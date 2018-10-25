@@ -1,8 +1,6 @@
-# Team info
+# Course Information 
 
-All members of the Students team are able to add/remove other members. Feel free to add missing members to the team. 
-
-# Videos
+## Videos
 
 See those talks preferably together in your team or with other programmers so that you can reflect upon the material together. 
 Be prepared for each seminar to share your reflections. 
@@ -180,12 +178,24 @@ For the swedish speaking programmers:
     * an aggregating entity database
     * live REPL coding
 
+## Deadlines
+
+### Sprint 1 
+11 November
+
+### Sprint 2
+25 November
+
+### Sprint 3
+9 December
+
+### Sprint 4
+21 December
 
 
+## firestone in Clojure
 
-# firestone in Clojure
-
-## Getting started with Cursive and Intellij
+### Getting started with Cursive and Intellij
 
 We recommend using Cursive and IntelliJ when developing Clojure. Both are freely available for students and non-commercial projects.
 
@@ -207,7 +217,7 @@ Sometimes it is nice to be able to reset the REPL (especially if you are working
 (clojure.tools.namespace.repl/refresh-all)
 ```
 
-## Tips when designing applications in clojure
+### Tips when designing applications in clojure
 
 * Keep the state of the application in ONE map.
 * The state should be information not decisions or the rules. Do not put functions in the state.
@@ -215,7 +225,7 @@ Sometimes it is nice to be able to reset the REPL (especially if you are working
 * The functions should be free of side effects.
 * Use the operators ->, ->> and as-> in order to make the code more readable.
 
-# firestone-sprint-1
+## firestone-sprint-1
 
 The first sprint of the game.
 
@@ -224,7 +234,7 @@ Keep in mind that we will extend the game in the next sprints, so keep your code
 
 Please open GitHub issues in this repo if you have any issues with the code provided.
 
-## Some notes
+### Some notes
 
 * This video instruction shows the basic rules of the game https://www.youtube.com/watch?v=TevkeE-Qy9Y
 * When the game is started, the starting player gets three cards. The other players gets four cards. This process is called mulligan. Our requirements is simply to take `x` number of cards of the deck. Also, we do not have any coin card for the moment.
@@ -233,7 +243,7 @@ Please open GitHub issues in this repo if you have any issues with the code prov
 * All functions should have tests unless there is nothing to test.
 * Demo the sprint by showing that you have relevant tests of the above functionality that passes.
 
-## Goals
+### Goals
 
 * Be able to create the state of the game.
 * Be able to play minion cards.
@@ -246,7 +256,7 @@ Please open GitHub issues in this repo if you have any issues with the code prov
 Observe that hero powers, spells and weapons are not included and that
 At the moment "Spell power" does not mean anything.
 
-#### Cards to implement:
+### Cards to implement:
 * Dalaran Mage (http://hearthstone.gamepedia.com/Dalaran_Mage)
 * Defender (http://hearthstone.gamepedia.com/Defender)
 * Imp (http://hearthstone.gamepedia.com/Imp)
