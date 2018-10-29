@@ -1,5 +1,11 @@
 # Course Information 
 
+## The git repository for your team
+
+Create one repository for each team and invite tomase to the repository. You are not allowed to use repositories outside
+of KTH-github. When done with a sprint, tag the code with a version x.0.0, where x is the number of the sprint, and send
+an email to tomase@kth.se notifying me that you are done with the sprint.
+
 ## Videos
 
 See those talks preferably together in your team or with other programmers so that you can reflect upon the material together. 
