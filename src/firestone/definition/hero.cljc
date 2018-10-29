@@ -16,6 +16,7 @@
     :class      :mage
     :health     30
     :hero-power "Fireblast"}
+
    "Rexxar"
    {:name       "Rexxar"
     :type       :hero

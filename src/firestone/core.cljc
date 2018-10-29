@@ -77,29 +77,29 @@
            ; Should be able to attack an enemy minion
            (is (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
                                  {:minions [(create-minion "War Golem" :id "wg")]}])
-                   (valid-attack? {:player-id "p1" :attacker-id "i" :target-id "wg"})))
+                   (valid-attack? "p1" "i" "wg")))
            ; Should be able to attack an enemy hero
            (is (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                   (valid-attack? {:player-id "p1" :attacker-id "i" :target-id "h2"})))
+                   (valid-attack? "p1" "i" "h2")))
            ; Should not be able to attack your own minions
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")
                                                 (create-minion "War Golem" :id "wg")]}])
-                       (valid-attack? {:player-id "p1" :attacker-id "i" :target-id "wg"})))
+                       (valid-attack? "p1" "i" "wg")))
            ; Should not be able to attack if it is not your turn
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}]
                                     :player-id-in-turn "p2")
-                       (valid-attack? {:player-id "p1" :attacker-id "i" :target-id "wg"})))
+                       (valid-attack? "p1" "i" "wg")))
            ; Should not be able to attack if you are sleepy
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}]
                                     :minion-ids-summoned-this-turn ["i"])
-                       (valid-attack? {:player-id "p1" :attacker-id "i" :target-id "wg"})))
+                       (valid-attack? "p1" "i" "wg")))
            ; Should not be able to attack if you already attacked this turn
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
-                       (valid-attack? {:player-id "p1" :attacker-id "i" :target-id "wg"}))))}
-  [state {player-id :player-id attacker-id :attacker-id target-id :target-id}]
+                       (valid-attack? "p1" "i" "wg"))))}
+  [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-character state target-id)]
     (and (= (:player-id-in-turn state) player-id)

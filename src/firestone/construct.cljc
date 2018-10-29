@@ -47,7 +47,7 @@
                  :name                        "Imp"
                  :id                          "i"}))}
   [name & kvs]
-  (let [definition (get-definition name) ; Will be used later
+  (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
@@ -293,7 +293,8 @@
                       minions)))))
 
 (defn update-minion
-  "Updates the given key using a given function or a value on the minion with given id."
+  "Updates the value of the given key for the minion with the given id. If function-or-value is a value it will be the
+   new value, else if it is a function it will be applied on the existing value to produce the new value."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (update-minion "i" :damage-taken inc)
@@ -326,7 +327,7 @@
                  (remove (fn [m] (= (:id m) id)) minions)))))
 
 (defn remove-minions
-  "Removes the minions with the given ids from the state"
+  "Removes the minions with the given ids from the state."
   {:test (fn []
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                                (create-minion "Imp" :id "i2")]}
