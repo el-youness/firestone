@@ -3,7 +3,11 @@
 ## The git repository for your team
 
 Create one repository for each team and invite tomase to the repository. You are not allowed to use repositories outside
-of KTH-github. When done with a sprint, tag the code with a version x.0.0, where x is the number of the sprint, and send
+of KTH-github. 
+
+## How to demo
+
+When done with a sprint, tag the code with a version x.0.0, where x is the number of the sprint, and send
 an email to tomase@kth.se notifying me that you are done with the sprint.
 
 ## Videos
