@@ -2,7 +2,7 @@
 
 ## The git repository for your team
 
-Create one repository for each team and invite tomase to the repository. You are not allowed to use repositories outside
+Create a repository for each team and invite tomase as a collaborator to the repository. You are not allowed to use repositories outside
 of KTH-github. 
 
 ## How to demo
