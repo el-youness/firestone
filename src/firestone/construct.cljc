@@ -141,6 +141,12 @@
   [state]
   [(update state :counter inc) (:counter state)])
 
+(defn add-card-to-deck
+  "Adds a card to a player's deck"
+  [state]
+  ; TODO: Implement
+  )
+
 (defn add-minion-to-board
   "Adds a minion with a given position to a player's minions and updates the other minions' positions."
   {:test (fn []
