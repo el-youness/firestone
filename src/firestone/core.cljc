@@ -106,7 +106,3 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target)))))
-
-(defn end-turn
-  [state player-id]
-  (assoc state :player-id-in-turn "p2"))
