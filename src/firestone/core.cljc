@@ -8,7 +8,9 @@
                                          create-minion
                                          get-heroes
                                          get-minion
-                                         get-minions]]))
+                                         get-minions
+                                         update-minion
+                                         remove-minion]]))
 
 (defn get-character
   "Returns the character with the given id from the state."
@@ -106,3 +108,29 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target)))))
+
+(defn damage-minion
+  "Deals damage to the minion with the given id."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
+                    (damage-minion "i" 3)
+                    (get-health "i"))
+                (as-> (get-definition "War Golem") $
+                    (- ($ :health) 3)))
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "i" :damage-taken 1)]}])
+                    (damage-minion "i" 1)
+                    (get-health "i"))
+                (as-> (get-definition "War Golem") $
+                      (- ($ :health) 2)))
+           ; Remove minion if dead
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (damage-minion "i" 1)
+                    (get-minion "i"))
+                nil))}
+  [state id damage]
+  (let [state (update-minion state id :damage-taken (+ damage (-> (get-minion state id)
+                                                                  (:damage-taken))))]
+    (if (> (get-health state id) 0)
+      state
+      (remove-minion state id)))
+  )
