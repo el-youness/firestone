@@ -134,3 +134,20 @@
       state
       (remove-minion state id)))
   )
+
+(defn damage-hero
+  "Deals damage to the hero with the given id."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Rexxar")}
+                                  {:hero (create-hero "Uther Lightbringer")}])
+                    (damage-hero "h1" 5)
+                    (get-health "h1"))
+                (as-> (get-definition "Rexxar") $
+                      (- ($ :health) 5))))}
+  [state id damage]
+  (let [state ]
+    (if (> (get-health state id) 0)
+      state
+      ; TODO: game should be over
+      state))
+  )
