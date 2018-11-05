@@ -279,7 +279,36 @@
                                                                  :damage-taken 0
                                                                  :owner-id     "p2"}}}
                  :counter                       2
-                 :minion-ids-summoned-this-turn []}))}
+                 :minion-ids-summoned-this-turn []})
+           ; Test to create game with cards in the hand
+           (is= (create-game [{:hand [(create-card "Imp")]}
+                              {:hero (create-hero "Anduin Wrynn")}])
+                {:player-id-in-turn             "p1"
+                 :players                       {"p1" {:id      "p1"
+                                                       :deck    []
+                                                       :hand    [{:name        "Imp"
+                                                                  :id          "c1"
+                                                                  :entity-type :card
+                                                                  :owner-id    "p1"}]
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p1"}}
+                                                 "p2" {:id      "p2"
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Anduin Wrynn"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p2"}}}
+                 :counter                       2
+                 :minion-ids-summoned-this-turn []})
+
+           )}
   ([data & kvs]
    (let [state (as-> (create-empty-state (map (fn [player-data]
                                                 (cond (nil? (:hero player-data))
@@ -304,7 +333,17 @@
                              (map-indexed (fn [index player-data]
                                             {:player-id (str "p" (inc index))
                                              :minions   (:minions player-data)})
-                                          data)))]
+                                          data))
+                     ; Add cards to hand
+                     (reduce (fn [state {player-id :player-id hand :hand}]
+                               (reduce (fn [state card] (add-card-to-hand state {:player-id player-id :card card}))
+                                       state
+                                       hand
+                                       ))
+                             $
+                             (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :hand (:hand player-data)})
+                                          data))
+                     )]
      (if (empty? kvs)
        state
        (apply assoc state kvs))))
