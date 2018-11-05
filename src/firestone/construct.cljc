@@ -357,6 +357,25 @@
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
 
+(defn update-hero
+  "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the
+   new value, else if it is a function it will be applied on the existing value to produce the new value."
+  {:test (fn []
+           (is= (-> (create-game (create-empty-state))
+                    (update-hero "h1" :damage-taken inc)
+                    (get-character "h1")
+                    (:damage-taken))
+                1)
+           (is= (-> (create-game (create-empty-state))
+                    (update-hero "h1" :damage-taken 2)
+                    (get-character "h1")
+                    (:damage-taken))
+                2))}
+  [state id key function-or-value]
+  (let [hero (get-character state id)]
+    (replace-hero state (if (function? function-or-value)
+                            (update hero key function-or-value)
+                            (assoc hero key function-or-value)))))
 (defn remove-minion
   "Removes a minion with the given id from the state."
   {:test (fn []
