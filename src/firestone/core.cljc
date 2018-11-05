@@ -12,23 +12,6 @@
                                          update-minion
                                          remove-minion]]))
 
-(defn get-character
-  "Returns the character with the given id from the state."
-  {:test (fn []
-           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
-                    (get-character "h1")
-                    (:name))
-                "Jaina Proudmoore")
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (get-character "i")
-                    (:name))
-                "Imp"))}
-  [state id]
-  (->> (concat (get-minions state)
-               (get-heroes state))
-       (filter (fn [c] (= (:id c) id)))
-       (first)))
-
 (defn get-health
   "Returns the health of the character."
   {:test (fn []

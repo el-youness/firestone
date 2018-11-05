@@ -287,6 +287,23 @@
        (vals)
        (map :hero)))
 
+(defn get-character
+  "Returns the character with the given id from the state."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
+                    (get-character "h1")
+                    (:name))
+                "Jaina Proudmoore")
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (get-character "i")
+                    (:name))
+                "Imp"))}
+  [state id]
+  (->> (concat (get-minions state)
+               (get-heroes state))
+       (filter (fn [c] (= (:id c) id)))
+       (first)))
+
 (defn replace-minion
   "Replaces a minion with the same id as the given new-minion."
   {:test (fn []
@@ -306,6 +323,19 @@
                           new-minion
                           m))
                       minions)))))
+
+(defn replace-hero
+  "Replaces a hero with the same id as the given new-hero."
+  {:test (fn []
+           (is= (-> (create-game (create-empty-state))
+                    (replace-hero (create-hero "Rexxar" :id "h1"))
+                    (get-character "h1")
+                    (:name))
+                "Rexxar"))}
+  [state new-hero]
+  (let [owner-id (or (:owner-id new-hero)
+                     (:owner-id (get-character state (:id new-hero))))]
+    (assoc-in state [:players owner-id :hero] new-hero)))
 
 (defn update-minion
   "Updates the value of the given key for the minion with the given id. If function-or-value is a value it will be the
