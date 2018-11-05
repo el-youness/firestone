@@ -5,6 +5,7 @@
             [firestone.definitions-loader]
             [firestone.construct]
             [firestone.core]
+            [firestone.api]
             [firestone.definition.card]
             [firestone.definition.hero]))
 

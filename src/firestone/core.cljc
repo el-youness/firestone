@@ -10,24 +10,9 @@
                                          get-minion
                                          get-minions
                                          update-minion
-                                         remove-minion]]))
-
-(defn get-character
-  "Returns the character with the given id from the state."
-  {:test (fn []
-           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
-                    (get-character "h1")
-                    (:name))
-                "Jaina Proudmoore")
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (get-character "i")
-                    (:name))
-                "Imp"))}
-  [state id]
-  (->> (concat (get-minions state)
-               (get-heroes state))
-       (filter (fn [c] (= (:id c) id)))
-       (first)))
+                                         remove-minion
+                                         update-hero
+                                         get-character]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -133,4 +118,28 @@
     (if (> (get-health state id) 0)
       state
       (remove-minion state id)))
+  )
+
+(defn damage-hero
+  "Deals damage to the hero with the given id."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Rexxar")}
+                                  {:hero (create-hero "Uther Lightbringer")}])
+                    (damage-hero "h1" 5)
+                    (get-health "h1"))
+                (as-> (get-definition "Rexxar") $
+                      (- ($ :health) 5)))
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :damage-taken 2)}
+                                  {:hero (create-hero "Uther Lightbringer")}])
+                    (damage-hero "h1" 5)
+                    (get-health "h1"))
+                (as-> (get-definition "Rexxar") $
+                      (- ($ :health) 7))))}
+  [state id damage]
+  (let [state (update-hero state id  :damage-taken (+ damage (-> (get-character state id)
+                                                                 (:damage-taken))))]
+    (if (> (get-health state id) 0)
+      state
+      ; TODO: game should be over
+      state))
   )

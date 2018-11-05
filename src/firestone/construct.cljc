@@ -11,6 +11,11 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0})
+           (is= (create-hero "Jaina Proudmoore" :owner-id "p1")
+                {:name         "Jaina Proudmoore"
+                 :entity-type  :hero
+                 :damage-taken 0
+                 :owner-id     "p1"})
            (is= (create-hero "Jaina Proudmoore" :damage-taken 10)
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -74,7 +79,8 @@
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :damage-taken 0
-                                                                 :entity-type  :hero}}
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p1"}}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -82,7 +88,8 @@
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h2"
                                                                  :damage-taken 0
-                                                                 :entity-type  :hero}}}
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p2"}}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
   ([heroes]
@@ -97,7 +104,7 @@
                                                           :deck    []
                                                           :hand    []
                                                           :minions []
-                                                          :hero    (assoc hero :id (str "h" (inc index)))}))
+                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
                                                   {}))
@@ -213,7 +220,8 @@
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero
-                                                                 :damage-taken 0}}
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p1"}}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -221,7 +229,8 @@
                                                        :hero    {:name         "Anduin Wrynn"
                                                                  :id           "h2"
                                                                  :entity-type  :hero
-                                                                 :damage-taken 0}}}
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p2"}}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []}))}
   ([data & kvs]
@@ -278,6 +287,23 @@
        (vals)
        (map :hero)))
 
+(defn get-character
+  "Returns the character with the given id from the state."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
+                    (get-character "h1")
+                    (:name))
+                "Jaina Proudmoore")
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (get-character "i")
+                    (:name))
+                "Imp"))}
+  [state id]
+  (->> (concat (get-minions state)
+               (get-heroes state))
+       (filter (fn [c] (= (:id c) id)))
+       (first)))
+
 (defn replace-minion
   "Replaces a minion with the same id as the given new-minion."
   {:test (fn []
@@ -297,6 +323,19 @@
                           new-minion
                           m))
                       minions)))))
+
+(defn replace-hero
+  "Replaces a hero with the same id as the given new-hero."
+  {:test (fn []
+           (is= (-> (create-game (create-empty-state))
+                    (replace-hero (create-hero "Rexxar" :id "h1"))
+                    (get-character "h1")
+                    (:name))
+                "Rexxar"))}
+  [state new-hero]
+  (let [owner-id (or (:owner-id new-hero)
+                     (:owner-id (get-character state (:id new-hero))))]
+    (assoc-in state [:players owner-id :hero] new-hero)))
 
 (defn update-minion
   "Updates the value of the given key for the minion with the given id. If function-or-value is a value it will be the
@@ -318,6 +357,25 @@
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
 
+(defn update-hero
+  "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the
+   new value, else if it is a function it will be applied on the existing value to produce the new value."
+  {:test (fn []
+           (is= (-> (create-game (create-empty-state))
+                    (update-hero "h1" :damage-taken inc)
+                    (get-character "h1")
+                    (:damage-taken))
+                1)
+           (is= (-> (create-game (create-empty-state))
+                    (update-hero "h1" :damage-taken 2)
+                    (get-character "h1")
+                    (:damage-taken))
+                2))}
+  [state id key function-or-value]
+  (let [hero (get-character state id)]
+    (replace-hero state (if (function? function-or-value)
+                            (update hero key function-or-value)
+                            (assoc hero key function-or-value)))))
 (defn remove-minion
   "Removes a minion with the given id from the state."
   {:test (fn []
