@@ -140,6 +140,16 @@
         (map :minions)
         (apply concat))))
 
+(defn get-deck
+  "Returns the minions on the board for the given player-id or for both players."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-minions "p1"))
+                []))}
+  ([state player-id]
+   (:deck (get-player state player-id)))
+  )
+
 (defn- generate-id
   "Generates an id and returns a tuple with the new state and the generated id."
   {:test (fn []
@@ -150,8 +160,32 @@
 
 (defn add-card-to-deck
   "Adds a card to a player's deck"
-  [state]
-  ; TODO: Implement
+  {:test (fn []
+           ;Adding a card to an empty deck
+           (is= (as-> (create-empty-state) $
+                      (add-card-to-deck $ {:player-id "p1" :card (create-card "imp" :id "c1")})
+                      (get-deck $ "p1")
+                      (map (fn [c] {:id (:id c) :entity-type (:entity-type c) :name (:name c)}) $))
+                [{:id "c1" :entity-type :card :name "imp"}]
+                )
+           ;Generate an Id for a new card
+           ;TODO : I am not sure if this is necessary
+           )}
+  [state {player-id :player-id card :card}]
+  {:pre [(map? state) (string? player-id) (map? card)]}
+  (let  [[state id] (if (contains? card :id)
+                      ;if it already has an id we return with that id
+                      [state (:id card)]
+                      ;else we generate a value and IdNumber = "m"+ Idnumber
+                      (let [[state value] (generate-id state)]
+                        [state (str "c" value)]))]
+    ;for the player with "player-id" we update the deck using the function
+    (update-in state
+               [:players player-id :deck]
+               (fn [deck] (conj (->> deck) (assoc card :id id))
+                 ))
+    )
+
   )
 
 (defn add-minion-to-board
@@ -193,7 +227,7 @@
                                     (if (< (:position m) position)
                                       m
                                       (update m :position inc)))))
-                       (assoc minion :position position
+                         (assoc minion :position position
                                      :owner-id player-id
                                      :id id))))))
 
@@ -232,7 +266,32 @@
                                                                  :damage-taken 0
                                                                  :owner-id     "p2"}}}
                  :counter                       2
-                 :minion-ids-summoned-this-turn []}))}
+                 :minion-ids-summoned-this-turn []})
+           (is= (create-game [{:deck [(create-card "Imp")]}
+                              {:hero (create-hero "Anduin Wrynn")}]
+                             :player-id-in-turn "p2")
+                {:player-id-in-turn             "p2"
+                 :players                       {"p1" {:id      "p1"
+                                                       :deck    [{:id          "c1"
+                                                                  :entity-type :card
+                                                                  :name        "Imp"}]
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :damage-taken 0}}
+                                                 "p2" {:id      "p2"
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Anduin Wrynn"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :damage-taken 0}}}
+                 :counter                       2
+                 :minion-ids-summoned-this-turn []})
+           )}
   ([data & kvs]
    (let [state (as-> (create-empty-state (map (fn [player-data]
                                                 (cond (nil? (:hero player-data))
@@ -246,18 +305,29 @@
                                               data)) $
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
-                               (reduce (fn [state [index minion]]
-                                         (add-minion-to-board state {:player-id player-id
-                                                                     :minion    minion
-                                                                     :position  index}))
+                               (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id
+                                                                                              :minion    minion
+                                                                                              :position  index}))
                                        state
-                                       (map-indexed (fn [index minion] [index minion])
-                                                    minions)))
+                                       ;returns a sequence 0 and the 1st elem. of "minions", 2 and the 2nd elem ... untill minions is exhausted
+                                       (map-indexed (fn [index minion] [index minion]) minions)))
                              $
                              (map-indexed (fn [index player-data]
                                             {:player-id (str "p" (inc index))
                                              :minions   (:minions player-data)})
-                                          data)))]
+                                          data))
+
+                     ;Add cards to deck
+                     (reduce (fn [state {player-id :player-id deck :deck}]
+                                (reduce (fn [state card] (add-card-to-deck state {:player-id player-id :card card}))
+                                       state
+                                       deck
+                                       ))
+                               $
+                               (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck   (:deck player-data)})
+                                            data))
+
+                     )]
      (if (empty? kvs)
        state
        (apply assoc state kvs))))
