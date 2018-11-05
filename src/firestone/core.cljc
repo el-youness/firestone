@@ -10,7 +10,9 @@
                                          get-minion
                                          get-minions
                                          update-minion
-                                         remove-minion]]))
+                                         remove-minion
+                                         update-hero
+                                         get-character]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -126,9 +128,16 @@
                     (damage-hero "h1" 5)
                     (get-health "h1"))
                 (as-> (get-definition "Rexxar") $
-                      (- ($ :health) 5))))}
+                      (- ($ :health) 5)))
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :damage-taken 2)}
+                                  {:hero (create-hero "Uther Lightbringer")}])
+                    (damage-hero "h1" 5)
+                    (get-health "h1"))
+                (as-> (get-definition "Rexxar") $
+                      (- ($ :health) 7))))}
   [state id damage]
-  (let [state ]
+  (let [state (update-hero state id  :damage-taken (+ damage (-> (get-character state id)
+                                                                 (:damage-taken))))]
     (if (> (get-health state id) 0)
       state
       ; TODO: game should be over
