@@ -123,6 +123,15 @@
   [state player-id]
   (get-in state [:players player-id]))
 
+(defn get-hand
+  "Returns the hand for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-hand "p1"))
+                []))}
+  ([state player-id]
+   (:hand (get-player state player-id))))
+
 (defn get-minions
   "Returns the minions on the board for the given player-id or for both players."
   {:test (fn []
@@ -187,6 +196,44 @@
     )
 
   )
+
+(defn add-card-to-hand
+  "Adds a card to a player's hand."
+  {:test (fn []
+           ; Adding a card to an empty hand
+           (is= (as-> (create-empty-state) $
+                      (add-card-to-hand $ {:player-id "p1" :card (create-card "Imp" :id "i")})
+                      (get-hand $ "p1")
+                      (map (fn [c] {:id (:id c) :name (:name c)}) $))
+                [{:id "i" :name "Imp"}])
+           ; Generating an id for the new card
+           (let [state (-> (create-empty-state)
+                           (add-card-to-hand {:player-id "p1" :card (create-card "Imp")}))]
+             (is= (-> (get-hand state "p1")
+                      (first)
+                      (:id))
+                  "c1")
+             (is= (:counter state) 2))
+           ; Adding two card to an empty hand
+           (is= (as-> (create-empty-state) $
+                      (add-card-to-hand $ {:player-id "p1" :card (create-card "Imp" :id "i1")})
+                      (add-card-to-hand $ {:player-id "p1" :card (create-card "War Golem" :id "i2")})
+                      (get-hand $ "p1")
+                      (map (fn [c] {:id (:id c) :name (:name c)}) $))
+                [{:id "i1" :name "Imp"}{:id "i2" :name "War Golem"}])
+           )}
+  [state {player-id :player-id card :card}]
+  {:pre [(map? state) (string? player-id) (map? card)]}
+  (let [[state id] (if (contains? card :id)
+                     [state (:id card)]
+                     (let [[state value] (generate-id state)]
+                       [state (str "c" value)]))]
+    (update-in state
+               [:players player-id :hand]
+               (fn [cards]
+                 (conj cards
+                       (assoc card :owner-id player-id
+                                   :id id))))))
 
 (defn add-minion-to-board
   "Adds a minion with a given position to a player's minions and updates the other minions' positions."
@@ -267,19 +314,24 @@
                                                                  :owner-id     "p2"}}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []})
-           (is= (create-game [{:deck [(create-card "Imp")]}
-                              {:hero (create-hero "Anduin Wrynn")}]
-                             :player-id-in-turn "p2")
-                {:player-id-in-turn             "p2"
+
+           ; Test to create game with cards in the hand and deck
+           (is= (create-game [{:hand [(create-card "Imp")] :deck [(create-card "Imp")]}
+                              {:hero (create-hero "Anduin Wrynn")}])
+                {:player-id-in-turn             "p1"
                  :players                       {"p1" {:id      "p1"
-                                                       :deck    [{:id          "c1"
+                                                       :deck    [{:id          "c2"
                                                                   :entity-type :card
                                                                   :name        "Imp"}]
-                                                       :hand    []
+                                                       :hand    [{:name        "Imp"
+                                                                  :id          "c1"
+                                                                  :entity-type :card
+                                                                  :owner-id    "p1"}]
                                                        :minions []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero
+                                                                 :owner-id     "p1"
                                                                  :damage-taken 0}}
                                                  "p2" {:id      "p2"
                                                        :deck    []
@@ -288,8 +340,9 @@
                                                        :hero    {:name         "Anduin Wrynn"
                                                                  :id           "h2"
                                                                  :entity-type  :hero
+                                                                 :owner-id     "p2"
                                                                  :damage-taken 0}}}
-                 :counter                       2
+                 :counter                       3
                  :minion-ids-summoned-this-turn []})
            )}
   ([data & kvs]
@@ -315,6 +368,16 @@
                              (map-indexed (fn [index player-data]
                                             {:player-id (str "p" (inc index))
                                              :minions   (:minions player-data)})
+                                          data))
+
+                     ; Add cards to hand
+                     (reduce (fn [state {player-id :player-id hand :hand}]
+                               (reduce (fn [state card] (add-card-to-hand state {:player-id player-id :card card}))
+                                       state
+                                       hand
+                                       ))
+                             $
+                             (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :hand (:hand player-data)})
                                           data))
 
                      ;Add cards to deck
