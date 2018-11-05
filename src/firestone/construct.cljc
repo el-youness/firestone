@@ -123,6 +123,15 @@
   [state player-id]
   (get-in state [:players player-id]))
 
+(defn get-hand
+  "Returns the hand for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-hand "p1"))
+                []))}
+  ([state player-id]
+   (:hand (get-player state player-id))))
+
 (defn get-minions
   "Returns the minions on the board for the given player-id or for both players."
   {:test (fn []
@@ -153,6 +162,44 @@
   [state]
   ; TODO: Implement
   )
+
+(defn add-card-to-hand
+  "Adds a card to a player's hand."
+  {:test (fn []
+           ; Adding a card to an empty hand
+           (is= (as-> (create-empty-state) $
+                      (add-card-to-hand $ {:player-id "p1" :card (create-card "Imp" :id "i")})
+                      (get-hand $ "p1")
+                      (map (fn [c] {:id (:id c) :name (:name c)}) $))
+                [{:id "i" :name "Imp"}])
+           ; Generating an id for the new card
+           (let [state (-> (create-empty-state)
+                           (add-card-to-hand {:player-id "p1" :card (create-card "Imp")}))]
+             (is= (-> (get-hand state "p1")
+                      (first)
+                      (:id))
+                  "c1")
+             (is= (:counter state) 2))
+           ; Adding two card to an empty hand
+           (is= (as-> (create-empty-state) $
+                      (add-card-to-hand $ {:player-id "p1" :card (create-card "Imp" :id "i1")})
+                      (add-card-to-hand $ {:player-id "p1" :card (create-card "War Golem" :id "i2")})
+                      (get-hand $ "p1")
+                      (map (fn [c] {:id (:id c) :name (:name c)}) $))
+                [{:id "i1" :name "Imp"}{:id "i2" :name "War Golem"}])
+           )}
+  [state {player-id :player-id card :card}]
+  {:pre [(map? state) (string? player-id) (map? card)]}
+  (let [[state id] (if (contains? card :id)
+                     [state (:id card)]
+                     (let [[state value] (generate-id state)]
+                       [state (str "c" value)]))]
+    (update-in state
+               [:players player-id :hand]
+               (fn [cards]
+                 (conj cards
+                       (assoc card :owner-id player-id
+                                   :id id))))))
 
 (defn add-minion-to-board
   "Adds a minion with a given position to a player's minions and updates the other minions' positions."
