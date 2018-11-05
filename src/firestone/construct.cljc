@@ -11,6 +11,11 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0})
+           (is= (create-hero "Jaina Proudmoore" :owner-id "p1")
+                {:name         "Jaina Proudmoore"
+                 :entity-type  :hero
+                 :damage-taken 0
+                 :owner-id     "p1"})
            (is= (create-hero "Jaina Proudmoore" :damage-taken 10)
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -74,7 +79,8 @@
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :damage-taken 0
-                                                                 :entity-type  :hero}}
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p1"}}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -82,7 +88,8 @@
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h2"
                                                                  :damage-taken 0
-                                                                 :entity-type  :hero}}}
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p2"}}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
   ([heroes]
@@ -97,7 +104,7 @@
                                                           :deck    []
                                                           :hand    []
                                                           :minions []
-                                                          :hero    (assoc hero :id (str "h" (inc index)))}))
+                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
                                                   {}))
@@ -213,7 +220,8 @@
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero
-                                                                 :damage-taken 0}}
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p1"}}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -221,7 +229,8 @@
                                                        :hero    {:name         "Anduin Wrynn"
                                                                  :id           "h2"
                                                                  :entity-type  :hero
-                                                                 :damage-taken 0}}}
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p2"}}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []}))}
   ([data & kvs]
