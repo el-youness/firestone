@@ -6,6 +6,7 @@
                                          create-game
                                          create-hero
                                          create-minion
+                                         get-hand
                                          get-heroes
                                          get-minion
                                          get-minions
@@ -13,6 +14,31 @@
                                          remove-minion
                                          update-hero
                                          get-character]]))
+
+(defn draw-card
+  "Draw a card from a player's deck and put it in the hand, if the hand is not full and there are cards in the deck"
+  {:test (fn []
+           ; Test to draw a card when the player has a card in the deck
+           (is= (-> (create-game [{:deck [(create-card "Imp")]}
+                                  {:hero (create-hero "Anduin Wrynn")}])
+                    (draw-card "p1")
+                    (get-hand "p1"))
+                {:hand    [{:name        "Imp"
+                            :id          "c1"
+                            :entity-type :card
+                            :owner-id    "p1"}]})
+           ; TODO: Test that a player takes fatigue damage if there are no cards in the deck
+
+           ; TODO: Test that the player takes increased damage when drawing multiple times from an empty deck
+
+           )}
+  ([state player-id]
+   {:pre [(map? state) (string? player-id)]}
+
+
+
+    ))
+
 
 (defn get-health
   "Returns the health of the character."
