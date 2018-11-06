@@ -494,12 +494,12 @@
   "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the
    new value, else if it is a function it will be applied on the existing value to produce the new value."
   {:test (fn []
-           (is= (-> (create-game (create-empty-state))
+           (is= (-> (create-game)
                     (update-hero "h1" :damage-taken inc)
                     (get-character "h1")
                     (:damage-taken))
                 1)
-           (is= (-> (create-game (create-empty-state))
+           (is= (-> (create-game)
                     (update-hero "h1" :damage-taken 2)
                     (get-character "h1")
                     (:damage-taken))
