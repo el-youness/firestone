@@ -12,7 +12,8 @@
                                          update-minion
                                          remove-minion
                                          update-hero
-                                         get-character]]))
+                                         get-character
+                                         add-minion-to-board]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -143,3 +144,53 @@
       ; TODO: game should be over
       state))
   )
+
+(defn summon-minion
+  "Plays a minion card-"
+  {:test (fn []
+           ; Play minion card on empty board
+           (is= (-> (create-game)
+                    (summon-minion "p1" (create-card "Imp" :id "c1"))
+                    (get-minions "p1")
+                    (first)
+                    (select-keys [:name :position]))
+                {:name     "Imp"
+                 :position 0})
+           ; Play a minion card on a board with one minion
+           (is= (-> (create-game [{:minions [(create-minion "War Golem")]}])
+                    (summon-minion "p1" (create-card "Imp" :id "c1"))
+                    (get-minion "m2")
+                    (select-keys [:name :position]))
+                {:name     "Imp"
+                 :position 0})
+           ; Play a minion on a specific board position
+           (is= (-> (create-game [{:minions [(create-minion "War Golem")]}])
+                    (summon-minion "p1" (create-card "Imp" :id "c1") 1)
+                    (get-minion "m2")
+                    (select-keys [:name :position]))
+                {:name     "Imp"
+                 :position 1})
+           ; No state change if board is already full
+           (is= (-> (create-game [{:minions [(create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")]}])
+                    (summon-minion "p1" (create-card "Imp" :id "c1")))
+                (create-game [{:minions [(create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")]}]))
+           )}
+  ([state player-id card position]
+   (if (< (count (get-minions state player-id)) 7)
+     (let [minion (create-minion (:name card))]
+       (add-minion-to-board state {:player-id player-id :minion minion :position position}))
+     state))
+  ([state player-id card]
+   (summon-minion state player-id card 0)))
