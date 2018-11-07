@@ -122,8 +122,8 @@
            ; Remove minion if dead
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (damage-minion "i" 1)
-                    (get-minion "i"))
-                nil))}
+                    (get-minions))
+                []))}
   [state id damage]
   (let [state (update-minion state id :damage-taken (+ damage (-> (get-minion state id)
                                                                   (:damage-taken))))]
