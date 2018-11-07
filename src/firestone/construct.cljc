@@ -80,7 +80,8 @@
                                                                  :id           "h1"
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
-                                                                 :owner-id     "p1"}}
+                                                                 :owner-id     "p1"}
+                                                       :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -89,7 +90,8 @@
                                                                  :id           "h2"
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
-                                                                 :owner-id     "p2"}}}
+                                                                 :owner-id     "p2"}
+                                                       :fatigue 1}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
   ([heroes]
@@ -104,7 +106,8 @@
                                                           :deck    []
                                                           :hand    []
                                                           :minions []
-                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))}))
+                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
+                                                          :fatigue 1}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
                                                   {}))
@@ -132,6 +135,26 @@
   ([state player-id]
    (:hand (get-player state player-id))))
 
+(defn get-deck
+  "Returns the deck for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-deck "p1"))
+                []))}
+  ([state player-id]
+   (:deck (get-player state player-id)))
+  )
+
+(defn get-hero-id
+  "Returns the hero id for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-hero-id "p1"))
+                "h1"))}
+  [state player-id]
+   (:id (:hero (get-player state player-id)))
+  )
+
 (defn get-minions
   "Returns the minions on the board for the given player-id or for both players."
   {:test (fn []
@@ -149,15 +172,13 @@
         (map :minions)
         (apply concat))))
 
-(defn get-deck
-  "Returns the minions on the board for the given player-id or for both players."
+(defn fatigue-damage
+  "Increase a player's fatigue and return a tuple with the new state and the old fatigue."
   {:test (fn []
-           (is= (-> (create-empty-state)
-                    (get-minions "p1"))
-                []))}
-  ([state player-id]
-   (:deck (get-player state player-id)))
-  )
+           (is= (fatigue-damage {:players {"p1" {:fatigue 1}}} "p1")
+                [{:players {"p1" {:fatigue 2}}} 1]))}
+  [state player-id]
+  [(update-in state [:players player-id :fatigue] inc) (get-in state [:players player-id :fatigue])])
 
 (defn- generate-id
   "Generates an id and returns a tuple with the new state and the generated id."
@@ -302,7 +323,8 @@
                                                                  :id           "h1"
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
-                                                                 :owner-id     "p1"}}
+                                                                 :owner-id     "p1"}
+                                                       :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -311,7 +333,8 @@
                                                                  :id           "h2"
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
-                                                                 :owner-id     "p2"}}}
+                                                                 :owner-id     "p2"}
+                                                       :fatigue 1}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []})
 
@@ -332,7 +355,8 @@
                                                                  :id           "h1"
                                                                  :entity-type  :hero
                                                                  :owner-id     "p1"
-                                                                 :damage-taken 0}}
+                                                                 :damage-taken 0}
+                                                       :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -341,7 +365,8 @@
                                                                  :id           "h2"
                                                                  :entity-type  :hero
                                                                  :owner-id     "p2"
-                                                                 :damage-taken 0}}}
+                                                                 :damage-taken 0}
+                                                       :fatigue 1}}
                  :counter                       3
                  :minion-ids-summoned-this-turn []})
            )}
@@ -356,6 +381,17 @@
                                                       :else
                                                       (:hero player-data)))
                                               data)) $
+                     ; Add custom fatigue to state if the player has it.
+                     (reduce (fn [state {player-id :player-id fatigue :fatigue}]
+                               (assoc-in state [:players player-id :fatigue] fatigue))
+                             $
+                             (map-indexed (fn [index player-data]
+                                            (if (nil? (:fatigue player-data))
+                                                {:player-id (str "p" (inc index))
+                                                 :fatigue   1}
+                                                {:player-id (str "p" (inc index))
+                                                 :fatigue   (:fatigue player-data)}))
+                                          data))
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
                                (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id
@@ -536,3 +572,45 @@
                 ["i2" "i3"]))}
   [state & ids]
   (reduce remove-minion state ids))
+
+(defn get-cards-from-deck
+  "Returns a given number of cards from the deck of the player id."
+  {:test (fn []
+           ; Test getting a card from a player's deck
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
+                    (get-cards-from-deck "p1" 1))
+                [(create-card "Imp" :id "i")])
+           ; Test getting cards from a empty deck
+           (is= (-> (create-game)
+                    (get-cards-from-deck "p1" 2))
+                [])
+           ; Test getting two cards from a player's deck
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i1")(create-card "Imp" :id "i2")(create-card "Imp" :id "i3")]}])
+                    (get-cards-from-deck "p1" 2))
+                [(create-card "Imp" :id "i1") (create-card "Imp" :id "i2")]))}
+
+  [state player-id amount]
+  {:pre [(map? state)(string? player-id)(number? amount)]}
+  (let [deck (get-deck state player-id)]
+              (let [size (count deck)]
+              (cond
+                (= size 0)
+                []
+
+                (<= size amount)
+                (subvec deck 0 size)
+
+                :else
+                (subvec deck 0 amount)))))
+
+(defn remove-card-from-deck
+  "Removes a card with the given id from the given player's deck."
+  {:test (fn []
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
+                    (remove-card-from-deck "p1" "i")
+                    (get-deck "p1"))
+                []))}
+  [state player-id id]
+  (update-in state [:players player-id :deck]
+               (fn [cards]
+                 (remove (fn [c] (= (:id c) id)) cards))))
