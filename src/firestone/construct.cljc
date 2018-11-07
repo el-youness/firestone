@@ -381,6 +381,17 @@
                                                       :else
                                                       (:hero player-data)))
                                               data)) $
+                     ; Add custom fatigue to state if the player has it.
+                     (reduce (fn [state {player-id :player-id fatigue :fatigue}]
+                               (assoc-in state [:players player-id :fatigue] fatigue))
+                             $
+                             (map-indexed (fn [index player-data]
+                                            (if (nil? (:fatigue player-data))
+                                                {:player-id (str "p" (inc index))
+                                                 :fatigue   1}
+                                                {:player-id (str "p" (inc index))
+                                                 :fatigue   (:fatigue player-data)}))
+                                          data))
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
                                (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id

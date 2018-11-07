@@ -183,17 +183,13 @@
                 (create-game [{:hand [(create-card "Imp")]}]))
            ; Test that a player takes fatigue damage if there are no cards in the deck
            (is= (-> (create-game)
-                    (draw-card "p1")
-                    (get-health "h1"))
-                (as-> (get-definition "Jaina Proudmoore") $
-                      (- ($ :health) 1)))
+                    (draw-card "p1"))
+                (create-game [{:fatigue 2 :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}]))
            ; Test that the player takes increased damage when drawing multiple times from an empty deck
            (is= (-> (create-game)
                     (draw-card "p1")
-                    (draw-card "p1")
-                    (get-health "h1"))
-                (as-> (get-definition "Jaina Proudmoore") $
-                      (- ($ :health) 3)))
+                    (draw-card "p1"))
+                (create-game [{:fatigue 3 :hero (create-hero "Jaina Proudmoore" :damage-taken 3)}]))
            )}
   ([state player-id]
    {:pre [(map? state) (string? player-id)]}
