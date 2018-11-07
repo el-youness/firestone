@@ -80,7 +80,8 @@
                                                                  :id           "h1"
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
-                                                                 :owner-id     "p1"}}
+                                                                 :owner-id     "p1"}
+                                                       :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -89,7 +90,8 @@
                                                                  :id           "h2"
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
-                                                                 :owner-id     "p2"}}}
+                                                                 :owner-id     "p2"}
+                                                       :fatigue 1}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
   ([heroes]
@@ -104,7 +106,8 @@
                                                           :deck    []
                                                           :hand    []
                                                           :minions []
-                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))}))
+                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
+                                                          :fatigue 1}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
                                                   {}))
@@ -158,6 +161,14 @@
   ([state player-id]
    (:deck (get-player state player-id)))
   )
+
+(defn fatigue-damage
+  "Increase a player's fatigue and return a tuple with the new state and the old fatigue."
+  {:test (fn []
+           (is= (fatigue-damage {:players {"p1" {:fatigue 1}}} "p1")
+                [{:players {"p1" {:fatigue 2}}} 1]))}
+  [state player-id]
+  [(update-in state [:players player-id :fatigue] inc) (get-in state [:players player-id :fatigue])])
 
 (defn- generate-id
   "Generates an id and returns a tuple with the new state and the generated id."
@@ -302,7 +313,8 @@
                                                                  :id           "h1"
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
-                                                                 :owner-id     "p1"}}
+                                                                 :owner-id     "p1"}
+                                                       :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -311,7 +323,8 @@
                                                                  :id           "h2"
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
-                                                                 :owner-id     "p2"}}}
+                                                                 :owner-id     "p2"}
+                                                       :fatigue 1}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []})
 
@@ -332,7 +345,8 @@
                                                                  :id           "h1"
                                                                  :entity-type  :hero
                                                                  :owner-id     "p1"
-                                                                 :damage-taken 0}}
+                                                                 :damage-taken 0}
+                                                       :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -341,7 +355,8 @@
                                                                  :id           "h2"
                                                                  :entity-type  :hero
                                                                  :owner-id     "p2"
-                                                                 :damage-taken 0}}}
+                                                                 :damage-taken 0}
+                                                       :fatigue 1}}
                  :counter                       3
                  :minion-ids-summoned-this-turn []})
            )}

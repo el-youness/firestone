@@ -3,7 +3,6 @@
             [ysera.collections :refer [seq-contains?]]
             [firestone.definitions :refer [get-definition]]
             [firestone.construct :refer [create-card
-                                         create-empty-state
                                          create-game
                                          create-hero
                                          create-minion
@@ -19,28 +18,38 @@
                                          get-character]]))
 
 (defn draw-card
-  "Draw a card from a player's deck and put it in the hand, if the hand is not full and there are cards in the deck."
+  "Draw a card from a player's deck and put it in the hand. This is only done if the hand is not full
+  and there are cards in the deck."
   {:test (fn []
            ; Test to draw a card when the player has a card in the deck
-           (is= (-> (create-game [{:deck [(create-card "Imp")]}
-                                  {:hero (create-hero "Anduin Wrynn")}])
+           (is= (-> (create-game [{:deck [(create-card "Imp")]}])
                     (draw-card "p1")
                     (get-hand "p1"))
                 {:hand    [{:name        "Imp"
                             :id          "c1"
                             :entity-type :card
                             :owner-id    "p1"}]})
-           ; TODO: Test that a player takes fatigue damage if there are no cards in the deck
-
-           ; TODO: Test that the player takes increased damage when drawing multiple times from an empty deck
-
+           ; Test that a player takes fatigue damage if there are no cards in the deck
+           (is= (-> (create-game)
+                    (draw-card "p1")
+                    (get-health "h1"))
+                (as-> (get-definition "Jaina Proudmoore") $
+                      (- ($ :health) 1)))
+           ; Test that the player takes increased damage when drawing multiple times from an empty deck
+           (is= (-> (create-game)
+                    (draw-card "p1")
+                    (draw-card "p1")
+                    (get-health "h1"))
+                (as-> (get-definition "Jaina Proudmoore") $
+                      (- ($ :health) 3)))
            )}
   ([state player-id]
    {:pre [(map? state) (string? player-id)]}
     ; TODO:
     ; (if (not (cards-in-deck? state player-id))
-    ;     (damage-hero state (get-hero-id state player-id) (get-fatigue-damage state player-id)) ...
-    ;     (let [state card] (remove-card-from-deck state player-id) $
+    ;     (let [state damage] (fatigue-damage state player-id)
+    ;          (damage-hero state (get-hero-id state player-id) damage))
+    ;     (let [state card] (remove-card-from-deck state player-id)
     ;            (if (space-in-hand? state player-id)
     ;                (add-card-to-hand state {player-id: player-id :card card})
     ;                 state
@@ -50,26 +59,19 @@
 
     ))
 
-; TODO: Player's should have fatigue field
-
-; TODO: get-fatigue-damage state player-id
-
-; TODO: Should have increase-fatigue, should be similar to generate-id. Should take player-id.
-
-; TODO: damage-hero should work with fatigue
+; TODO: get-hero-id state player-id
 
 ; TODO: remove-card-from-deck (in construct). Returns the state and the removed card
 
 ; TODO: space-in-hand? state player-id
 
-; TODO: get-hero-id state player-id
 
 (defn card-in-deck?
   "Checks if there are cards in the player's deck."
   {:test (fn []
            (is (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
                    (card-in-deck? "p1")))
-           (is-not (-> (create-game (create-empty-state))
+           (is-not (-> (create-game)
                        (card-in-deck? "p1"))))}
   [state player-id]
   (not (empty? (get-deck state player-id))))
