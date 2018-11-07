@@ -146,7 +146,7 @@
   )
 
 (defn get-hero
-  "Returns the deck for the given player-id."
+  "Returns the hero for the given player-id."
   {:test (fn []
            (is= (-> (create-empty-state)
                     (get-hero "p1"))
@@ -563,7 +563,7 @@
   (reduce remove-minion state ids))
 
 (defn get-a-card-from-deck
-  "Returns a card from the deck for the player id."
+  "Returns a card from the deck of the player id."
   {:test (fn []
            (is= (-> (create-game [{:deck [(create-minion "Imp" :id "i")]}])
                     (get-a-card-from-deck "p1")

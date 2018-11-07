@@ -179,12 +179,8 @@
   {:test (fn []
            ; Test to draw a card when the player has a card in the deck
            (is= (-> (create-game [{:deck [(create-card "Imp")]}])
-                    (draw-card "p1")
-                    (get-hand "p1"))
-                [{:name        "Imp"
-                  :id          "c1"
-                  :entity-type :card
-                  :owner-id    "p1"}])
+                    (draw-card "p1"))
+                (create-game [{:hand [(create-card "Imp")]}]))
            ; Test that a player takes fatigue damage if there are no cards in the deck
            (is= (-> (create-game)
                     (draw-card "p1")
