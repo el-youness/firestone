@@ -8,6 +8,7 @@
                                          create-minion
                                          get-deck
                                          get-hand
+                                         get-hero
                                          get-player
                                          get-heroes
                                          get-minion
@@ -48,7 +49,7 @@
     ; TODO:
     ; (if (not (cards-in-deck? state player-id))
     ;     (let [state damage] (fatigue-damage state player-id)
-    ;          (damage-hero state (get-hero-id state player-id) damage))
+    ;          (damage-hero state (:id get-hero state player-id) damage))
     ;     (let [state card] (remove-card-from-deck state player-id)
     ;            (if (space-in-hand? state player-id)
     ;                (add-card-to-hand state {player-id: player-id :card card})
@@ -58,8 +59,6 @@
 
 
     ))
-
-; TODO: get-hero-id state player-id
 
 ; TODO: remove-card-from-deck (in construct). Returns the state and the removed card
 

@@ -135,6 +135,26 @@
   ([state player-id]
    (:hand (get-player state player-id))))
 
+(defn get-deck
+  "Returns the deck for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-minions "p1"))
+                []))}
+  ([state player-id]
+   (:deck (get-player state player-id)))
+  )
+
+(defn get-hero
+  "Returns the deck for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-hero "p1"))
+                {:name "Jaina Proudmoore", :entity-type :hero, :damage-taken 0, :id "h1", :owner-id "p1"}))}
+  ([state player-id]
+   (:hero (get-player state player-id)))
+  )
+
 (defn get-minions
   "Returns the minions on the board for the given player-id or for both players."
   {:test (fn []
@@ -151,16 +171,6 @@
         (vals)
         (map :minions)
         (apply concat))))
-
-(defn get-deck
-  "Returns the minions on the board for the given player-id or for both players."
-  {:test (fn []
-           (is= (-> (create-empty-state)
-                    (get-minions "p1"))
-                []))}
-  ([state player-id]
-   (:deck (get-player state player-id)))
-  )
 
 (defn fatigue-damage
   "Increase a player's fatigue and return a tuple with the new state and the old fatigue."
