@@ -65,6 +65,18 @@
   [state id]
   (seq-contains? (:minion-ids-summoned-this-turn state) id))
 
+(defn hero?
+  "Checks if the character with given id is a hero"
+  {:test (fn []
+           (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                   (hero? "h1")))
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                   (hero? "imp"))))}
+  [state id]
+  (= (-> (get-character state id)
+         (get :entity-type))
+     :hero))
+
 (defn valid-attack?
   "Checks if the attack is valid"
   {:test (fn []
@@ -117,8 +129,8 @@
            ; Remove minion if dead
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (damage-minion "i" 1)
-                    (get-minion "i"))
-                nil))}
+                    (get-minions))
+                []))}
   [state id damage]
   (let [state (update-minion state id :damage-taken (+ damage (-> (get-minion state id)
                                                                   (:damage-taken))))]
