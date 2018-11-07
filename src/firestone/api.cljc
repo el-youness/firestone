@@ -11,7 +11,8 @@
                                     get-health
                                     get-attack
                                     damage-minion
-                                    damage-hero]]))
+                                    damage-hero
+                                    hero?]]))
 
 ; TODO: function "play-card"
 
@@ -52,9 +53,7 @@
   [state player-id attacker-id target-id]
   (if (valid-attack? state player-id attacker-id target-id)
     (let [attacker-attack (get-attack state attacker-id)]
-      (if (= (-> (get-character state target-id)
-              (get :entity-type))
-              :hero)
+      (if (hero? state target-id)
         (damage-hero state target-id attacker-attack)
         (let [target-attack (get-attack state target-id)]
           (-> (damage-minion state target-id attacker-attack)
