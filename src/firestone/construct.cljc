@@ -573,16 +573,35 @@
   [state & ids]
   (reduce remove-minion state ids))
 
-(defn get-a-card-from-deck
-  "Returns a card from the deck of the player id."
+(defn get-cards-from-deck
+  "Returns a given number of cards from the deck of the player id."
   {:test (fn []
-           (is= (-> (create-game [{:deck [(create-minion "Imp" :id "i")]}])
-                    (get-a-card-from-deck "p1")
-                    (:name))
-                "Imp"))}
-  [state player-id]
-  (-> (get-deck state player-id)
-       (first)))
+           ; Test getting a card from a player's deck
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
+                    (get-cards-from-deck "p1" 1))
+                [(create-card "Imp" :id "i")])
+           ; Test getting cards from a empty deck
+           (is= (-> (create-game)
+                    (get-cards-from-deck "p1" 2))
+                [])
+           ; Test getting two cards from a player's deck
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i1")(create-card "Imp" :id "i2")(create-card "Imp" :id "i3")]}])
+                    (get-cards-from-deck "p1" 2))
+                [(create-card "Imp" :id "i1") (create-card "Imp" :id "i2")]))}
+
+  [state player-id amount]
+  {:pre [(map? state)(string? player-id)(number? amount)]}
+  (let [deck (get-deck state player-id)]
+              (let [size (count deck)]
+              (cond
+                (= size 0)
+                []
+
+                (<= size amount)
+                (subvec deck 0 size)
+
+                :else
+                (subvec deck 0 amount)))))
 
 (defn remove-card-from-deck
   "Removes a card with the given id from the given player's deck."

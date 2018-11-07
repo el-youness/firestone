@@ -7,7 +7,7 @@
                                          create-hero
                                          create-minion
                                          get-deck
-                                         get-a-card-from-deck
+                                         get-cards-from-deck
                                          remove-card-from-deck
                                          fatigue-damage
                                          get-hand
@@ -196,7 +196,7 @@
    (if (not (card-in-deck? state player-id))
      (let [[state damage] (fatigue-damage state player-id)]
        (damage-hero state (:id (get-hero state player-id)) damage))
-     (let [card (get-a-card-from-deck state player-id)]
+     (let [card (first (get-cards-from-deck state player-id 1))]
        (let [state (remove-card-from-deck state player-id (:id card))]
          (if (space-in-hand? state player-id)
            (add-card-to-hand state {:player-id player-id :card card})
