@@ -139,7 +139,7 @@
   "Returns the deck for the given player-id."
   {:test (fn []
            (is= (-> (create-empty-state)
-                    (get-minions "p1"))
+                    (get-deck "p1"))
                 []))}
   ([state player-id]
    (:deck (get-player state player-id)))
@@ -561,3 +561,26 @@
                 ["i2" "i3"]))}
   [state & ids]
   (reduce remove-minion state ids))
+
+(defn get-a-card-from-deck
+  "Returns a card from the deck for the player id."
+  {:test (fn []
+           (is= (-> (create-game [{:deck [(create-minion "Imp" :id "i")]}])
+                    (get-a-card-from-deck "p1")
+                    (:name))
+                "Imp"))}
+  [state player-id]
+  (-> (get-deck state player-id)
+       (first)))
+
+(defn remove-card-from-deck
+  "Removes a card with the given id from the given player's deck."
+  {:test (fn []
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
+                    (remove-card-from-deck "p1" "i")
+                    (get-deck "p1"))
+                []))}
+  [state player-id id]
+  (update-in state [:players player-id :deck]
+               (fn [cards]
+                 (remove (fn [c] (= (:id c) id)) cards))))
