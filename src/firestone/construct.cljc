@@ -145,14 +145,14 @@
    (:deck (get-player state player-id)))
   )
 
-(defn get-hero
-  "Returns the hero for the given player-id."
+(defn get-hero-id
+  "Returns the hero id for the given player-id."
   {:test (fn []
            (is= (-> (create-empty-state)
-                    (get-hero "p1"))
-                {:name "Jaina Proudmoore", :entity-type :hero, :damage-taken 0, :id "h1", :owner-id "p1"}))}
-  ([state player-id]
-   (:hero (get-player state player-id)))
+                    (get-hero-id "p1"))
+                "h1"))}
+  [state player-id]
+   (:id (:hero (get-player state player-id)))
   )
 
 (defn get-minions
