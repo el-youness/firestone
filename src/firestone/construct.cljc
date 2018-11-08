@@ -281,13 +281,13 @@
                       (map (fn [m] {:id (:id m) :name (:name m)}) $))
                 [{:id "i" :name "Imp"}])
            ; Adding a minion and update positions
-           (let [state (-> (create-empty-state)
+           (let [minions (-> (create-empty-state)
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i1") :position 0})
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i2") :position 0})
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i3") :position 1})
                            (get-minions "p1"))]
-             (is= (map :id state) ["i1" "i2" "i3"])
-             (is= (map :position state) [2 0 1]))
+             (is= (map :id minions) ["i1" "i2" "i3"])
+             (is= (map :position minions) [2 0 1]))
            ; Generating an id for the new minion
            (let [state (-> (create-empty-state)
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp") :position 0}))]
@@ -305,15 +305,15 @@
         ready-minion (assoc minion :position position
                                    :owner-id player-id
                                    :id id)]
-    (update-in state
-               [:players player-id :minions]
-               (fn [minions]
-                 (conj (->> minions
-                            (mapv (fn [m]
-                                    (if (< (:position m) position)
-                                      m
-                                      (update m :position inc)))))
-                       ready-minion)))))
+    (-> (assoc-in state [:minion-ids-summoned-this-turn] (conj (:minion-ids-summoned-this-turn state) id))
+        (update-in [:players player-id :minions]
+                   (fn [minions]
+                     (conj (->> minions
+                                (mapv (fn [m]
+                                        (if (< (:position m) position)
+                                          m
+                                          (update m :position inc)))))
+                           ready-minion))))))
 
 (defn create-game
   "Creates a game with the given deck, hand, minions (placed on the board), and heroes."
@@ -456,6 +456,9 @@
                                             {:player-id (str "p" (inc index))
                                              :minions   (:minions player-data)})
                                           data))
+
+                     ; Remove minions from :minion-ids-summoned-this-turn for testing purposes
+                     (assoc-in $ [:minion-ids-summoned-this-turn] [])
 
                      ; Add cards to hand
                      (reduce (fn [state {player-id :player-id hand :hand}]
