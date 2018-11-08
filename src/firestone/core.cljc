@@ -22,7 +22,8 @@
                                          update-hero
                                          get-character
                                          get-mana
-                                         add-minion-to-board]]))
+                                         add-minion-to-board
+                                         get-card-from-hand]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -334,25 +335,20 @@
 (defn playable?
   "checks if a card is playble on the board for a specific player"
   {:test (fn []
-           (is (-> (create-game [{:max-mana 1}])
-                   (playable? "p1" (create-card "Imp" :id "c1")))
+           (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
+                   (playable? "p1" "c1"))
                )
-           (is-not (-> (create-game [{:max-mana 0}])
-                   (playable? "p1" (create-card "Imp" :id "c1")))
+           (is-not (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 0}])
+                   (playable? "p1" "c1"))
                )
-           (is-not (-> (create-game [{:max-mana 5 :minions [(create-minion "War Golem")
-                                                            (create-minion "War Golem")
-                                                            (create-minion "War Golem")
-                                                            (create-minion "War Golem")
-                                                            (create-minion "War Golem")
-                                                            (create-minion "War Golem")
-                                                            (create-minion "War Golem")]}])
-                       (playable? "p1" (create-card "Imp" :id "c1")))
+           (is-not (-> (create-game [{:max-mana 5 :hand [(create-card "Imp" :id "c1")]
+                                      :minions ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
+                       (playable? "p1" "c1"))
                    )
            )}
-  [state player-id card]
+  [state player-id card-id]
   (let [available-mana (get-mana state player-id)
-        card-cost (get-cost card)
+        card-cost (get-cost (get-card-from-hand state player-id card-id))
         minions-on-board (get-minions state player-id)]
     (and (<= card-cost available-mana)
          (< (count minions-on-board) 7)))
