@@ -66,9 +66,14 @@
                 1)
            (is= (-> (create-card "Dalaran Mage" :id "i")
                     (get-cost))
+                3)
+           (is= (-> (create-game [{:hand [(create-card "Dalaran Mage" :id "dm")]}])
+                    (get-cost "dm"))
                 3))}
-  [card]
-  (get (get-definition (:name card)) :mana-cost)
+  ([card]
+   (get (get-definition (:name card)) :mana-cost))
+  ([state id]
+    (get-cost (get-card-from-hand state id)))
   )
 
 (defn get-owner
@@ -348,7 +353,7 @@
            )}
   [state player-id card-id]
   (let [available-mana (get-mana state player-id)
-        card-cost (get-cost (get-card-from-hand state card-id))
+        card-cost (get-cost state card-id)
         minions-on-board (get-minions state player-id)]
     (and (<= card-cost available-mana)
          (< (count minions-on-board) 7)))
