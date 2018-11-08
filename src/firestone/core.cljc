@@ -54,6 +54,26 @@
         definition (get-definition (:name minion))]
     (:attack definition)))
 
+(defn get-owner
+  "Returns the player-id of the owner of the character with the given id."
+  {:test (fn []
+           ; Get owner of hero
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                    (get-owner "h1"))
+                "p1")
+           ; Get owner of minion
+           (is= (-> (create-game [{}
+                                  {:minions [(create-minion "Imp" :id "imp")]}])
+                    (get-owner "imp"))
+                "p2")
+           ; Get owner of non-existing character
+           (is= (-> (create-game)
+                    (get-owner "non-id"))
+                nil)
+           )}
+  [state id]
+  (:owner-id (get-character state id)))
+
 (defn sleepy?
   "Checks if the minion with given id is sleepy."
   {:test (fn []
