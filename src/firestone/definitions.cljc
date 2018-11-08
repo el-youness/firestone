@@ -2,12 +2,17 @@
   (:require [ysera.test :refer [is is= is-not error?]]
             [ysera.error :refer [error]]))
 
+; Here is where the definitions are stored
 (defonce definitions-atom (atom {}))
 
-(defn add-definitions! [definitions]
+(defn add-definitions!
+  "Adds the given definitions to the game."
+  [definitions]
   (swap! definitions-atom merge definitions))
 
-(defn get-definitions []
+(defn get-definitions
+  "Returns all definitions in the game."
+  []
   (vals @definitions-atom))
 
 (defn get-definition
@@ -22,8 +27,10 @@
                  :type :minion
                  :race :demon
                  :set :classic})
+           ; The name can be present in a map with :name as key
            (is= (get-definition {:name "Imp"})
                 (get-definition "Imp"))
+
            (error? (get-definition "Something that does not exist")))}
   [name-or-entity]
   {:pre [(or (string? name-or-entity)

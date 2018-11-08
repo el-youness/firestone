@@ -158,6 +158,7 @@
 (defn get-minions
   "Returns the minions on the board for the given player-id or for both players."
   {:test (fn []
+           ; Getting minions is also tested in add-minion-to-board.
            (is= (-> (create-empty-state)
                     (get-minions "p1"))
                 [])
@@ -294,7 +295,10 @@
   (let [[state id] (if (contains? minion :id)
                      [state (:id minion)]
                      (let [[state value] (generate-id state)]
-                       [state (str "m" value)]))]
+                       [state (str "m" value)]))
+        ready-minion (assoc minion :position position
+                                   :owner-id player-id
+                                   :id id)]
     (update-in state
                [:players player-id :minions]
                (fn [minions]
@@ -303,9 +307,7 @@
                                     (if (< (:position m) position)
                                       m
                                       (update m :position inc)))))
-                         (assoc minion :position position
-                                     :owner-id player-id
-                                     :id id))))))
+                       ready-minion)))))
 
 (defn create-game
   "Creates a game with the given deck, hand, minions (placed on the board), and heroes."
@@ -313,6 +315,12 @@
            (is= (create-game) (create-empty-state))
            (is= (create-game [{:hero (create-hero "Anduin Wrynn")}])
                 (create-game [{:hero "Anduin Wrynn"}]))
+           (is= (create-game [{:minions [(create-minion "Imp") (create-minion "War Golem")]}])
+                (create-game [{:minions ["Imp" "War Golem"]}]))
+           (is= (create-game [{:hand [(create-card "Imp") (create-card "War Golem")]}])
+                (create-game [{:hand ["Imp" "War Golem"]}]))
+           (is= (create-game [{:deck [(create-card "Imp") (create-card "War Golem")]}])
+                (create-game [{:deck ["Imp" "War Golem"]}]))
            (is= (create-game [{:minions [(create-minion "Imp")]}
                               {:hero (create-hero "Anduin Wrynn")}]
                              :player-id-in-turn "p2")
@@ -404,7 +412,9 @@
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
                                (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id
-                                                                                              :minion    minion
+                                                                                              :minion    (if (string? minion)
+                                                                                                           (create-minion minion)
+                                                                                                           minion)
                                                                                               :position  index}))
                                        state
                                        ;returns a sequence 0 and the 1st elem. of "minions", 2 and the 2nd elem ... untill minions is exhausted
@@ -417,7 +427,10 @@
 
                      ; Add cards to hand
                      (reduce (fn [state {player-id :player-id hand :hand}]
-                               (reduce (fn [state card] (add-card-to-hand state {:player-id player-id :card card}))
+                               (reduce (fn [state card] (add-card-to-hand state {:player-id player-id
+                                                                                 :card (if (string? card)
+                                                                                         (create-card card)
+                                                                                         card)}))
                                        state
                                        hand
                                        ))
@@ -427,7 +440,10 @@
 
                      ;Add cards to deck
                      (reduce (fn [state {player-id :player-id deck :deck}]
-                                (reduce (fn [state card] (add-card-to-deck state {:player-id player-id :card card}))
+                                (reduce (fn [state card] (add-card-to-deck state {:player-id player-id
+                                                                                  :card (if (string? card)
+                                                                                          (create-card card)
+                                                                                          card)}))
                                        state
                                        deck
                                        ))
