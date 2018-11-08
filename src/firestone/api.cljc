@@ -28,13 +28,13 @@
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."
   {:test (fn []
-           ; Attack hero
+           ; Attack the opponent's hero
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
                                   {:hero (create-hero "Rexxar")}])
                     (attack-with-minion "p1" "i" "h2"))
                 (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                               {:hero (create-hero "Rexxar" :damage-taken ((get-definition "Imp") :attack))}]))
-           ; Attack minion
+           ; Attack an enemy minion
            (is= (-> (create-game [{:minions [(create-minion "Dalaran Mage" :id "m1")]}
                                   {:minions [(create-minion "Dalaran Mage" :id "m2")]}]
                                  :player-id-in-turn "p2")
@@ -42,7 +42,7 @@
                 (create-game [{:minions [(create-minion "Dalaran Mage" :id "m1" :damage-taken ((get-definition "Dalaran Mage") :attack))]}
                               {:minions [(create-minion "Dalaran Mage" :id "m2" :damage-taken ((get-definition "Dalaran Mage") :attack) :attacks-performed-this-turn 1)]}]
                              :player-id-in-turn "p2"))
-           ; Fatal attack
+           ; Attack and kill an enemy minion
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
                                   {:minions [(create-minion "War Golem" :id "wg")]}]
                                  :player-id-in-turn "p2")
@@ -50,6 +50,13 @@
                 (create-game [{}
                               {:minions [(create-minion "War Golem" :id "wg" :damage-taken ((get-definition "Imp") :attack) :attacks-performed-this-turn 1)]}]
                              :player-id-in-turn "p2"))
+           ; A minion cannot attack twice on the same turn
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
+                                  {:hero (create-hero "Rexxar")}])
+                    (attack-with-minion "p1" "i" "h2")
+                    (attack-with-minion "p1" "i" "h2"))
+                (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
+                              {:hero (create-hero "Rexxar" :damage-taken ((get-definition "Imp") :attack))}]))
            ; Invalid attack does nothing
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")
                                              (create-minion "War Golem" :id "wg")]}])
