@@ -8,7 +8,8 @@
                                          create-hero
                                          get-character
                                          update-minion
-                                         create-card]]
+                                         create-card
+                                         get-card-from-hand]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -91,4 +92,4 @@
                     (play-card "wg"))
                 (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])))}
   [state card-id]
-  (if (playable? state (get-owner state card-id) )))
+  (if (playable? state card-id)))

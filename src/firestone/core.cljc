@@ -333,7 +333,7 @@
    )))
 
 (defn playable?
-  "checks if a card is playble on the board for a specific player"
+  "checks if a card is playable on the board for a specific player"
   {:test (fn []
            (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
                    (playable? "p1" "c1"))
@@ -348,7 +348,7 @@
            )}
   [state player-id card-id]
   (let [available-mana (get-mana state player-id)
-        card-cost (get-cost (get-card-from-hand state player-id card-id))
+        card-cost (get-cost (get-card-from-hand state card-id))
         minions-on-board (get-minions state player-id)]
     (and (<= card-cost available-mana)
          (< (count minions-on-board) 7)))

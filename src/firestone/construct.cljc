@@ -567,11 +567,12 @@
   "Returns the card with the given id from the hand."
   {:test (fn []
            (is= (-> (create-game [{:hand [(create-card "Imp" :id "imp")]}])
-                    (get-card-from-hand "p1" "imp")
+                    (get-card-from-hand "imp")
                     (:name))
                 "Imp"))}
-  [state player-id id]
-  (->> (get-hand state player-id)
+  [state id]
+  (->> (concat (get-hand state "p1")
+               (get-hand state "p2"))
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
