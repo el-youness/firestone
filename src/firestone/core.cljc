@@ -21,7 +21,9 @@
                                          remove-minion
                                          update-hero
                                          get-character
+                                         get-mana
                                          add-minion-to-board]]))
+
 (defn get-health
   "Returns the health of the character."
   {:test (fn []
@@ -54,6 +56,20 @@
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
     (:attack definition)))
+
+(defn get-cost
+  "Returns the cost of the minion with the given name."
+  {:test (fn []
+           (is= (-> (create-card "Imp" :id "i")
+                    (get-cost))
+                1)
+           (is= (-> (create-card "Dalaran Mage" :id "i")
+                    (get-cost))
+                3))}
+  [card]
+  (get (get-definition (:name card)) :mana-cost)
+  )
+
 
 (defn sleepy?
   "Checks if the minion with given id is sleepy."
@@ -295,3 +311,30 @@
                          [x y])
 
    )))
+
+(defn playable?
+  "checks if a card is playble on the board for a specific player"
+  {:test (fn []
+           (is (-> (create-game [{:max-mana 1}])
+                   (playable? "p1" (create-card "Imp" :id "c1")))
+               )
+           (is-not (-> (create-game [{:max-mana 0}])
+                   (playable? "p1" (create-card "Imp" :id "c1")))
+               )
+           (is-not (-> (create-game [{:max-mana 5 :minions [(create-minion "War Golem")
+                                                            (create-minion "War Golem")
+                                                            (create-minion "War Golem")
+                                                            (create-minion "War Golem")
+                                                            (create-minion "War Golem")
+                                                            (create-minion "War Golem")
+                                                            (create-minion "War Golem")]}])
+                       (playable? "p1" (create-card "Imp" :id "c1")))
+                   )
+           )}
+  [state player-id card]
+  (let [available-mana (get-mana state player-id)
+        card-cost (get-cost card)
+        minions-on-board (get-minions state player-id)]
+    (and (<= card-cost available-mana)
+         (< (count minions-on-board) 7)))
+  )
