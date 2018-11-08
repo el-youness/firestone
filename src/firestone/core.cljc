@@ -353,3 +353,13 @@
     (and (<= card-cost available-mana)
          (< (count minions-on-board) 7)))
   )
+
+(defn consume-mana
+  "Consume a given amount of a player's mana."
+  {:test (fn []
+           (is= (-> (create-game [{:used-mana 2}])
+                    (consume-mana "p1" 5)
+                    (get-mana "p1"))
+                3))}
+  [state player-id amount]
+  (assoc-in state [:players player-id :used-mana] (+ amount (get-in state [:players player-id :used-mana]))))
