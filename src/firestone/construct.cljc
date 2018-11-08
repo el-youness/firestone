@@ -401,7 +401,7 @@
                  :counter                       3
                  :minion-ids-summoned-this-turn []})
            ; Test to add mana
-           (is= (create-game [{} {:max-mana 5 :used-mana 2}])
+           (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
                 {:player-id-in-turn             "p1"
                  :players                       {"p1" {:id      "p1"
                                                        :deck    []
@@ -426,7 +426,7 @@
                                                                  :damage-taken 0}
                                                        :max-mana 5
                                                        :used-mana 2
-                                                       :fatigue 1}}
+                                                       :fatigue 4}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []})
            )}
@@ -441,17 +441,6 @@
                                                       :else
                                                       (:hero player-data)))
                                               data)) $
-                     ; Add custom fatigue to state if the player has it.
-                     (reduce (fn [state {player-id :player-id fatigue :fatigue}]
-                               (assoc-in state [:players player-id :fatigue] fatigue))
-                             $
-                             (map-indexed (fn [index player-data]
-                                            (if (nil? (:fatigue player-data))
-                                                {:player-id (str "p" (inc index))
-                                                 :fatigue   1}
-                                                {:player-id (str "p" (inc index))
-                                                 :fatigue   (:fatigue player-data)}))
-                                          data))
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
                                (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id
@@ -493,16 +482,20 @@
                                $
                                (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck   (:deck player-data)})
                                             data))
-                     ; Add mana to the players
-                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana}]
+                     ; Add mana and fatigue to the players
+                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue}]
                                (-> (assoc-in state [:players player-id :max-mana] max-mana)
-                                   (assoc-in [:players player-id :used-mana] used-mana)))
+                                   (assoc-in [:players player-id :used-mana] used-mana)
+                                   (assoc-in [:players player-id :fatigue] fatigue)))
                              $
                              (map-indexed (fn [index player-data]
                                             {:player-id (str "p" (inc index))
-                                             :max-mana (if (nil? (:max-mana player-data))
-                                                         10
-                                                         (:max-mana player-data))
+                                             :fatigue   (if (nil? (:fatigue player-data))
+                                                          1
+                                                          (:fatigue player-data))
+                                             :max-mana  (if (nil? (:max-mana player-data))
+                                                          10
+                                                          (:max-mana player-data))
                                              :used-mana (if (nil? (:used-mana player-data))
                                                           0
                                                           (:used-mana player-data))})
