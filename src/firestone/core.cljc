@@ -205,3 +205,42 @@
            state
            )))
      )))
+
+(defn mulligan
+  "Take x cards from player 1's deck and y cards from player 2's deck. The cards are removed from the
+  player's decks and put into their hands."
+  {:test (fn []
+           ; Test mulligan with the same amount of cards as in the players' decks
+           (is= (-> (create-game [{:deck [(create-card "Imp")]}
+                                  {:deck [(create-card "Imp")]}])
+                    (mulligan 1 1))
+                (create-game [{:hand [(create-card "Imp")]}
+                              {:hand [(create-card "Imp")]}]))
+           ; Test mulligan with more than the amount of cards in the players' decks
+           (is= (-> (create-game [{:deck [(create-card "Imp")]}
+                                  {:deck [(create-card "Imp")]}])
+                    (mulligan 2 2))
+                (create-game [{:hand [(create-card "Imp")]}
+                              {:hand [(create-card "Imp")]}]))
+           ; Test mulligan when the players' decks are empty
+           (is= (-> (create-game)
+                    (mulligan 1 1))
+                (create-game))
+           )}
+  ([state x y]
+   {:pre [(map? state) (number? x) (number? y)]}
+   (reduce (fn [state {player-id :player-id cards :cards}]
+             (reduce (fn[state card]
+                       (-> (add-card-to-hand state {:player-id player-id :card card})
+                           (remove-card-from-deck player-id (:id card))))
+                     state
+                     cards)
+             )
+           state
+           (map-indexed (fn [index amount]
+                          (let [player-id (str "p" (inc index))]
+                             {:player-id player-id
+                              :cards     (get-cards-from-deck state player-id amount)}))
+                         [x y])
+
+   )))
