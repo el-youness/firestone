@@ -210,26 +210,12 @@
   {:test (fn []
            ; Play minion card on empty board
            (is= (-> (create-game)
-                    (summon-minion "p1" (create-card "Imp" :id "c1"))
-                    (get-minions "p1")
-                    (first)
-                    (select-keys [:name :position]))
-                {:name     "Imp"
-                 :position 0})
+                    (summon-minion "p1" (create-card "Imp" :id "c1")))
+                (create-game [{:minions ["Imp"]}] :minion-ids-summoned-this-turn ["m1"]))
            ; Play a minion card on a board with one minion
-           (is= (-> (create-game [{:minions [(create-minion "War Golem")]}])
-                    (summon-minion "p1" (create-card "Imp" :id "c1"))
-                    (get-minion "m2")
-                    (select-keys [:name :position]))
-                {:name     "Imp"
-                 :position 0})
-           ; Play a minion on a specific board position
-           (is= (-> (create-game [{:minions [(create-minion "War Golem")]}])
-                    (summon-minion "p1" (create-card "Imp" :id "c1") 1)
-                    (get-minion "m2")
-                    (select-keys [:name :position]))
-                {:name     "Imp"
-                 :position 1})
+           (is= (-> (create-game [{:minions ["War Golem"]}])
+                    (summon-minion "p1" (create-card "Imp" :id "c1") 1))
+                (create-game [{:minions ["War Golem" "Imp"]}] :minion-ids-summoned-this-turn ["m2"]))
            ; No state change if board is already full
            (is= (-> (create-game [{:minions [(create-minion "War Golem")
                                              (create-minion "War Golem")
