@@ -639,16 +639,3 @@
   (update-in state [:players player-id :deck]
                (fn [cards]
                  (remove (fn [c] (= (:id c) id)) cards))))
-
-(defn remove-cards-from-deck
-  "Removes the cards with the given ids from the given player's deck."
-  {:test (fn []
-           (is= (as-> (create-game [{:deck [(create-card "Imp" :id "i1")(create-card "Imp" :id "i2")]}]) $
-                      (remove-cards-from-deck $ "p1" "i1" "i2")
-                      (get-deck $ "p1"))
-                []))}
-  [state player-id & ids]
-  (reduce (fn[state id]
-            (remove-card-from-deck state player-id id))
-          state
-          ids))
