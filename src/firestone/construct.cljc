@@ -563,6 +563,18 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
+(defn get-card-from-hand
+  "Returns the card with the given id from the hand."
+  {:test (fn []
+           (is= (-> (create-game [{:hand [(create-card "Imp" :id "imp")]}])
+                    (get-card-from-hand "p1" "imp")
+                    (:name))
+                "Imp"))}
+  [state player-id id]
+  (->> (get-hand state player-id)
+       (filter (fn [c] (= (:id c) id)))
+       (first)))
+
 (defn replace-minion
   "Replaces a minion with the same id as the given new-minion."
   {:test (fn []
