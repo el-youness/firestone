@@ -15,7 +15,8 @@
                                     damage-minion
                                     damage-hero
                                     hero?
-                                    get-owner]]))
+                                    get-owner
+                                    playable?]]))
 
 ; TODO: function "play-card"
 
@@ -79,8 +80,15 @@
 (defn play-card
   "Play a card from the hand if possible."
   {:test (fn []
-           (is= (-> (create-game)
-                    (play-card (create-card "War Golem")))
-                (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}]))
-           )}
-  [state card])
+           (is= (-> (create-game [{:hand [(create-minion "War Golem" :id "wg")]}])
+                    (play-card "wg"))
+                (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}] :minion-ids-summoned-this-turn ["wg"]))
+           ; Not enough mana
+           (is= (-> (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}])
+                    (play-card "wg"))
+                (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}]))
+           (is= (-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])
+                    (play-card "wg"))
+                (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])))}
+  [state card-id]
+  (if (playable? state (get-owner state card-id) )))
