@@ -7,7 +7,8 @@
                                          get-minion
                                          create-hero
                                          get-character
-                                         update-minion]]
+                                         update-minion
+                                         create-card]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -73,3 +74,12 @@
           (-> (damage-minion state target-id attacker-attack)
               (damage-minion attacker-id target-attack)))))
     state))
+
+(defn play-card
+  "Play a card from the hand if possible."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (play-card (create-card "War Golem")))
+                (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}]))
+           )}
+  [state card])

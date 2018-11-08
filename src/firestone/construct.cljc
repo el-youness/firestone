@@ -705,3 +705,15 @@
   (update-in state [:players player-id :deck]
                (fn [cards]
                  (remove (fn [c] (= (:id c) id)) cards))))
+
+(defn remove-card-from-hand
+  "Removes a card with the given id from the given player's hand."
+  {:test (fn []
+           (is= (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                    (remove-card-from-hand "p1" "i")
+                    (get-hand "p1"))
+                []))}
+  [state player-id id]
+  (update-in state [:players player-id :hand]
+             (fn [cards]
+               (remove (fn [c] (= (:id c) id)) cards))))
