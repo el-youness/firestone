@@ -80,7 +80,9 @@
                                                                  :id           "h1"
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
-                                                                 :owner-id     "p1"}}
+                                                                 :owner-id     "p1"}
+                                                       :max-mana 10
+                                                       :used-mana 0}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -89,7 +91,9 @@
                                                                  :id           "h2"
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
-                                                                 :owner-id     "p2"}}}
+                                                                 :owner-id     "p2"}
+                                                       :max-mana 10
+                                                       :used-mana 0}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
   ([heroes]
@@ -104,7 +108,9 @@
                                                           :deck    []
                                                           :hand    []
                                                           :minions []
-                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))}))
+                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
+                                                          :max-mana 10
+                                                          :used-mana 0}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
                                                   {}))
@@ -302,7 +308,9 @@
                                                                  :id           "h1"
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
-                                                                 :owner-id     "p1"}}
+                                                                 :owner-id     "p1"}
+                                                       :max-mana 10
+                                                       :used-mana 0}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -311,7 +319,9 @@
                                                                  :id           "h2"
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
-                                                                 :owner-id     "p2"}}}
+                                                                 :owner-id     "p2"}
+                                                       :max-mana 10
+                                                       :used-mana 0}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []})
 
@@ -332,7 +342,9 @@
                                                                  :id           "h1"
                                                                  :entity-type  :hero
                                                                  :owner-id     "p1"
-                                                                 :damage-taken 0}}
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
+                                                       :used-mana 0}
                                                  "p2" {:id      "p2"
                                                        :deck    []
                                                        :hand    []
@@ -341,8 +353,37 @@
                                                                  :id           "h2"
                                                                  :entity-type  :hero
                                                                  :owner-id     "p2"
-                                                                 :damage-taken 0}}}
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
+                                                       :used-mana 0}}
                  :counter                       3
+                 :minion-ids-summoned-this-turn []})
+           ; Test to add mana
+           (is= (create-game [{} {:max-mana 5 :used-mana 2}])
+                {:player-id-in-turn             "p1"
+                 :players                       {"p1" {:id      "p1"
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p1"
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
+                                                       :used-mana 0}
+                                                 "p2" {:id      "p2"
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p2"
+                                                                 :damage-taken 0}
+                                                       :max-mana 5
+                                                       :used-mana 2}}
+                 :counter                       1
                  :minion-ids-summoned-this-turn []})
            )}
   ([data & kvs]
@@ -380,7 +421,7 @@
                              (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :hand (:hand player-data)})
                                           data))
 
-                     ;Add cards to deck
+                     ; Add cards to deck
                      (reduce (fn [state {player-id :player-id deck :deck}]
                                 (reduce (fn [state card] (add-card-to-deck state {:player-id player-id :card card}))
                                        state
@@ -389,13 +430,42 @@
                                $
                                (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck   (:deck player-data)})
                                             data))
-
-                     )]
+                     ; Add mana to the players
+                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana}]
+                               (-> (assoc-in state [:players player-id :max-mana] max-mana)
+                                   (assoc-in [:players player-id :used-mana] used-mana)))
+                             $
+                             (map-indexed (fn [index player-data]
+                                            {:player-id (str "p" (inc index))
+                                             :max-mana (if (nil? (:max-mana player-data))
+                                                         10
+                                                         (:max-mana player-data))
+                                             :used-mana (if (nil? (:used-mana player-data))
+                                                          0
+                                                          (:used-mana player-data))})
+                                          data)))]
      (if (empty? kvs)
        state
        (apply assoc state kvs))))
   ([]
    (create-game [])))
+
+(defn get-mana
+  "Returns the mana available to use for the given player-id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-mana "p1"))
+                10)
+           (is= (-> (create-game [{:max-mana 5}])
+                    (get-mana "p1"))
+                5)
+           (is= (-> (create-game [{:max-mana 10 :used-mana 4}])
+                    (get-mana "p1"))
+                6)
+           )}
+  [state player-id]
+  (let [player-data (get-player state player-id)]
+    (- (:max-mana player-data) (:used-mana player-data))))
 
 (defn get-minion
   "Returns the minion with the given id."
@@ -509,6 +579,7 @@
     (replace-hero state (if (function? function-or-value)
                             (update hero key function-or-value)
                             (assoc hero key function-or-value)))))
+
 (defn remove-minion
   "Removes a minion with the given id from the state."
   {:test (fn []
