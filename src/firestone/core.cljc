@@ -20,7 +20,11 @@
                                          update-minion
                                          remove-minion
                                          update-hero
-                                         get-character]]))
+                                         get-character
+                                         get-mana
+                                         add-minion-to-board
+                                         get-card-from-hand]]))
+
 (defn get-health
   "Returns the health of the character."
   {:test (fn []
@@ -53,6 +57,24 @@
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
     (:attack definition)))
+
+(defn get-cost
+  "Returns the cost of the minion with the given name."
+  {:test (fn []
+           (is= (-> (create-card "Imp" :id "i")
+                    (get-cost))
+                1)
+           (is= (-> (create-card "Dalaran Mage" :id "i")
+                    (get-cost))
+                3)
+           (is= (-> (create-game [{:hand [(create-card "Dalaran Mage" :id "dm")]}])
+                    (get-cost "dm"))
+                3))}
+  ([card]
+   (get (get-definition (:name card)) :mana-cost))
+  ([state id]
+    (get-cost (get-card-from-hand state id)))
+  )
 
 (defn get-owner
   "Returns the player-id of the owner of the character with the given id."
@@ -183,6 +205,42 @@
       state))
   )
 
+(defn summon-minion
+  "Plays a minion card-"
+  {:test (fn []
+           ; Play minion card on empty board
+           (is= (-> (create-game)
+                    (summon-minion "p1" (create-card "Imp" :id "c1")))
+                (create-game [{:minions ["Imp"]}] :minion-ids-summoned-this-turn ["m1"]))
+           ; Play a minion card on a board with one minion
+           (is= (-> (create-game [{:minions ["War Golem"]}])
+                    (summon-minion "p1" (create-card "Imp" :id "c1") 1))
+                (create-game [{:minions ["War Golem" "Imp"]}] :minion-ids-summoned-this-turn ["m2"]))
+           ; No state change if board is already full
+           (is= (-> (create-game [{:minions [(create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")
+                                             (create-minion "War Golem")]}])
+                    (summon-minion "p1" (create-card "Imp" :id "c1")))
+                (create-game [{:minions [(create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")
+                                         (create-minion "War Golem")]}]))
+           )}
+  ([state player-id card position]
+   (if (< (count (get-minions state player-id)) 7)
+     (let [minion (create-minion (:name card))]
+       (add-minion-to-board state {:player-id player-id :minion minion :position position}))
+     state))
+  ([state player-id card]
+   (summon-minion state player-id card 0)))
+
 (defn draw-card
   "Draw a card from a player's deck and put it in the hand. This is only done if the hand is not full
   and there are cards in the deck."
@@ -264,3 +322,35 @@
                          [x y])
 
    )))
+
+(defn playable?
+  "checks if a card is playable on the board for a specific player"
+  {:test (fn []
+           (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
+                   (playable? "p1" "c1"))
+               )
+           (is-not (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 0}])
+                   (playable? "p1" "c1"))
+               )
+           (is-not (-> (create-game [{:max-mana 5 :hand [(create-card "Imp" :id "c1")]
+                                      :minions ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
+                       (playable? "p1" "c1"))
+                   )
+           )}
+  [state player-id card-id]
+  (let [available-mana (get-mana state player-id)
+        card-cost (get-cost state card-id)
+        minions-on-board (get-minions state player-id)]
+    (and (<= card-cost available-mana)
+         (< (count minions-on-board) 7)))
+  )
+
+(defn consume-mana
+  "Consume a given amount of a player's mana."
+  {:test (fn []
+           (is= (-> (create-game [{:used-mana 2}])
+                    (consume-mana "p1" 5)
+                    (get-mana "p1"))
+                3))}
+  [state player-id amount]
+  (assoc-in state [:players player-id :used-mana] (+ amount (get-in state [:players player-id :used-mana]))))

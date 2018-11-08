@@ -7,14 +7,21 @@
                                          get-minion
                                          create-hero
                                          get-character
-                                         update-minion]]
+                                         update-minion
+                                         create-card
+                                         get-card-from-hand
+                                         remove-card-from-hand]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
                                     damage-minion
                                     damage-hero
                                     hero?
-                                    get-owner]]))
+                                    get-owner
+                                    playable?
+                                    consume-mana
+                                    get-cost
+                                    summon-minion]]))
 
 ; TODO: function "play-card"
 
@@ -74,3 +81,25 @@
           (-> (damage-minion state target-id attacker-attack)
               (damage-minion attacker-id target-attack)))))
     state))
+
+(defn play-card
+  "Play a card from the hand if possible."
+  {:test (fn []
+           (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
+                    (play-card "p1" "wg" 0))
+                (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}] :minion-ids-summoned-this-turn ["m1"]))
+           ; Not enough mana
+           (is= (-> (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}])
+                    (play-card "p1" "wg" 0))
+                (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}]))
+           ; No space on board
+           (is= (-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])
+                    (play-card "p1" "wg" 0))
+                (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])))}
+  [state player-id card-id position]
+  (let [card (get-card-from-hand state card-id)]
+    (if (playable? state player-id card-id)
+      (-> (consume-mana state player-id (get-cost card))
+          (summon-minion player-id card position)
+          (remove-card-from-hand player-id card-id))
+      state)))

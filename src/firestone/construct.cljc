@@ -81,6 +81,8 @@
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
                                                                  :owner-id     "p1"}
+                                                       :max-mana 10
+                                                       :used-mana 0
                                                        :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
@@ -91,6 +93,8 @@
                                                                  :damage-taken 0
                                                                  :entity-type  :hero
                                                                  :owner-id     "p2"}
+                                                       :max-mana 10
+                                                       :used-mana 0
                                                        :fatigue 1}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
@@ -107,6 +111,8 @@
                                                           :hand    []
                                                           :minions []
                                                           :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
+                                                          :max-mana 10
+                                                          :used-mana 0
                                                           :fatigue 1}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
@@ -275,13 +281,13 @@
                       (map (fn [m] {:id (:id m) :name (:name m)}) $))
                 [{:id "i" :name "Imp"}])
            ; Adding a minion and update positions
-           (let [state (-> (create-empty-state)
+           (let [minions (-> (create-empty-state)
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i1") :position 0})
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i2") :position 0})
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i3") :position 1})
                            (get-minions "p1"))]
-             (is= (map :id state) ["i1" "i2" "i3"])
-             (is= (map :position state) [2 0 1]))
+             (is= (map :id minions) ["i1" "i2" "i3"])
+             (is= (map :position minions) [2 0 1]))
            ; Generating an id for the new minion
            (let [state (-> (create-empty-state)
                            (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp") :position 0}))]
@@ -299,15 +305,15 @@
         ready-minion (assoc minion :position position
                                    :owner-id player-id
                                    :id id)]
-    (update-in state
-               [:players player-id :minions]
-               (fn [minions]
-                 (conj (->> minions
-                            (mapv (fn [m]
-                                    (if (< (:position m) position)
-                                      m
-                                      (update m :position inc)))))
-                       ready-minion)))))
+    (-> (assoc-in state [:minion-ids-summoned-this-turn] (conj (:minion-ids-summoned-this-turn state) id))
+        (update-in [:players player-id :minions]
+                   (fn [minions]
+                     (conj (->> minions
+                                (mapv (fn [m]
+                                        (if (< (:position m) position)
+                                          m
+                                          (update m :position inc)))))
+                           ready-minion))))))
 
 (defn create-game
   "Creates a game with the given deck, hand, minions (placed on the board), and heroes."
@@ -340,6 +346,8 @@
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
                                                                  :owner-id     "p1"}
+                                                       :max-mana 10
+                                                       :used-mana 0
                                                        :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
@@ -350,6 +358,8 @@
                                                                  :entity-type  :hero
                                                                  :damage-taken 0
                                                                  :owner-id     "p2"}
+                                                       :max-mana 10
+                                                       :used-mana 0
                                                        :fatigue 1}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []})
@@ -373,6 +383,8 @@
                                                                  :entity-type  :hero
                                                                  :owner-id     "p1"
                                                                  :damage-taken 0}
+                                                       :max-mana 10
+                                                       :used-mana 0
                                                        :fatigue 1}
                                                  "p2" {:id      "p2"
                                                        :deck    []
@@ -383,8 +395,39 @@
                                                                  :entity-type  :hero
                                                                  :owner-id     "p2"
                                                                  :damage-taken 0}
+                                                       :max-mana 10
+                                                       :used-mana 0
                                                        :fatigue 1}}
                  :counter                       3
+                 :minion-ids-summoned-this-turn []})
+           ; Test to add mana
+           (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
+                {:player-id-in-turn             "p1"
+                 :players                       {"p1" {:id      "p1"
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p1"
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
+                                                       :used-mana 0
+                                                       :fatigue 1}
+                                                 "p2" {:id      "p2"
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p2"
+                                                                 :damage-taken 0}
+                                                       :max-mana 5
+                                                       :used-mana 2
+                                                       :fatigue 4}}
+                 :counter                       1
                  :minion-ids-summoned-this-turn []})
            )}
   ([data & kvs]
@@ -398,17 +441,6 @@
                                                       :else
                                                       (:hero player-data)))
                                               data)) $
-                     ; Add custom fatigue to state if the player has it.
-                     (reduce (fn [state {player-id :player-id fatigue :fatigue}]
-                               (assoc-in state [:players player-id :fatigue] fatigue))
-                             $
-                             (map-indexed (fn [index player-data]
-                                            (if (nil? (:fatigue player-data))
-                                                {:player-id (str "p" (inc index))
-                                                 :fatigue   1}
-                                                {:player-id (str "p" (inc index))
-                                                 :fatigue   (:fatigue player-data)}))
-                                          data))
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
                                (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id
@@ -425,6 +457,9 @@
                                              :minions   (:minions player-data)})
                                           data))
 
+                     ; Remove minions from :minion-ids-summoned-this-turn for testing purposes
+                     (assoc-in $ [:minion-ids-summoned-this-turn] [])
+
                      ; Add cards to hand
                      (reduce (fn [state {player-id :player-id hand :hand}]
                                (reduce (fn [state card] (add-card-to-hand state {:player-id player-id
@@ -438,7 +473,7 @@
                              (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :hand (:hand player-data)})
                                           data))
 
-                     ;Add cards to deck
+                     ; Add cards to deck
                      (reduce (fn [state {player-id :player-id deck :deck}]
                                 (reduce (fn [state card] (add-card-to-deck state {:player-id player-id
                                                                                   :card (if (string? card)
@@ -450,13 +485,46 @@
                                $
                                (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck   (:deck player-data)})
                                             data))
-
-                     )]
+                     ; Add mana and fatigue to the players
+                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue}]
+                               (-> (assoc-in state [:players player-id :max-mana] max-mana)
+                                   (assoc-in [:players player-id :used-mana] used-mana)
+                                   (assoc-in [:players player-id :fatigue] fatigue)))
+                             $
+                             (map-indexed (fn [index player-data]
+                                            {:player-id (str "p" (inc index))
+                                             :fatigue   (if (nil? (:fatigue player-data))
+                                                          1
+                                                          (:fatigue player-data))
+                                             :max-mana  (if (nil? (:max-mana player-data))
+                                                          10
+                                                          (:max-mana player-data))
+                                             :used-mana (if (nil? (:used-mana player-data))
+                                                          0
+                                                          (:used-mana player-data))})
+                                          data)))]
      (if (empty? kvs)
        state
        (apply assoc state kvs))))
   ([]
    (create-game [])))
+
+(defn get-mana
+  "Returns the mana available to use for the given player-id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-mana "p1"))
+                10)
+           (is= (-> (create-game [{:max-mana 5}])
+                    (get-mana "p1"))
+                5)
+           (is= (-> (create-game [{:max-mana 10 :used-mana 4}])
+                    (get-mana "p1"))
+                6)
+           )}
+  [state player-id]
+  (let [player-data (get-player state player-id)]
+    (- (:max-mana player-data) (:used-mana player-data))))
 
 (defn get-minion
   "Returns the minion with the given id."
@@ -495,6 +563,19 @@
   [state id]
   (->> (concat (get-minions state)
                (get-heroes state))
+       (filter (fn [c] (= (:id c) id)))
+       (first)))
+
+(defn get-card-from-hand
+  "Returns the card with the given id from the hand."
+  {:test (fn []
+           (is= (-> (create-game [{:hand [(create-card "Imp" :id "imp")]}])
+                    (get-card-from-hand "imp")
+                    (:name))
+                "Imp"))}
+  [state id]
+  (->> (concat (get-hand state "p1")
+               (get-hand state "p2"))
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
@@ -570,6 +651,7 @@
     (replace-hero state (if (function? function-or-value)
                             (update hero key function-or-value)
                             (assoc hero key function-or-value)))))
+
 (defn remove-minion
   "Removes a minion with the given id from the state."
   {:test (fn []
@@ -639,3 +721,15 @@
   (update-in state [:players player-id :deck]
                (fn [cards]
                  (remove (fn [c] (= (:id c) id)) cards))))
+
+(defn remove-card-from-hand
+  "Removes a card with the given id from the given player's hand."
+  {:test (fn []
+           (is= (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                    (remove-card-from-hand "p1" "i")
+                    (get-hand "p1"))
+                []))}
+  [state player-id id]
+  (update-in state [:players player-id :hand]
+             (fn [cards]
+               (remove (fn [c] (= (:id c) id)) cards))))
