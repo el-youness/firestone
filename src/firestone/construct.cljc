@@ -189,34 +189,42 @@
   [(update state :counter inc) (:counter state)])
 
 (defn add-card-to-deck
-  "Adds a card to a player's deck"
+  "Adds a card to a player's deck."
   {:test (fn []
-           ;Adding a card to an empty deck
+           ; Adding a card to an empty deck
            (is= (as-> (create-empty-state) $
-                      (add-card-to-deck $ {:player-id "p1" :card (create-card "imp" :id "c1")})
+                      (add-card-to-deck $ {:player-id "p1" :card (create-card "Imp" :id "i")})
                       (get-deck $ "p1")
-                      (map (fn [c] {:id (:id c) :entity-type (:entity-type c) :name (:name c)}) $))
-                [{:id "c1" :entity-type :card :name "imp"}]
-                )
-           ;Generate an Id for a new card
-           ;TODO : I am not sure if this is necessary
+                      (map (fn [c] {:id (:id c) :name (:name c) :owner-id (:owner-id c)}) $))
+                [{:id "i" :name "Imp" :owner-id "p1"}])
+           ; Generating an id for the new card
+           (let [state (-> (create-empty-state)
+                           (add-card-to-deck {:player-id "p1" :card (create-card "Imp")}))]
+             (is= (-> (get-deck state "p1")
+                      (first)
+                      (:id))
+                  "c1")
+             (is= (:counter state) 2))
+           ; Adding two card to an empty hand
+           (is= (as-> (create-empty-state) $
+                      (add-card-to-deck $ {:player-id "p1" :card (create-card "Imp" :id "i1")})
+                      (add-card-to-deck $ {:player-id "p1" :card (create-card "War Golem" :id "i2")})
+                      (get-deck $ "p1")
+                      (map (fn [c] {:id (:id c) :name (:name c)}) $))
+                [{:id "i1" :name "Imp"}{:id "i2" :name "War Golem"}])
            )}
   [state {player-id :player-id card :card}]
   {:pre [(map? state) (string? player-id) (map? card)]}
-  (let  [[state id] (if (contains? card :id)
-                      ;if it already has an id we return with that id
-                      [state (:id card)]
-                      ;else we generate a value and IdNumber = "m"+ Idnumber
-                      (let [[state value] (generate-id state)]
-                        [state (str "c" value)]))]
-    ;for the player with "player-id" we update the deck using the function
+  (let [[state id] (if (contains? card :id)
+                     [state (:id card)]
+                     (let [[state value] (generate-id state)]
+                       [state (str "c" value)]))]
     (update-in state
                [:players player-id :deck]
-               (fn [deck] (conj (->> deck) (assoc card :id id))
-                 ))
-    )
-
-  )
+               (fn [cards]
+                 (conj cards
+                       (assoc card :owner-id player-id
+                                   :id id))))))
 
 (defn add-card-to-hand
   "Adds a card to a player's hand."
@@ -345,7 +353,8 @@
                  :players                       {"p1" {:id      "p1"
                                                        :deck    [{:id          "c2"
                                                                   :entity-type :card
-                                                                  :name        "Imp"}]
+                                                                  :name        "Imp"
+                                                                  :owner-id    "p1"}]
                                                        :hand    [{:name        "Imp"
                                                                   :id          "c1"
                                                                   :entity-type :card
@@ -579,7 +588,7 @@
            ; Test getting a card from a player's deck
            (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
                     (get-cards-from-deck "p1" 1))
-                [(create-card "Imp" :id "i")])
+                [(create-card "Imp" :id "i" :owner-id "p1")])
            ; Test getting cards from a empty deck
            (is= (-> (create-game)
                     (get-cards-from-deck "p1" 2))
@@ -587,7 +596,7 @@
            ; Test getting two cards from a player's deck
            (is= (-> (create-game [{:deck [(create-card "Imp" :id "i1")(create-card "Imp" :id "i2")(create-card "Imp" :id "i3")]}])
                     (get-cards-from-deck "p1" 2))
-                [(create-card "Imp" :id "i1") (create-card "Imp" :id "i2")]))}
+                [(create-card "Imp" :id "i1" :owner-id "p1") (create-card "Imp" :id "i2" :owner-id "p1")]))}
 
   [state player-id amount]
   {:pre [(map? state)(string? player-id)(number? amount)]}
