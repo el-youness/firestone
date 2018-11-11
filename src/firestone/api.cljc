@@ -5,6 +5,7 @@
             [firestone.construct :refer [create-game
                                          create-minion
                                          get-minion
+                                         get-minions
                                          create-hero
                                          get-character
                                          update-minion
@@ -32,12 +33,16 @@
 (defn end-turn
   "Ends the turn of the playing hero"
   {:test (fn []
-           ; The mana increments at the beginning of a turn and the card is drawn
-           (is= (end-turn (create-game [{:max-mana 5 :deck [(create-minion "Imp" :id "i1")]}
-                                  {:minions [(create-minion "Imp" :id "i2")]}
-                                  :minion-ids-summoned-this-turn ["i2"]
-                                  :player-id-in-turn "p2"]))
-                (create-game [{:max-mana 6 :hand [(create-minion "Imp" :id "i1")]}
+           ; The mana increments at the beginning of a turn, a card is drawn and the minion's attacks are reset
+           (is= (end-turn (create-game [{:max-mana 5
+                                         :deck [(create-minion "Imp" :id "i1")]
+                                         :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 1)]}
+                                        {:minions [(create-minion "Imp" :id "i2")]}
+                                        :minion-ids-summoned-this-turn ["i2"]
+                                        :player-id-in-turn "p2"]))
+                (create-game [{:max-mana 6
+                               :hand [(create-minion "Imp" :id "i1")]
+                               :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 0)]}
                               {:minions [(create-minion "Imp" :id "i2")]}
                               :minion-ids-summoned-this-turn []
                               :player-id-in-turn "p1"]))
@@ -50,19 +55,21 @@
                               {}
                               :player-id-in-turn "p1"])))}
   [state]
-  (-> state
-      ;TODO: trigger the "end of turn" card effects
-      (assoc :player-id-in-turn (if (is= "p1" (get state :player-id-in-turn)) "p1" "p2")
-             :minion-ids-summoned-this-turn [])
-      (draw-card (get state :player-id-in-turn))
-      (add-to-max-mana
-        (get state :player-id-in-turn)
-        (if (>= (get (get-player state (get state :player-id-in-turn)) :max-mana)
-                10) 0 1))
-      (restore-mana (get state :player-id-in-turn))
-      ;TODO: reset hero power
-      ;TODO: trigger the "beginning of turn" card effects
-      ))
+  (let [pid (get state :player-id-in-turn)]
+    (-> state
+        ;TODO: trigger the "end of turn" card effects
+        (assoc :player-id-in-turn (if (is= "p1" pid) "p1" "p2")
+               :minion-ids-summoned-this-turn [])
+        (draw-card pid)
+        (add-to-max-mana
+          (get state :player-id-in-turn)
+          (if (>= (get (get-player state pid) :max-mana)
+                  10) 0 1))
+        (restore-mana pid)
+        ;TODO: reset hero power
+        ;TODO: trigger the "beginning of turn" card effects
+        )
+    ))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."
