@@ -10,7 +10,8 @@
                                          update-minion
                                          create-card
                                          get-card-from-hand
-                                         remove-card-from-hand]]
+                                         remove-card-from-hand
+                                         get-player]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -28,41 +29,36 @@
 
 ; TODO: function "play-card"
 
-; TODO: function "end-turn"
 (defn end-turn
   "Ends the turn of the playing hero"
   {:test (fn []
-           ; Sleepy minions wake up and the :player-id-in-turn switched
-           (is= (-> (create-game [{}
-                                  {:minions [(create-minion "Imp" :id "i")]}
-                                  :minion-ids-summoned-this-turn ["i"]
-                                  :player-id-in-turn "p2"])
-                    (end-turn))
-                (create-game [{}
-                              {:minions [(create-minion "Imp" :id "i")]}
-                              :minion-ids-summoned-this-turn []
-                              :player-id-in-turn "p1"]))
            ; The mana increments at the beginning of a turn and the card is drawn
-           (is= (-> (create-game [{:max-mana 5 :deck [(create-minion "Imp" :id "i1")]}
+           (is= (end-turn (create-game [{:max-mana 5 :deck [(create-minion "Imp" :id "i1")]}
                                   {:minions [(create-minion "Imp" :id "i2")]}
                                   :minion-ids-summoned-this-turn ["i2"]
-                                  :player-id-in-turn "p2"])
-                    (end-turn))
+                                  :player-id-in-turn "p2"]))
                 (create-game [{:max-mana 6 :hand [(create-minion "Imp" :id "i1")]}
                               {:minions [(create-minion "Imp" :id "i2")]}
                               :minion-ids-summoned-this-turn []
                               :player-id-in-turn "p1"]))
            ; The mana of each player doesn't increment over 10 mana on a new turn
-           (is= (-> (create-game [:player-id-in-turn "p2"])
-                    (end-turn))
-                (create-game [:player-id-in-turn "p1"])))}
+           ; Player without a card in the deck gets fatigue damage
+           (is= (end-turn (create-game [{:hero (create-hero "Jaina Proudmoore")}
+                                        {}
+                                        :player-id-in-turn "p2" ]))
+                (create-game [{:fatigue 2  :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}
+                              {}
+                              :player-id-in-turn "p1"])))}
   [state]
   (-> state
       ;TODO: trigger the "end of turn" card effects
-      (assoc :player-id-in-turn (if (= "p1" (get state :player-id-in-turn)) "p2" "p1")
+      (assoc :player-id-in-turn (if (is= "p1" (get state :player-id-in-turn)) "p1" "p2")
              :minion-ids-summoned-this-turn [])
       (draw-card (get state :player-id-in-turn))
-      (add-to-max-mana (get state :player-id-in-turn) (if (>= (get (get state :player-id-in-turn) :max-mana) 10) 0 1))
+      (add-to-max-mana
+        (get state :player-id-in-turn)
+        (if (>= (get (get-player state (get state :player-id-in-turn)) :max-mana)
+                10) 0 1))
       (restore-mana (get state :player-id-in-turn))
       ;TODO: reset hero power
       ;TODO: trigger the "beginning of turn" card effects

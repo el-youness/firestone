@@ -373,4 +373,4 @@
                     (get-mana "p1"))
                 5))}
   [state player-id amount]
-  (assoc-in state [:players player-id :used-mana] (+ amount (get-in state [:players player-id :max-mana]))))
+  (assoc-in state [:players player-id :max-mana] (+ amount (get-in state [:players player-id :max-mana]))))
