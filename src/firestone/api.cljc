@@ -36,13 +36,13 @@
            ; The mana increments at the beginning of a turn, a card is drawn and the minion's attacks are reset
            (is= (end-turn (create-game [:player-id-in-turn "p2"
                                         :players {"p1" {:max-mana 5
-                                                        :deck [(create-minion "Imp" :id "i1")]
+                                                        :deck [(create-card "Imp" :id "i1")]
                                                         :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 1)]}
                                                   "p2" {:minions [(create-minion "Imp" :id "i2")]}}
                                         :minion-ids-summoned-this-turn ["i2"]]))
                 (create-game [:player-id-in-turn "p1"
                               :players {"p1" {:max-mana 6
-                                              :hand [(create-minion "Imp" :id "i1")]
+                                              :hand [(create-card "Imp" :id "i1")]
                                               :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 0)]}
                                         "p2" {:minions [(create-minion "Imp" :id "i2")]}}
                               :minion-ids-summoned-this-turn []]))
