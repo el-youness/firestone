@@ -34,26 +34,26 @@
   "Ends the turn of the playing hero"
   {:test (fn []
            ; The mana increments at the beginning of a turn, a card is drawn and the minion's attacks are reset
-           (is= (end-turn (create-game [{:max-mana 5
-                                         :deck [(create-minion "Imp" :id "i1")]
-                                         :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 1)]}
-                                        {:minions [(create-minion "Imp" :id "i2")]}
-                                        :minion-ids-summoned-this-turn ["i2"]
-                                        :player-id-in-turn "p2"]))
-                (create-game [{:max-mana 6
-                               :hand [(create-minion "Imp" :id "i1")]
-                               :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 0)]}
-                              {:minions [(create-minion "Imp" :id "i2")]}
-                              :minion-ids-summoned-this-turn []
-                              :player-id-in-turn "p1"]))
+           (is= (end-turn (create-game [:player-id-in-turn "p2"
+                                        :players {"p1" {:max-mana 5
+                                                        :deck [(create-minion "Imp" :id "i1")]
+                                                        :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 1)]}
+                                                  "p2" {:minions [(create-minion "Imp" :id "i2")]}}
+                                        :minion-ids-summoned-this-turn ["i2"]]))
+                (create-game [:player-id-in-turn "p1"
+                              :players {"p1" {:max-mana 6
+                                              :hand [(create-minion "Imp" :id "i1")]
+                                              :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 0)]}
+                                        "p2" {:minions [(create-minion "Imp" :id "i2")]}}
+                              :minion-ids-summoned-this-turn []]))
            ; The mana of each player doesn't increment over 10 mana on a new turn
            ; Player without a card in the deck gets fatigue damage
-           (is= (end-turn (create-game [{:hero (create-hero "Jaina Proudmoore")}
-                                        {}
-                                        :player-id-in-turn "p2" ]))
-                (create-game [{:fatigue 2  :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}
-                              {}
-                              :player-id-in-turn "p1"])))}
+           (is= (end-turn (create-game [:player-id-in-turn "p2"
+                                        :players {"p1" {:hero (create-hero "Jaina Proudmoore")}
+                                                  "p2" {}}]))
+                (create-game [:player-id-in-turn "p1"
+                              :players {"p1" {:fatigue 2  :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}
+                                        "p2" {}}])))}
   [state]
   (let [pid (get state :player-id-in-turn)]
     (-> state
@@ -69,7 +69,9 @@
         ;TODO: reset hero power
         ;TODO: trigger the "beginning of turn" card effects
         )
-    ))
+    (map (fn [minions] (assoc minions :attacks-performed-this-turn 0))
+         (get-minions state pid))
+    state))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."
