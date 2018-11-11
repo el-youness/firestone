@@ -364,3 +364,13 @@
                 10))}
   [state player-id]
   (assoc-in state [:players player-id :used-mana] 0))
+
+(defn add-to-max-mana
+  "Adds a given amount of mana to the max-mana pool of a player (doesn't affect consumed mana)"
+  {:test (fn []
+           (is= (-> (create-game [{:max-mana 3}])
+                    (add-to-max-mana "p1" 2)
+                    (get-mana "p1"))
+                5))}
+  [state player-id amount]
+  (assoc-in state [:players player-id :used-mana] (+ amount (get-in state [:players player-id :max-mana]))))
