@@ -182,7 +182,8 @@
    {:name        "Bananas"
     :mana-cost   1
     :set         :classic
-    :description "Give a minion +1/+1."}
+    :description "Give a minion +1/+1."
+    :spell (fn [target-id] )}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"

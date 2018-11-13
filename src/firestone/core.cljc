@@ -26,6 +26,7 @@
                                          get-card-from-hand]]))
 
 (defn get-health
+  ; TODO: Update to use extra-health key
   "Returns the health of the character."
   {:test (fn []
            ; The health of minions
@@ -48,6 +49,7 @@
    (get-health (get-character state id))))
 
 (defn get-attack
+  ; TODO: Update to use extra-attack key
   "Returns the attack of the minion with the given id."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])

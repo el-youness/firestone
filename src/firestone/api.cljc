@@ -120,19 +120,21 @@
               (damage-minion attacker-id target-attack)))))
     state))
 
-(defn play-card
+; TODO: Add play-spell-card
+
+(defn play-minion-card
   "Play a card from the hand if possible."
   {:test (fn []
            (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
-                    (play-card "p1" "wg" 0))
+                    (play-minion-card "p1" "wg" 0))
                 (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}] :minion-ids-summoned-this-turn ["m1"]))
            ; Not enough mana
            (is= (-> (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}])
-                    (play-card "p1" "wg" 0))
+                    (play-minion-card "p1" "wg" 0))
                 (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}]))
            ; No space on board
            (is= (-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])
-                    (play-card "p1" "wg" 0))
+                    (play-minion-card "p1" "wg" 0))
                 (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])))}
   [state player-id card-id position]
   (let [card (get-card-from-hand state card-id)]
