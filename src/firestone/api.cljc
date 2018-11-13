@@ -28,8 +28,6 @@
                                     restore-mana
                                     add-to-max-mana]]))
 
-; TODO: function "play-card"
-
 (defn end-turn
   "Ends the turn of the playing hero"
   {:test (fn []
