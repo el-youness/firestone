@@ -98,8 +98,7 @@
     :attack      1
     :health      1
     :mana-cost   1
-    :set         :classic
-    :description "go and grab it from the internet"}
+    :set         :classic}
 
    "Ancient Watcher"
    {:name        "Ancient Watcher"
@@ -134,7 +133,7 @@
     :mana-cost   2
     :set         :basic
     :rarity      :none
-    :description "go and grab it from the internet"}
+    :description "Deal 3 damage to a character and Freeze it."}
 
    "Cabal Shadow Priest"
    {:name        "Cabal Shadow Priest"
