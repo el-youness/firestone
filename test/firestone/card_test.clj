@@ -15,4 +15,11 @@
                   (attack-with-minion "ap" "imp")
                   (get-hand "p1")
                   (count))
+              1)
+         ; Two Acolyte of Pain on board but only one should be triggered
+         (is= (-> (create-game [{:minions [(create-minion "Acolyte of Pain" :id "ap") "Acolyte of Pain"] :deck ["Imp" "Imp"]}
+                                {:minions [(create-minion "Imp" :id "imp")]}])
+                  (attack-with-minion "ap" "imp")
+                  (get-hand "p1")
+                  (count))
               1))
