@@ -40,25 +40,33 @@
            (is= (get-health (create-hero "Jaina Proudmoore" :damage-taken 2)) 28)
            (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
                     (get-health "h1"))
-                30))}
+                30)
+           ; The health of minions with extra-health
+           (is= (get-health (create-minion "War Golem" :effects {:extra-health 3})) 10))}
   ([character]
    {:pre [(map? character) (contains? character :damage-taken)]}
    (let [definition (get-definition character)]
-     (- (:health definition) (:damage-taken character))))
+     (- (if (map? (:effects character))
+          (+ (:health definition) (get-in character [:effects :extra-health]))
+          (:health definition))
+       (:damage-taken character))))
   ([state id]
    (get-health (get-character state id))))
 
 (defn get-attack
-  ; TODO: Update to use extra-attack key
   "Returns the attack of the minion with the given id."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (get-attack "i"))
-                1))}
+                1)
+           ; Minion with extra-attack effect
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :effects {:extra-attack 2})]}])
+                    (get-attack "wg"))
+                9))}
   [state id]
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
-    (:attack definition)))
+    (+ (:attack definition) (get-in minion [:effects :extra-attack])) ))
 
 (defn get-cost
   "Returns the cost of the minion with the given name."
