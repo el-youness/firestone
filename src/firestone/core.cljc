@@ -23,7 +23,8 @@
                                          get-character
                                          get-mana
                                          add-minion-to-board
-                                         get-card-from-hand]]))
+                                         get-card-from-hand
+                                         get-minion-effects]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -387,17 +388,10 @@
                     (count))
                 1))}
   [state event & args]
-
-  (reduce (fn [state minion]
-            (let [triggers (get-in minion [:effects :triggers])]
-              (if (.contains triggers event);the use of ".contains" is just to get the desired output and test further functionalities
-                (let [effect-function (get-definition (str (minion :name) " effect"))]
-                  (println "minion-id" (get minion :id) "damaged minion" (first args))
-                  (effect-function state (get minion :id) (first args))))))
-          ;TODO: remove trigger of the function from triggers
-
-          state
-          (get-minions state))
-
-
-  )
+  (->> (get-minions state)
+       (reduce (fn [state minion]
+                 (let [effects (get-minion-effects minion)]
+                   (if (contains? effects event)
+                     ((get-definition (effects event)) state (:id minion) args)
+                     state)))
+               state)))

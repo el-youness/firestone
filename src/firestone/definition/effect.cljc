@@ -1,15 +1,13 @@
 (ns firestone.definition.effect
   (:require [firestone.definitions :as definitions]
-            [firestone.core :refer [draw-card
-                                    get-owner]]))
+            [firestone.core :refer [get-owner
+                                    draw-card]]))
 
 (def effect-definitions
   {
-   "Acolyte of Pain effect" (fn [state acolyte-id damaged-minion-id]
-                              (println "I was here")
+   "Acolyte of Pain effect" (fn [state acolyte-id [damaged-minion-id]]
                               (if (= damaged-minion-id acolyte-id)
-                                (draw-card state (get-owner state acolyte-id))
-                                state))
+                                (draw-card state (get-owner state acolyte-id))))
    })
 
 (definitions/add-definitions! effect-definitions)

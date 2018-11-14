@@ -548,6 +548,18 @@
        (vals)
        (map :hero)))
 
+(defn get-minion-effects
+  "Gets the effects map from the given minion."
+  {:test (fn []
+           (is= (-> (create-minion "Imp")
+                    (get-minion-effects))
+                {})
+           (is= (-> (create-minion "Acolyte of Pain")
+                    (get-minion-effects))
+                {:on-damage "Acolyte of Pain effect"}))}
+  [minion]
+  (:effects minion))
+
 (defn get-character
   "Returns the character with the given id from the state."
   {:test (fn []
