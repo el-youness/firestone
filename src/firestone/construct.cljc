@@ -50,13 +50,18 @@
                  :damage-taken                0
                  :entity-type                 :minion
                  :name                        "Imp"
-                 :id                          "i"}))}
+                 :id                          "i"
+                 :effects                     {:extra-attack 0
+                                               :extra-health 0}}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
-                :attacks-performed-this-turn 0}]
+                :attacks-performed-this-turn 0
+                :effects                     {:extra-attack 0
+                                              :extra-health 0}
+                }]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
@@ -340,7 +345,9 @@
                                                                   :name                        "Imp"
                                                                   :id                          "m1"
                                                                   :position                    0
-                                                                  :owner-id                    "p1"}]
+                                                                  :owner-id                    "p1"
+                                                                  :effects                     {:extra-attack 0
+                                                                                                :extra-health 0}}]
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero

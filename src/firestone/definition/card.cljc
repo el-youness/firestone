@@ -1,5 +1,11 @@
 (ns firestone.definition.card
-  (:require [firestone.definitions :as definitions]))
+  (:require [firestone.definitions :as definitions]
+            [clojure.test :refer [function?]]
+            [ysera.test :refer [is is-not is= error?]]
+            [firestone.construct :refer [create-game
+                                         create-minion
+                                         update-minion
+                                         get-minion]]))
 
 (def card-definitions
   {
@@ -183,7 +189,16 @@
     :mana-cost   1
     :set         :classic
     :description "Give a minion +1/+1."
-    :spell (fn [target-id] )}
+    :spell (defn banana
+             {:test (fn []
+                      (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                               (banana "i")
+                               (get-minion "i")
+                               [(:extra-health) (:extra-attack)])
+                           [1 1]))}
+             [state target-id]
+             (-> (update-minion state target-id :extra-health inc)
+                 (update-minion target-id :extra-attack inc)))}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"
