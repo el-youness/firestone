@@ -34,10 +34,12 @@
            (is= (create-card "Imp" :id "i")
                 {:id          "i"
                  :entity-type :card
+                 :type        :minion
                  :name        "Imp"}))}
   [name & kvs]
   (let [card {:name        name
-              :entity-type :card}]
+              :entity-type :card
+              :type        (get (get-definition name) :type)}]
     (if (empty? kvs)
       card
       (apply assoc card kvs))))
@@ -378,11 +380,13 @@
                  :players                       {"p1" {:id      "p1"
                                                        :deck    [{:id          "c2"
                                                                   :entity-type :card
+                                                                  :type        :minion
                                                                   :name        "Imp"
                                                                   :owner-id    "p1"}]
                                                        :hand    [{:name        "Imp"
                                                                   :id          "c1"
                                                                   :entity-type :card
+                                                                  :type        :minion
                                                                   :owner-id    "p1"}]
                                                        :minions []
                                                        :hero    {:name         "Jaina Proudmoore"

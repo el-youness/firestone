@@ -121,17 +121,17 @@
     state))
 
 ; TODO: Add play-spell-card
-(defn play-spell-card
+(defn play-card
   "Play a spell card from the hand if possible."
   {:test (fn []
            (is= (-> (create-game [{:hand [(create-card "Bananas" :id "b1")] :minions [(create-minion "Imp" :id "i")]}])
-                    (play-spell-card "p1" "b1" "i"))
+                    (play-card "p1" "b1" "i"))
                 (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}] :minion-ids-summoned-this-turn ["m1"]))
            ; Not enough mana
            (is= (-> (create-game [{:hand [(create-minion "Bananas" :id "b1")]
                                    :minions [(create-minion "Imp" :id "i")]
                                    :used-mana 10}])
-                    (play-spell-card "p1" "b1" "i"))
+                    (play-card "p1" "b1" "i"))
                 (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 10}])))}
   [state player-id card-id target-id]
   (let [card (get-card-from-hand state card-id)]
