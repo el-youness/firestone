@@ -89,8 +89,7 @@
     :set         :classic
     :rarity      :common
     :description "Whenever this minion takes damage, draw a card."
-    :triggers     [:on-damage]
-    :on-damage   "Acolyte of Pain"}
+    :on-damage   "Acolyte of Pain effect"}
 
    "Snake"
    {:name        "Snake"

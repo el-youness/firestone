@@ -51,20 +51,14 @@
                  :entity-type                 :minion
                  :name                        "Acolyte of Pain"
                  :id                          "i"
-                 :effects                      {:triggers [:on-damage]
-                                                :extra-health 0
-                                                :extra-attack 0
-                                                :spell-damage 0}}))}
+                 :effects                      {:on-damage  "Acolyte of Pain effect"}}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                      {:triggers (if (contains? definition :triggers) (definition :triggers))
-                                               :extra-health 0
-                                               :extra-attack 0
-                                               :spell-damage 0}}]
+                :effects                     (select-keys definition [:on-damage])}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
