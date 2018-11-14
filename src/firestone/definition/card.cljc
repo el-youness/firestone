@@ -4,7 +4,7 @@
             [ysera.test :refer [is is-not is= error?]]
             [firestone.construct :refer [create-game
                                          create-minion
-                                         update-minion
+                                         update-in-minion
                                          get-minion]]))
 
 (def card-definitions
@@ -191,14 +191,17 @@
     :description "Give a minion +1/+1."
     :spell (defn banana
              {:test (fn []
-                      (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                               (banana "i")
-                               (get-minion "i")
-                               [(:extra-health) (:extra-attack)])
+                      (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                                            (banana "i")
+                                            (get-minion "i"))
+                                 effects (get minion :effects)]
+                                [(get effects :extra-health)
+                                 (get effects :extra-attack)]
+                               )
                            [1 1]))}
              [state target-id]
-             (-> (update-minion state target-id :extra-health inc)
-                 (update-minion target-id :extra-attack inc)))}
+             (-> (update-in-minion state target-id [:effects :extra-health] inc)
+                 (update-in-minion target-id [:effects :extra-attack] inc)))}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"
