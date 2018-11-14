@@ -174,8 +174,7 @@
                     (get-minions))
                 []))}
   [state id damage]
-  (let [state (update-minion state id :damage-taken (+ damage (-> (get-minion state id)
-                                                                  (:damage-taken))))]
+  (let [state (update-minion state id :damage-taken (partial + damage))]
     (if (> (get-health state id) 0)
       state
       (remove-minion state id)))
@@ -197,8 +196,7 @@
                 (as-> (get-definition "Rexxar") $
                       (- ($ :health) 7))))}
   [state id damage]
-  (let [state (update-hero state id  :damage-taken (+ damage (-> (get-character state id)
-                                                                 (:damage-taken))))]
+  (let [state (update-hero state id  :damage-taken (partial + damage))]
     (if (> (get-health state id) 0)
       state
       ; TODO: game should be over
@@ -353,7 +351,7 @@
                     (get-mana "p1"))
                 3))}
   [state player-id amount]
-  (assoc-in state [:players player-id :used-mana] (+ amount (get-in state [:players player-id :used-mana]))))
+  (update-in state [:players player-id :used-mana] (partial + amount)))
 
 (defn restore-mana
   "resets the consumed amount of a player's mana"
@@ -373,4 +371,4 @@
                     (get-mana "p1"))
                 5))}
   [state player-id amount]
-  (assoc-in state [:players player-id :max-mana] (+ amount (get-in state [:players player-id :max-mana]))))
+  (update-in state [:players player-id :max-mana] (partial + amount)))
