@@ -5,10 +5,11 @@
 
 (def effect-definitions
   {
-   "Acolyte of Pain" (fn [state acolyte-id damaged-minion-id]
-                       (if (= damaged-minion-id acolyte-id)
-                         (draw-card state (get-owner state acolyte-id))
-                         state))
+   "Acolyte of Pain effect" (fn [state acolyte-id damaged-minion-id]
+                              (println "I was here")
+                              (if (= damaged-minion-id acolyte-id)
+                                (draw-card state (get-owner state acolyte-id))
+                                state))
    })
 
 (definitions/add-definitions! effect-definitions)

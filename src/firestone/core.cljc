@@ -374,3 +374,30 @@
                 5))}
   [state player-id amount]
   (assoc-in state [:players player-id :max-mana] (+ amount (get-in state [:players player-id :max-mana]))))
+
+(defn handle-triggers
+  "Handle the triggers of multiple event listeners."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (handle-triggers :on-damage))
+                (create-game))
+           (is= (-> (create-game [{:deck ["Imp"] :minions [(create-minion "Acolyte of Pain" :id "m1")]}])
+                    (handle-triggers :on-damage "m1")
+                    (get-hand "p1")
+                    (count))
+                1))}
+  [state event & args]
+
+  (reduce (fn [state minion]
+            (let [triggers (get-in minion [:effects :triggers])]
+              (if (.contains triggers event);the use of ".contains" is just to get the desired output and test further functionalities
+                (let [effect-function (get-definition (str (minion :name) " effect"))]
+                  (println "minion-id" (get minion :id) "damaged minion" (first args))
+                  (effect-function state (get minion :id) (first args))))))
+          ;TODO: remove trigger of the function from triggers
+
+          state
+          (get-minions state))
+
+
+  )
