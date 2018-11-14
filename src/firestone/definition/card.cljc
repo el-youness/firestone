@@ -105,7 +105,8 @@
     :mana-cost 1
     :type      :minion
     :rarity    :rare
-    :set       :classic}
+    :set       :classic
+    :race      :beast}
 
    "Ancient Watcher"
    {:name        "Ancient Watcher"
