@@ -1,3 +1,4 @@
+
 (ns firestone.definition.card
   (:require [firestone.definitions :as definitions]
             [clojure.test :refer [function?]]
@@ -65,6 +66,7 @@
     :attack      4
     :health      2
     :mana-cost   5
+    :type        :minion
     :set         :classic
     :rarity      :epic
     :description "Battlecry: Destroy a minion with an Attack of 7 or more."}
@@ -74,6 +76,7 @@
     :attack      2
     :health      4
     :mana-cost   4
+    :type        :minion
     :set         :whispers-of-the-old-gods
     :rarity      :rare
     :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."}
@@ -83,6 +86,7 @@
     :attack      4
     :health      4
     :mana-cost   3
+    :type        :minion
     :set         :classic
     :rarity      :rare
     :description "Battlecry: Give your opponent a Mana Crystal."}
@@ -92,6 +96,7 @@
     :attack      1
     :health      3
     :mana-cost   3
+    :type        :minion
     :set         :classic
     :rarity      :common
     :description "Whenever this minion takes damage, draw a card."
@@ -100,17 +105,20 @@
                    )}
 
    "Snake"
-   {:name        "Snake"
-    :attack      1
-    :health      1
-    :mana-cost   1
-    :set         :classic}
+   {:name      "Snake"
+    :attack    1
+    :health    1
+    :mana-cost 1
+    :type      :minion
+    :rarity    :rare
+    :set       :classic}
 
    "Ancient Watcher"
    {:name        "Ancient Watcher"
     :attack      4
     :health      5
     :mana-cost   2
+    :type        :minion
     :set         :classic
     :rarity      :rare
     :description "Can't attack."}
@@ -120,6 +128,7 @@
     :attack      5
     :health      7
     :mana-cost   8
+    :type        :minion
     :set         :goblins-vs-gnomes
     :rarity      :legendary
     :description "Deathrattle: Summon a random Legendary minion."
@@ -131,12 +140,15 @@
     :attack      5
     :health      5
     :mana-cost   3
+    :type        :minion
     :set         :classic
+    :rarity      :legendary
     :description "Battlecry: Give your opponent 2 Bananas."}
 
    "Frostbolt"
    {:name        "Frostbolt"
     :mana-cost   2
+    :type        :spell
     :set         :basic
     :rarity      :none
     :description "Deal 3 damage to a character and Freeze it."}
@@ -146,6 +158,7 @@
     :attack      4
     :health      5
     :mana-cost   6
+    :type        :minion
     :set         :classic
     :rarity      :epic
     :description "Battlecry: Take control of an enemy minion that has 2 or less Attack."}
@@ -153,6 +166,7 @@
    "Mind Control"
    {:name        "Mind Control"
     :mana-cost   10
+    :type        :spell
     :set         :basic
     :rarity      :none
     :description "Take control of an enemy minion."}
@@ -162,6 +176,7 @@
     :attack      8
     :health      8
     :mana-cost   8
+    :type        :minion
     :set         :the-witchwood
     :rarity      :common
     :description "Deathrattle: Restore 8 Health to your hero."}
@@ -171,6 +186,7 @@
     :attack      5
     :health      5
     :mana-cost   6
+    :type        :minion
     :set         :hall-of-fame
     :rarity      :legendary
     :description "Deathrattle: Take control of a random enemy minion."}
@@ -180,6 +196,7 @@
     :attack      2
     :health      4
     :mana-cost   3
+    :type        :minion
     :set         :classic
     :rarity      :rare
     :description "Whenever a minion takes damage, gain +1 Attack."}
@@ -187,6 +204,7 @@
    "Bananas"
    {:name        "Bananas"
     :mana-cost   1
+    :type        :spell
     :set         :classic
     :description "Give a minion +1/+1."
     :spell (defn banana
@@ -208,6 +226,7 @@
     :attack      2
     :health      1
     :mana-cost   2
+    :type        :minion
     :set         :classic
     :rarity      :common
     :description "Deathrattle: Draw a card."}
@@ -215,6 +234,7 @@
    "Snake Trap"
    {:name        "Snake Trap"
     :mana-cost   2
+    :type        :spell
     :set         :classic
     :rarity      :epic
     :description "Secret: When one of your minions is attacked summon three 1/1 Snakes."}

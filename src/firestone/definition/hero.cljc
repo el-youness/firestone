@@ -31,6 +31,30 @@
     :health     30
     :hero-power "Reinforce"}
 
+   "Fireblast"
+   {:name        "Fireblast"
+    :mana-cost   2
+    :type        :hero-power
+    :description "Deal 1 damage."}
+
+   "Lesser Heal"
+   {:name        "Lesser Heal"
+    :mana-cost   2
+    :type        :hero-power
+    :description "Restore 2 health."}
+
+   "Reinforce"
+   {:name        "Reinforce"
+    :mana-cost   2
+    :type        :hero-power
+    :description "Summon a 1/1 Silver Hand Recruit."}
+
+   "Steady Shot"
+   {:name        "Steady Shot"
+    :mana-cost   2
+    :type        :hero-power
+    :description "Deal 2 damage to the enemy hero."}
+
    })
 
 (definitions/add-definitions! hero-definitions)
