@@ -35,11 +35,13 @@
                 {:id          "i"
                  :entity-type :card
                  :type        :minion
-                 :name        "Imp"}))}
+                 :name        "Imp"
+                 :target-type nil}))}
   [name & kvs]
   (let [card {:name        name
               :entity-type :card
-              :type        (get (get-definition name) :type)}]
+              :type        (get (get-definition name) :type)
+              :target-type (get (get-definition name) :target-type)}]
     (if (empty? kvs)
       card
       (apply assoc card kvs))))
@@ -378,16 +380,8 @@
                               {:hero (create-hero "Anduin Wrynn")}])
                 {:player-id-in-turn             "p1"
                  :players                       {"p1" {:id      "p1"
-                                                       :deck    [{:id          "c2"
-                                                                  :entity-type :card
-                                                                  :type        :minion
-                                                                  :name        "Imp"
-                                                                  :owner-id    "p1"}]
-                                                       :hand    [{:name        "Imp"
-                                                                  :id          "c1"
-                                                                  :entity-type :card
-                                                                  :type        :minion
-                                                                  :owner-id    "p1"}]
+                                                       :deck    [(create-card "Imp" :id "c2" :owner-id "p1")]
+                                                       :hand    [(create-card "Imp" :id "c1" :owner-id "p1")]
                                                        :minions []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
