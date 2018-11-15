@@ -125,20 +125,20 @@
 (defn play-spell-card
   "Play a spell card from the hand if possible."
   {:test (fn []
-           (is= (as-> (create-game [{:hand [(create-card "Bananas" :id "b1")] :minions [(create-minion "Imp" :id "i")]}]) $
-                    (play-spell-card $ "p1" "b1" "i")
-                    [(get-health $ "i") (get-attack $ "i")])
+           (is= (as-> (create-game [{:hand [(create-card "Bananas" :id "b1")]
+                                     :minions [(create-minion "Imp" :id "i")]}]) $
+                      (play-spell-card $ "p1" "b1" {:target-id "i"})
+                      [(get-health $ "i") (get-attack $ "i")])
                 [2 2])
            ; Not enough mana
-           (is= (as-> (create-game [{:hand [(create-minion "Bananas" :id "b1")]
-                                   :minions [(create-minion "Imp" :id "i")]
-                                   :used-mana 10}]) $
+           (is= (as-> (create-game [{:hand [(create-card "Bananas" :id "b1")]
+                                     :minions [(create-minion "Imp" :id "i")]
+                                     :used-mana 10}]) $
                       (play-spell-card $ "p1" "b1" "i")
                       [(get-health $ "i") (get-attack $ "i")])
                 [1 1]))}
   [state player-id card-id {target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
-    ; TODO: Update playable? to work with spells or do not use it and create an alternative...
     (if (and (playable? state player-id card-id)
              (valid-target? state player-id card-id target-id))
       (-> ((get-spell-function card) state target-id)
