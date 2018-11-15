@@ -206,7 +206,7 @@
     :type        :spell
     :set         :classic
     :description "Give a minion +1/+1."
-    :target-type "All minions"
+    :target-type :all-minions
     :spell (defn banana
              {:test (fn []
                       (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])

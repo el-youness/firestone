@@ -404,7 +404,7 @@
     (cond (nil? target-type)
           true
 
-          (= target-type "All minions")
+          (= target-type :all-minions)
           (if (nil? (get-minion state target-id))
               false
               true)
