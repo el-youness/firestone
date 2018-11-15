@@ -107,7 +107,8 @@
     :mana-cost   2
     :set         :classic
     :rarity      :rare
-    :description "Can't attack."}
+    :description "Can't attack."
+    :no-attack   true}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"

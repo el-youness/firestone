@@ -45,18 +45,20 @@
 (defn create-minion
   "Creates a minion from its definition by the given minion name. The additional key-values will override the default values."
   {:test (fn []
-           (is= (create-minion "Imp" :id "i" :attacks-performed-this-turn 1)
+           (is= (create-minion "Ancient Watcher" :id "i" :attacks-performed-this-turn 1)
                 {:attacks-performed-this-turn 1
                  :damage-taken                0
                  :entity-type                 :minion
-                 :name                        "Imp"
-                 :id                          "i"}))}
+                 :name                        "Ancient Watcher"
+                 :id                          "i"
+                 :effects                     [:no-attack true]}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
-                :attacks-performed-this-turn 0}]
+                :attacks-performed-this-turn 0
+                :effects                     (select-keys definition [:no-attack true])}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
