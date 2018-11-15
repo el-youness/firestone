@@ -209,7 +209,8 @@
     :type        :minion
     :set         :classic
     :rarity      :common
-    :description "Deathrattle: Draw a card."}
+    :description "Deathrattle: Draw a card."
+    :deathrattle "Loot Hoarder deathrattle"}
 
    "Snake Trap"
    {:name        "Snake Trap"
