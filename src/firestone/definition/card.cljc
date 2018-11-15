@@ -94,9 +94,7 @@
     :set         :classic
     :rarity      :common
     :description "Whenever this minion takes damage, draw a card."
-    :on-damage   (fn [state change-to-your-args]
-
-                   )}
+    :on-damage   "Acolyte of Pain effect"}
 
    "Snake"
    {:name      "Snake"
