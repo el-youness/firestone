@@ -7,7 +7,9 @@
             [firestone.core]
             [firestone.api]
             [firestone.definition.card]
-            [firestone.definition.hero]))
+            [firestone.definition.hero]
+            [firestone.definition.effect]
+            [firestone.card_test]))
 
 (deftest test-all
          "Bootstrapping with the required namespaces, finds all the firestone.* namespaces (except this one),

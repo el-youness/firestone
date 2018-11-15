@@ -100,9 +100,7 @@
     :set         :classic
     :rarity      :common
     :description "Whenever this minion takes damage, draw a card."
-    :on-damage   (fn [state change-to-your-args]
-
-                   )}
+    :on-damage   "Acolyte of Pain effect"}
 
    "Snake"
    {:name      "Snake"
@@ -111,7 +109,8 @@
     :mana-cost 1
     :type      :minion
     :rarity    :rare
-    :set       :classic}
+    :set       :classic
+    :race      :beast}
 
    "Ancient Watcher"
    {:name        "Ancient Watcher"

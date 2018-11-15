@@ -23,7 +23,8 @@
                                          get-character
                                          get-mana
                                          add-minion-to-board
-                                         get-card-from-hand]]))
+                                         get-card-from-hand
+                                         get-minion-effects]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -82,7 +83,7 @@
   ([card]
    (get (get-definition (:name card)) :mana-cost))
   ([state id]
-    (get-cost (get-card-from-hand state id))))
+   (get-cost (get-card-from-hand state id))))
 
 (defn get-card-type
   "Returns the type of the card with the given id or entity."
@@ -138,7 +139,7 @@
            (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
                    (hero? "h1")))
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                   (hero? "imp"))))}
+                       (hero? "imp"))))}
   [state id]
   (= (-> (get-character state id)
          (get :entity-type))
@@ -180,6 +181,26 @@
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target)))))
 
+(defn handle-triggers
+  "Handle the triggers of multiple event listeners."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (handle-triggers :on-damage))
+                (create-game))
+           (is= (-> (create-game [{:deck ["Imp"] :minions [(create-minion "Acolyte of Pain" :id "m1")]}])
+                    (handle-triggers :on-damage "m1")
+                    (get-hand "p1")
+                    (count))
+                1))}
+  [state event & args]
+  (->> (get-minions state)
+       (reduce (fn [state minion]
+                 (let [effects (get-minion-effects minion)]
+                   (if (contains? effects event)
+                     ((get-definition (effects event)) state (:id minion) args)
+                     state)))
+               state)))
+
 (defn damage-minion
   "Deals damage to the minion with the given id."
   {:test (fn []
@@ -187,7 +208,7 @@
                     (damage-minion "i" 3)
                     (get-health "i"))
                 (as-> (get-definition "War Golem") $
-                    (- ($ :health) 3)))
+                      (- ($ :health) 3)))
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "i" :damage-taken 1)]}])
                     (damage-minion "i" 1)
                     (get-health "i"))
@@ -199,12 +220,11 @@
                     (get-minions))
                 []))}
   [state id damage]
-  (let [state (update-minion state id :damage-taken (+ damage (-> (get-minion state id)
-                                                                  (:damage-taken))))]
-    (if (> (get-health state id) 0)
-      state
-      (remove-minion state id)))
-  )
+  (let [state (update-minion state id :damage-taken (partial + damage))]
+    (let [state (handle-triggers state :on-damage id)]
+      (if (> (get-health state id) 0)
+        state
+        (remove-minion state id)))))
 
 (defn damage-hero
   "Deals damage to the hero with the given id."
@@ -222,8 +242,7 @@
                 (as-> (get-definition "Rexxar") $
                       (- ($ :health) 7))))}
   [state id damage]
-  (let [state (update-hero state id  :damage-taken (+ damage (-> (get-character state id)
-                                                                 (:damage-taken))))]
+  (let [state (update-hero state id  :damage-taken (partial + damage))]
     (if (> (get-health state id) 0)
       state
       ; TODO: game should be over
@@ -275,14 +294,14 @@
                     (draw-card "p1"))
                 (create-game [{:hand [(create-card "Imp")]}]))
            ; Test to draw a card when the player's hand is full
-           (is= (-> (create-game [{:hand [(create-card "Imp")(create-card "Imp")(create-card "Imp")(create-card "Imp")
-                                          (create-card "Imp")(create-card "Imp")(create-card "Imp")(create-card "Imp")
-                                          (create-card "Imp")(create-card "Imp")]
+           (is= (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp")]
                                    :deck [(create-card "War Golem")]}])
                     (draw-card "p1"))
-                (-> (create-game [{:hand [(create-card "Imp")(create-card "Imp")(create-card "Imp")(create-card "Imp")
-                                      (create-card "Imp")(create-card "Imp")(create-card "Imp")(create-card "Imp")
-                                      (create-card "Imp")(create-card "Imp")]}])
+                (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp")]}])
                     (update :counter inc)))
            ; Test that a player takes fatigue damage if there are no cards in the deck
            (is= (-> (create-game)
@@ -296,7 +315,7 @@
            )}
   ([state player-id]
    {:pre [(map? state) (string? player-id)]}
-   ; Check if there are cards in the deck
+    ; Check if there are cards in the deck
    (if (empty? (get-deck state player-id))
      (let [[state damage] (fatigue-damage state player-id)]
        (damage-hero state (get-hero-id state player-id) damage))
@@ -305,9 +324,7 @@
          ; Check that the hand is not full
          (if (< (count (get-hand state player-id)) 10)
            (add-card-to-hand state {:player-id player-id :card card})
-           state
-           )))
-     )))
+           state))))))
 
 (defn mulligan
   "Take x cards from player 1's deck and y cards from player 2's deck. The cards are removed from the
@@ -333,7 +350,7 @@
   ([state x y]
    {:pre [(map? state) (number? x) (number? y)]}
    (reduce (fn [state {player-id :player-id cards :cards}]
-             (reduce (fn[state card]
+             (reduce (fn [state card]
                        (-> (add-card-to-hand state {:player-id player-id :card card})
                            (remove-card-from-deck player-id (:id card))))
                      state
@@ -342,11 +359,11 @@
            state
            (map-indexed (fn [index amount]
                           (let [player-id (str "p" (inc index))]
-                             {:player-id player-id
-                              :cards     (get-cards-from-deck state player-id amount)}))
-                         [x y])
+                            {:player-id player-id
+                             :cards     (get-cards-from-deck state player-id amount)}))
+                        [x y])
 
-   )))
+           )))
 
 (defn playable?
   "Checks if a card is playable on the board for a specific player"
@@ -355,10 +372,10 @@
                    (playable? "p1" "c1"))
                )
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 0}])
-                   (playable? "p1" "c1"))
-               )
+                       (playable? "p1" "c1"))
+                   )
            (is-not (-> (create-game [{:max-mana 5 :hand [(create-card "Imp" :id "c1")]
-                                      :minions ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
+                                      :minions  ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
                        (playable? "p1" "c1"))
                    )
            )}
@@ -414,7 +431,7 @@
                     (get-mana "p1"))
                 3))}
   [state player-id amount]
-  (assoc-in state [:players player-id :used-mana] (+ amount (get-in state [:players player-id :used-mana]))))
+  (update-in state [:players player-id :used-mana] (partial + amount)))
 
 (defn restore-mana
   "resets the consumed amount of a player's mana"
@@ -434,4 +451,4 @@
                     (get-mana "p1"))
                 5))}
   [state player-id amount]
-  (assoc-in state [:players player-id :max-mana] (+ amount (get-in state [:players player-id :max-mana]))))
+  (update-in state [:players player-id :max-mana] (partial + amount)))
