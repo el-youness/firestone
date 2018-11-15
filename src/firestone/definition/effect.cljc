@@ -5,11 +5,13 @@
 
 (def effect-definitions
   {
-   "Acolyte of Pain effect" (fn [state acolyte-id [damaged-minion-id]]
-                              (let [state (if (= damaged-minion-id acolyte-id)
-                                            (draw-card state (get-owner state acolyte-id))
-                                            state)]
-                                state))
+   "Acolyte of Pain effect"   (fn [state acolyte-id [damaged-minion-id]]
+                                (let [state (if (= damaged-minion-id acolyte-id)
+                                              (draw-card state (get-owner state acolyte-id))
+                                              state)]
+                                  state))
+   "Loot Hoarder deathrattle" (fn [state loot-hoarder-id]
+                                (draw-card state (get-owner state loot-hoarder-id)))
    })
 
 (definitions/add-definitions! effect-definitions)

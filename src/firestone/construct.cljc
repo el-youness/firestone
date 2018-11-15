@@ -65,7 +65,7 @@
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (select-keys definition [:on-damage :cannot-attack])}]
+                :effects                     (select-keys definition [:on-damage :cannot-attack :deathrattle])}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
