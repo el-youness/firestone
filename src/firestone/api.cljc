@@ -150,17 +150,17 @@
   "Play a minion card from the hand if possible."
   {:test (fn []
            (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
-                    (play-minion-card "p1" "wg" 0))
+                    (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions ["War Golem"] :used-mana (:mana-cost (get-definition "War Golem"))}] :minion-ids-summoned-this-turn ["m1"]))
            ; Not enough mana
            (is= (-> (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}])
-                    (play-minion-card "p1" "wg" 0))
+                    (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:hand [(create-minion "War Golem" :id "wg")] :used-mana 4}]))
            ; No space on board
            (is= (-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])
-                    (play-minion-card "p1" "wg" 0))
+                    (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])))}
-  [state player-id card-id position]
+  [state player-id card-id {position :position target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
     (if (playable? state player-id card-id)
       (-> (consume-mana state player-id (get-cost card))
