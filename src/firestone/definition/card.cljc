@@ -108,7 +108,7 @@
     :set         :classic
     :rarity      :rare
     :description "Can't attack."
-    :no-attack   true}
+    :can-attack   false}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"

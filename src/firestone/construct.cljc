@@ -51,14 +51,14 @@
                  :entity-type                 :minion
                  :name                        "Ancient Watcher"
                  :id                          "i"
-                 :effects                     [:no-attack true]}))}
+                 :effects                     [:can-attack true]}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (select-keys definition [:no-attack true])}]
+                :effects                     (select-keys definition [:can-attack true])}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
@@ -336,13 +336,7 @@
                  :players                       {"p1" {:id      "p1"
                                                        :deck    []
                                                        :hand    []
-                                                       :minions [{:damage-taken                0
-                                                                  :attacks-performed-this-turn 0
-                                                                  :entity-type                 :minion
-                                                                  :name                        "Imp"
-                                                                  :id                          "m1"
-                                                                  :position                    0
-                                                                  :owner-id                    "p1"}]
+                                                       :minions [(create-minion "Imp" :id "m1" :owner-id "p1" :position 0)]
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero

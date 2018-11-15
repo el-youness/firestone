@@ -146,6 +146,10 @@
            ; Should not be able to attack if you already attacked this turn
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
+                       (valid-attack? "p1" "i" "wg")))
+           ;should not be able to atack if the card is Ancient Watcher
+           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "i")]}
+                                     {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
@@ -153,7 +157,8 @@
     (and (= (:player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
-         (not= (:owner-id attacker) (:owner-id target)))))
+         (not= (:owner-id attacker) (:owner-id target))
+         (not (attacker :can-attack)))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."
