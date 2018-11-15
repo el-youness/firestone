@@ -201,6 +201,25 @@
                      state)))
                state)))
 
+(defn destroy-minion
+  "Causes a minion on the board to die. Should trigger deathrattles and other on death effects."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                    (destroy-minion "wg")
+                    (get-minions))
+                [])
+           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh")] :deck ["Imp"]}])
+                    (destroy-minion "lh")
+                    (get-hand "p1")
+                    (count))
+                1))}
+  [state id]
+  (-> (let [effects (get-minion-effects (get-minion state id))]
+        (if (contains? effects :deathrattle)
+          ((get-definition (effects :deathrattle)) state id)
+          state))
+      (remove-minion id)))
+
 (defn damage-minion
   "Deals damage to the minion with the given id."
   {:test (fn []
@@ -224,7 +243,7 @@
     (let [state (handle-triggers state :on-damage id)]
       (if (> (get-health state id) 0)
         state
-        (remove-minion state id)))))
+        (destroy-minion state id)))))
 
 (defn damage-hero
   "Deals damage to the hero with the given id."
