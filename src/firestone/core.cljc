@@ -26,7 +26,6 @@
                                          get-card-from-hand]]))
 
 (defn get-health
-  ; TODO: Update to use extra-health key
   "Returns the health of the character."
   {:test (fn []
            ; The health of minions
@@ -334,7 +333,7 @@
    )))
 
 (defn playable?
-  "checks if a card is playable on the board for a specific player"
+  "Checks if a card is playable on the board for a specific player"
   {:test (fn []
            (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
                    (playable? "p1" "c1"))
@@ -352,8 +351,31 @@
         card-cost (get-cost state card-id)
         minions-on-board (get-minions state player-id)]
     (and (<= card-cost available-mana)
-         (< (count minions-on-board) 7)))
-  )
+         (< (count minions-on-board) 7))))
+
+(defn valid-target?
+  "Checks if the target of a card is valid"
+  {:test (fn []
+           (is (-> (create-game [{:minions [(create-card "Imp" :id "i1")]
+                                  :hand [(create-card "Bananas" :id "c1")]}])
+                   (valid-target? "p1" "c1" "i1")))
+           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
+                                      :hero (create-hero "Anduin Wrynn")}])
+                       (valid-target? "p1" "c1" "h1"))))}
+  [state player-id card-id target-id]
+  (let [card (get-card-from-hand state card-id)
+        target-type (:target-type card)]
+    (cond (nil? target-type)
+          true
+
+          (= target-type "All minions")
+          (if (nil? (get-minion state target-id))
+              false
+              true)
+
+          ; TODO: Add checks for other target-type
+          :else
+          false)))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."
