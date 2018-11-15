@@ -119,6 +119,19 @@
          (get :entity-type))
      :hero))
 
+(defn frozen?
+  "Checks if the minion with the given id cannot attack"
+  {:test (fn []
+           (is-not (-> (create-minion "Imp")
+                       (frozen?)))
+           (is (-> (create-minion "Ancient Watcher")
+                   (frozen?))))}
+  [minion]
+  ;if the minion's cannot-attack => true, frozen => true
+  (println "minion :" (minion :name) "frozen? " (get-in minion [:effects :cannot-attack]))
+  (let [frozen (get-in minion [:effects :cannot-attack])]
+    (if (nil? frozen) false frozen)))
+
 (defn valid-attack?
   "Checks if the attack is valid"
   {:test (fn []
@@ -147,7 +160,7 @@
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg")))
-           ;should not be able to atack if the card is Ancient Watcher
+           ;Should not be able to attack if "cannot-attack" is true
            (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "i")]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg"))))}
@@ -158,7 +171,7 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not (attacker :can-attack)))))
+         (not (frozen? attacker)))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."

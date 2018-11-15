@@ -102,13 +102,13 @@
 
    "Ancient Watcher"
    {:name        "Ancient Watcher"
-    :attack      4
-    :health      5
-    :mana-cost   2
-    :set         :classic
-    :rarity      :rare
-    :description "Can't attack."
-    :can-attack   false}
+    :attack        4
+    :health        5
+    :mana-cost     2
+    :set           :classic
+    :rarity        :rare
+    :description   "Can't attack."
+    :cannot-attack true}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"

@@ -51,14 +51,14 @@
                  :entity-type                 :minion
                  :name                        "Ancient Watcher"
                  :id                          "i"
-                 :effects                     [:can-attack true]}))}
+                 :effects                     {:cannot-attack true}}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (select-keys definition [:can-attack])}]
+                :effects                     (select-keys definition [:cannot-attack])}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))

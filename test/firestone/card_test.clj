@@ -6,12 +6,13 @@
             [firestone.construct :refer [create-game
                                          create-minion
                                          create-hero
-                                         get-mana]]))
+                                         get-minion]]))
 
 (deftest ancient-watcher
          "Tests for Ancient Watcher."
-         (is= (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "a")]}
-                                {:minions [(create-minion "Imp" :id "i")]}])
+         (is= (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                {:minions [(create-minion "War Golem" :id "wg")]}])
                   (attack-with-minion "a" "i")
-                  (get-mana "p1"))
-              10))
+                  (get-minion "wg")
+                  (:damage-taken))
+              0))
