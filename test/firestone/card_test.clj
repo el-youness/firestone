@@ -23,3 +23,12 @@
                   (get-hand "p1")
                   (count))
               1))
+
+(deftest loot-hoarder
+         "Tests for Loot Hoarder."
+         (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh")] :deck ["Imp"]}
+                                {:minions [(create-minion "War Golem" :id "wg")]}])
+                  (attack-with-minion "lh" "wg")
+                  (get-hand "p1")
+                  (count))
+              1))
