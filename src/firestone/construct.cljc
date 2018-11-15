@@ -51,7 +51,7 @@
                  :entity-type                 :minion
                  :name                        "Ancient Watcher"
                  :id                          "i"
-                 :effects                     {:cannot-attack true}}))}
+                 :effects                     {:cannot-attack true}})
            (is= (create-minion "Acolyte of Pain" :id "i" :attacks-performed-this-turn 1)
                 {:attacks-performed-this-turn 1
                  :damage-taken                0
