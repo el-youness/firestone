@@ -356,7 +356,7 @@
 (defn valid-target?
   "Checks if the target of a card is valid"
   {:test (fn []
-           (is (-> (create-game [{:minions [(create-card "Imp" :id "i1")]
+           (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
                                   :hand [(create-card "Bananas" :id "c1")]}])
                    (valid-target? "p1" "c1" "i1")))
            (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
@@ -376,6 +376,16 @@
           ; TODO: Add checks for other target-type
           :else
           false)))
+
+(defn get-spell-function
+  "Get the spell function in the definition of a card"
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
+                      ((get-spell-function (create-card "Bananas")) $ "i1")
+                      (get-health $ "i1"))
+                2))}
+  [card]
+  (:spell (get-definition card)))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."

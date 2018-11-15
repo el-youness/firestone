@@ -22,6 +22,7 @@
                                     get-owner
                                     playable?
                                     valid-target?
+                                    get-spell-function
                                     consume-mana
                                     get-cost
                                     summon-minion
@@ -140,8 +141,8 @@
     ; TODO: Update playable? to work with spells or do not use it and create an alternative...
     (if (and (playable? state player-id card-id)
              (valid-target? state player-id card-id target-id))
-      (-> (consume-mana state player-id (get-cost card))
-          ; TODO: Call card's spell function by getting the definition
+      (-> ((get-spell-function card) state target-id)
+          (consume-mana player-id (get-cost card))
           (remove-card-from-hand player-id card-id))
       state)))
 
