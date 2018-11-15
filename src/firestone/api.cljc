@@ -139,12 +139,17 @@
                 [1 1]))}
   [state player-id card-id {target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
-    (if (and (playable? state player-id card-id)
-             (valid-target? state player-id card-id target-id))
-      (-> ((get-spell-function card) state target-id)
-          (consume-mana player-id (get-cost card))
-          (remove-card-from-hand player-id card-id))
-      state)))
+    (if (playable? state player-id card-id)
+        (if (nil? target-id)
+            (-> ((get-spell-function card) state)
+                (consume-mana player-id (get-cost card))
+                (remove-card-from-hand player-id card-id))
+            (if (valid-target? state player-id card-id target-id)
+                (-> ((get-spell-function card) state target-id)
+                    (consume-mana player-id (get-cost card))
+                    (remove-card-from-hand player-id card-id))
+                state))
+        state)))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."

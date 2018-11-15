@@ -397,12 +397,16 @@
                    (valid-target? "p1" "c1" "i1")))
            (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
                                       :hero (create-hero "Anduin Wrynn")}])
-                       (valid-target? "p1" "c1" "h1"))))}
+                       (valid-target? "p1" "c1" "h1")))
+           ; A card with no :target-type cannot have a valid target
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]
+                                      }])
+                       (valid-target? "p1" "i1" "i2"))))}
   [state player-id card-id target-id]
   (let [card (get-card-from-hand state card-id)
         target-type (:target-type card)]
     (cond (nil? target-type)
-          true
+          false
 
           (= target-type :all-minions)
           (if (nil? (get-minion state target-id))
