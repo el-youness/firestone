@@ -178,7 +178,8 @@
     :type        :minion
     :set         :the-witchwood
     :rarity      :common
-    :description "Deathrattle: Restore 8 Health to your hero."}
+    :description "Deathrattle: Restore 8 Health to your hero."
+    :deathrattle "Deranged Doctor deathrattle"}
 
    "Sylvanas Windrunner"
    {:name        "Sylvanas Windrunner"
