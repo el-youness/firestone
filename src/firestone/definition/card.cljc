@@ -176,9 +176,9 @@
     :target-type :enemy-minions
     :spell       (defn mind-control
                    {:test (fn []
-                            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}]) $
-                                       (mind-control $ "imp")
-                                       (get-owner $ "imp"))
+                            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                                       (mind-control "imp")
+                                       (get-owner "imp"))
                                  "p2"))}
                    [state target-id]
                    (change-minion-board-side state target-id))}
