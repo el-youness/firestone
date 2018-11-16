@@ -127,11 +127,18 @@
 (defn play-spell-card
   "Play a spell card from the hand if possible."
   {:test (fn []
+           ; Play spell card that can target all minions
            (is= (as-> (create-game [{:hand [(create-card "Bananas" :id "b1")]
                                      :minions [(create-minion "Imp" :id "i")]}]) $
                       (play-spell-card $ "p1" "b1" {:target-id "i"})
                       [(get-health $ "i") (get-attack $ "i")])
                 [2 2])
+           ; Play spell card that can only target enemy minions
+           (is= (as-> (create-game [{:hand [(create-card "Mind Control" :id "mc1")]}
+                                    {:minions [(create-minion "Imp" :id "i")]}]) $
+                      (play-spell-card $ "p1" "mc1" {:target-id "i"})
+                      (get-owner $ "i"))
+                "p1")
            ; Not enough mana
            (is= (as-> (create-game [{:hand [(create-card "Bananas" :id "b1")]
                                      :minions [(create-minion "Imp" :id "i")]

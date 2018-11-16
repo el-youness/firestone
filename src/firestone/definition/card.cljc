@@ -4,9 +4,13 @@
             [ysera.test :refer [is is-not is= error?]]
             [firestone.construct :refer [create-game
                                          create-minion
+                                         update-minion
                                          update-in-minion
                                          get-minion
-                                         get-effects]]))
+                                         get-minions
+                                         get-effects]]
+            [firestone.core :refer [change-minion-board-side
+                                    get-owner]]))
 
 (def card-definitions
   {
@@ -168,7 +172,16 @@
     :type        :spell
     :set         :basic
     :rarity      :none
-    :description "Take control of an enemy minion."}
+    :description "Take control of an enemy minion."
+    :target-type :enemy-minions
+    :spell       (defn mind-control
+                   {:test (fn []
+                            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                                       (mind-control "imp")
+                                       (get-owner "imp"))
+                                 "p2"))}
+                   [state target-id]
+                   (change-minion-board-side state target-id))}
 
    "Deranged Doctor"
    {:name        "Deranged Doctor"
