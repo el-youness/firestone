@@ -34,10 +34,14 @@
            (is= (create-card "Imp" :id "i")
                 {:id          "i"
                  :entity-type :card
-                 :name        "Imp"}))}
+                 :type        :minion
+                 :name        "Imp"
+                 :target-type nil}))}
   [name & kvs]
   (let [card {:name        name
-              :entity-type :card}]
+              :entity-type :card
+              :type        (get (get-definition name) :type)
+              :target-type (get (get-definition name) :target-type)}]
     (if (empty? kvs)
       card
       (apply assoc card kvs))))
@@ -51,14 +55,18 @@
                  :entity-type                 :minion
                  :name                        "Acolyte of Pain"
                  :id                          "i"
-                 :effects                      {:on-damage  "Acolyte of Pain effect"}}))}
+                 :effects                      {:on-damage  "Acolyte of Pain effect"
+                                                :extra-attack 0
+                                                :extra-health 0}}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (select-keys definition [:on-damage :deathrattle])}]
+                :effects                     (assoc (select-keys definition [:on-damage :deathrattle])
+                                                    :extra-attack 0
+                                                    :extra-health 0)}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
@@ -368,14 +376,8 @@
                               {:hero (create-hero "Anduin Wrynn")}])
                 {:player-id-in-turn             "p1"
                  :players                       {"p1" {:id      "p1"
-                                                       :deck    [{:id          "c2"
-                                                                  :entity-type :card
-                                                                  :name        "Imp"
-                                                                  :owner-id    "p1"}]
-                                                       :hand    [{:name        "Imp"
-                                                                  :id          "c1"
-                                                                  :entity-type :card
-                                                                  :owner-id    "p1"}]
+                                                       :deck    [(create-card "Imp" :id "c2" :owner-id "p1")]
+                                                       :hand    [(create-card "Imp" :id "c1" :owner-id "p1")]
                                                        :minions []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
@@ -553,10 +555,13 @@
   {:test (fn []
            (is= (-> (create-minion "Imp")
                     (get-minion-effects))
-                {})
+                {:extra-attack 0
+                 :extra-health 0})
            (is= (-> (create-minion "Acolyte of Pain")
                     (get-minion-effects))
-                {:on-damage "Acolyte of Pain effect"}))}
+                {:on-damage "Acolyte of Pain effect"
+                 :extra-attack 0
+                 :extra-health 0}))}
   [minion]
   (:effects minion))
 
@@ -642,6 +647,26 @@
     (replace-minion state (if (function? function-or-value)
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
+
+(defn update-in-minion
+  "Updates the value of the given key nested inside the minion with the given id. If function-or-value is a value it will be the
+   new value, else if it is a function it will be applied on the existing value to produce the new value."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (update-in-minion "i" [:effects :extra-health] inc)
+                    (get-minion "i")
+                    (get-in [:effects :extra-health]))
+                1)
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (update-in-minion "i" [:effects :extra-health] 5)
+                    (get-minion "i")
+                    (get-in [:effects :extra-health]))
+                5))}
+  [state id keys function-or-value]
+  (let [minion (get-minion state id)]
+    (replace-minion state (if (function? function-or-value)
+                            (update-in minion keys function-or-value)
+                            (assoc-in minion keys function-or-value)))))
 
 (defn update-hero
   "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the
