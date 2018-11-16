@@ -6,7 +6,7 @@
                                          create-minion
                                          update-in-minion
                                          get-minion
-                                         get-minion-effects]]))
+                                         get-effects]]))
 
 (def card-definitions
   {
@@ -238,9 +238,11 @@
    {:name        "Snake Trap"
     :mana-cost   2
     :type        :spell
+    :subtype     :secret
     :set         :classic
     :rarity      :epic
-    :description "Secret: When one of your minions is attacked summon three 1/1 Snakes."}
+    :description "Secret: When one of your minions is attacked summon three 1/1 Snakes."
+    :on-attack   "Snake Trap effect"}
    })
 
 (definitions/add-definitions! card-definitions)
