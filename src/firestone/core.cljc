@@ -411,15 +411,24 @@
 (defn valid-target?
   "Checks if the target of a card is valid"
   {:test (fn []
+           ; A card with :target-type :all-minions can target minion
            (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
                                   :hand [(create-card "Bananas" :id "c1")]}])
                    (valid-target? "p1" "c1" "i1")))
+           ; A card with :target-type :all-minions cannot target hero
            (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
                                       :hero (create-hero "Anduin Wrynn")}])
                        (valid-target? "p1" "c1" "h1")))
+           ; A card with :target-type :enemy-minions can target enemy minion
+           (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                 {:hand [(create-card "Mind Control" :id "c1")]}])
+                   (valid-target? "p2" "c1" "i1")))
+           ; A card with :target-type :enemy-minions cannot target friendly minion
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
+                                  :hand [(create-card "Mind Control" :id "c1")]}])
+                   (valid-target? "p1" "c1" "i1")))
            ; A card with no :target-type cannot have a valid target
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]
-                                      }])
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]}])
                        (valid-target? "p1" "i1" "i2"))))}
   [state player-id card-id target-id]
   (let [card (get-card-from-hand state card-id)
@@ -427,8 +436,14 @@
     (cond (nil? target-type)
           false
 
+          (nil? (get-minion state target-id))
+          false
+
           (= target-type :all-minions)
-          (if (nil? (get-minion state target-id))
+          true
+
+          (= target-type :enemy-minions)
+          (if (= (get-owner state target-id) player-id)
               false
               true)
 
