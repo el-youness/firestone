@@ -35,12 +35,14 @@
                 {:id          "i"
                  :entity-type :card
                  :type        :minion
+                 :subtype     nil
                  :name        "Imp"
                  :target-type nil}))}
   [name & kvs]
   (let [card {:name        name
               :entity-type :card
               :type        (get (get-definition name) :type)
+              :subtype     (get (get-definition name) :subtype)
               :target-type (get (get-definition name) :target-type)}]
     (if (empty? kvs)
       card
@@ -72,7 +74,7 @@
       (apply assoc minion kvs))))
 
 (defn create-secret
-  "Creates a secret from its definition by the given minion name. The additional key-values will override the default values."
+  "Creates a secret from its definition by the given secret name. The additional key-values will override the default values."
   {:test (fn []
            (is= (create-secret "Snake Trap" :id "s")
                 {:name        "Snake Trap"
@@ -360,17 +362,17 @@
                            ready-minion))))))
 
 (defn add-secret-to-player
-  "Adds a card to a player's hand."
+  "Adds a secret to a player."
   {:test (fn []
            ; Adding a secret
            (is= (as-> (create-empty-state) $
-                      (add-secret-to-player $ "p1" (create-card "Snake Trap" :id "s"))
+                      (add-secret-to-player $ "p1" (create-secret "Snake Trap" :id "s"))
                       (get-secrets $ "p1")
                       (map (fn [c] {:id (:id c) :name (:name c)}) $))
                 [{:id "s" :name "Snake Trap"}])
            ; Generating an id for the new secret
            (let [state (-> (create-empty-state)
-                           (add-secret-to-player "p1" (create-card "Snake Trap")))]
+                           (add-secret-to-player "p1" (create-secret "Snake Trap")))]
              (is= (-> (get-secrets state "p1")
                       (first)
                       (:id))
@@ -748,8 +750,8 @@
   [state id key function-or-value]
   (let [minion (get-minion state id)]
     (replace-minion state (if (function? function-or-value)
-                              (update minion key function-or-value)
-                              (assoc minion key function-or-value)))))
+                            (update minion key function-or-value)
+                            (assoc minion key function-or-value)))))
 
 (defn update-in-minion
   "Updates the value of the given key nested inside the minion with the given id. If function-or-value is a value it will be the
