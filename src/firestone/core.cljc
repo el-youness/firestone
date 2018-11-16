@@ -512,7 +512,7 @@
     state))
 
 (defn get-spell-function
-  "Get the spell function in the definition of a card"
+  "Get the spell function in the definition of a card."
   {:test (fn []
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
                       ((get-spell-function (create-card "Bananas")) $ "i1")
@@ -528,6 +528,18 @@
     (fn [state] (play-secret state (:player-id-in-turn state) (create-secret (:name card))))
     (:spell (get-definition card))))
 
+(defn get-battlecry-function
+  "Get the battlecry function in the definition of a card."
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "Eater of Secrets" :id "es")]}
+                                    {:secrets ["Snake Trap"]}]) $
+                      ((get-battlecry-function (create-card "Eater of Secrets")) $ "es")
+                      (get-secrets $)
+                      (count $))
+                0))}
+  [card]
+  (:battlecry (get-definition card)))
+
 (defn consume-mana
   "Consume a given amount of a player's mana."
   {:test (fn []
@@ -539,7 +551,7 @@
   (update-in state [:players player-id :used-mana] (partial + amount)))
 
 (defn restore-mana
-  "resets the consumed amount of a player's mana"
+  "resets the consumed amount of a player's mana."
   {:test (fn []
            (is= (-> (create-game [{:used-mana 3}])
                     (restore-mana "p1")
