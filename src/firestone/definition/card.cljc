@@ -6,12 +6,11 @@
                                          create-minion
                                          update-minion
                                          update-in-minion
-                                         remove-minion
                                          get-minion
                                          get-minions
-                                         get-minion-effects
-                                         add-minion-to-board]]
-            [firestone.core :refer [get-owner]]))
+                                         get-minion-effects]]
+            [firestone.core :refer [change-minion-board-side
+                                    get-owner]]))
 
 (def card-definitions
   {
@@ -179,19 +178,10 @@
                    {:test (fn []
                             (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}]) $
                                        (mind-control $ "imp")
-                                       [(get-owner $ "imp")
-                                        (count (get-minions $ "p1"))
-                                        (count (get-minions $ "p2"))])
-                                 ["p2" 0 1]))}
+                                       (get-owner $ "imp"))
+                                 "p2"))}
                    [state target-id]
-                   (let [minion (get-minion state target-id)
-                         new-owner (if (= (get-owner state target-id) "p1")
-                                       "p2"
-                                       "p1")]
-                     (-> (remove-minion state target-id)
-                         (add-minion-to-board {:player-id new-owner
-                                               :minion minion
-                                               :position 0}))))}
+                   (change-minion-board-side state target-id))}
 
    "Deranged Doctor"
    {:name        "Deranged Doctor"

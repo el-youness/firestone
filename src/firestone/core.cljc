@@ -201,6 +201,25 @@
                      state)))
                state)))
 
+(defn change-minion-board-side
+  "Causes a minion on the board to switch board side and owner."
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}]) $
+                      (change-minion-board-side $ "wg")
+                      [(get-owner $ "wg")
+                       (count (get-minions $ "p1"))
+                       (count (get-minions $ "p2"))])
+                ["p2" 0 1]))}
+  [state id]
+  (let [minion (get-minion state id)
+        new-owner-id (if (= (get-owner state id) "p1")
+                    "p2"
+                    "p1")]
+    (-> (remove-minion state id)
+        (add-minion-to-board {:player-id new-owner-id
+                              :minion minion
+                              :position 0}))))
+
 (defn destroy-minion
   "Causes a minion on the board to die. Should trigger deathrattles and other on death effects."
   {:test (fn []
