@@ -872,3 +872,15 @@
   (update-in state [:players player-id :hand]
              (fn [cards]
                (remove (fn [c] (= (:id c) id)) cards))))
+
+(defn remove-secret
+  "Removes the secret with the given id from the given player."
+  {:test (fn []
+           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (remove-secret "p1" "s")
+                    (get-secrets))
+                []))}
+  [state player-id id]
+  (update-in state [:players player-id :secrets]
+             (fn [secret]
+               (remove (fn [s] (= (:id s) id)) secret))))
