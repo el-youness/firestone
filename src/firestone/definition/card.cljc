@@ -130,9 +130,9 @@
     :type        :minion
     :set         :goblins-vs-gnomes
     :rarity      :legendary
+    :race        :mech
     :description "Deathrattle: Summon a random Legendary minion."
-    :deathrattle (fn [state change-to-your-args]
-                   )}
+    :deathrattle "Sneed's Old Shredder deathrattle"}
 
    "King Mukla"
    {:name        "King Mukla"
