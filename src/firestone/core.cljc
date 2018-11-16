@@ -289,6 +289,20 @@
       state))
   )
 
+(defn heal-hero
+  "Reduces damage taken of a hero by the given amount."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1" :damage-taken 10)}])
+                    (heal-hero "h1" 5)
+                    (get-health "h1"))
+                25)
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1" :damage-taken 10)}])
+                    (heal-hero "h1" 20)
+                    (get-health "h1"))
+                30))}
+  [state id amount]
+  (update-hero state id :damage-taken (fn [x] (max (- x amount) 0))))
+
 (defn summon-minion
   "Plays a minion card-"
   {:test (fn []

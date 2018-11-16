@@ -8,13 +8,16 @@
             [firestone.core :refer [get-attack
                                     draw-card
                                     get-owner
-                                    summon-minion]]
+                                    summon-minion
+                                    get-health
+                                    heal-hero]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          get-hand
                                          create-hero
                                          update-in-minion
-                                         get-minions]]))
+                                         get-minions
+                                         get-hero-id]]))
 
 (def effect-definitions
   {
@@ -97,6 +100,18 @@
                                         (let [[_ legendary-minion] (->> (get-definitions)
                                                                         (filter (fn [v] (= (:rarity v) :legendary)))
                                                                         (random-nth 0))]
-                                          (summon-minion state player-id legendary-minion)))})
+                                          (summon-minion state player-id legendary-minion)))
+
+   "Deranged Doctor deathrattle"      (defn deranged-doctor-deathrattle
+                                        "Deathrattle: Restore 8 Health to your hero."
+                                        {:test (fn []
+                                                 (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg") (create-minion "Imp" :id "imp")]}
+                                                                        {:hero (create-hero "Rexxar" :id "h2" :damage-taken 9) :minions [(create-minion "Deranged Doctor" :id "dd")]}])
+                                                          (attack-with-minion "wg" "dd")
+                                                          (attack-with-minion "imp" "dd")
+                                                          (get-health "h2"))
+                                                      29))}
+                                        [state player-id]
+                                        (heal-hero state (get-hero-id state player-id) 8))})
 
 (definitions/add-definitions! effect-definitions)
