@@ -6,7 +6,8 @@
             [firestone.construct :refer [create-game
                                          create-minion
                                          update-in-minion
-                                         get-minion]]))
+                                         get-minion
+                                         get-minion-effects]]))
 
 (def card-definitions
   {
@@ -212,7 +213,7 @@
                       (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                                             (banana "i")
                                             (get-minion "i"))
-                                 effects (get minion :effects)]
+                                 effects (get-minion-effects minion)]
                                 [(get effects :extra-health)
                                  (get effects :extra-attack)]
                                )
