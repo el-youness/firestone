@@ -4,13 +4,19 @@
             [ysera.test :refer [is is-not is= error?]]
             [firestone.construct :refer [create-game
                                          create-minion
+                                         create-card
+                                         create-secret
                                          update-minion
                                          update-in-minion
                                          get-minion
                                          get-minions
+                                         get-secrets
                                          get-effects]]
             [firestone.core :refer [change-minion-board-side
-                                    get-owner]]))
+                                    get-owner
+                                    get-attack
+                                    get-health]]
+            [firestone.api :refer [play-minion-card]]))
 
 (def card-definitions
   {
@@ -83,7 +89,35 @@
     :type        :minion
     :set         :whispers-of-the-old-gods
     :rarity      :rare
-    :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."}
+    :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."
+    :battlecry   (defn eater-of-secrets-battlecry
+                   {:test (fn []
+                            ; Opponent has one secret.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
+                                                     {:secrets ["Snake Trap"]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m2") (get-health $ "m2")])
+                                 [0 3 5])
+                            ; Opponent has two secret.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
+                                                     {:secrets ["Snake Trap" "Snake Trap"]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
+                                 [0 4 6])
+                            ; Oppenent has no secrets.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
+                                 [0 2 4]))}
+                   [state eater-of-secrets-id]
+                   (println state)
+                   (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
+                                       "p2"
+                                       "p1")]
+                     (let [number-of-secrets (count (get-secrets state opponent-id))]
+                       (println number-of-secrets)
+                       (-> () (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
+                           (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))))))}
 
    "Arcane Golem"
    {:name        "Arcane Golem"
@@ -177,8 +211,8 @@
     :spell       (defn mind-control
                    {:test (fn []
                             (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                                       (mind-control "imp")
-                                       (get-owner "imp"))
+                                     (mind-control "imp")
+                                     (get-owner "imp"))
                                  "p2"))}
                    [state target-id]
                    (change-minion-board-side state target-id))}
