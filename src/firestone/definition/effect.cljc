@@ -17,7 +17,8 @@
                                          create-hero
                                          update-in-minion
                                          get-minions
-                                         get-hero-id]]))
+                                         get-hero-id
+                                         remove-secret]]))
 
 (def effect-definitions
   {
@@ -125,6 +126,15 @@
                                                             (filter (fn [m] (= (:name m) "Snake")) $)
                                                             (count $))
                                                       3)
+                                                 ; The Snake Trap should only work once
+                                                 (is= (as-> (create-game [{:secrets ["Snake Trap"] :minions [(create-minion "War Golem" :id "wg")]}
+                                                                          {:minions [(create-minion "Imp" :id "imp1") (create-minion "Imp" :id "imp2")]}] :player-id-in-turn "p2") $
+                                                            (attack-with-minion $ "imp1" "wg")
+                                                            (attack-with-minion $ "imp2" "wg")
+                                                            (get-minions $ "p1")
+                                                            (filter (fn [m] (= (:name m) "Snake")) $)
+                                                            (count $))
+                                                      3)
                                                  ; Snake Trap should not trigger when player with the trap is attacking
                                                  (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}
                                                                           {:secrets ["Snake Trap"] :minions [(create-minion "Imp" :id "imp")]}] :player-id-in-turn "p2") $
@@ -136,7 +146,8 @@
                                         [state snake-trap-id [attacked-minion-id]]
                                         (let [player-id (get-owner state snake-trap-id)]
                                           (if (= player-id (get-owner state attacked-minion-id))
-                                            (-> (summon-minion state player-id "Snake")
+                                            (-> (remove-secret state player-id snake-trap-id)
+                                                (summon-minion player-id "Snake")
                                                 (summon-minion player-id "Snake")
                                                 (summon-minion player-id "Snake"))
                                             state)))
