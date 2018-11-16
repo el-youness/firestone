@@ -43,7 +43,7 @@
                                                    (attack-with-minion "fb" "imp")
                                                    (get-attack "fb"))
                                                4))}
-                                 [state frothing-berserker-id [damaged-minion-id]]
+                                 [state frothing-berserker-id & _]
                                  (update-in-minion state frothing-berserker-id [:effects :extra-attack] inc))
 
    ; Deathrattles
