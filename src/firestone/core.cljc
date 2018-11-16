@@ -120,19 +120,6 @@
          (get :entity-type))
      :hero))
 
-(defn frozen?
-  "Checks if the minion with the given id cannot attack"
-  {:test (fn []
-           (is-not (-> (create-minion "Imp")
-                       (frozen?)))
-           (is (-> (create-minion "Ancient Watcher")
-                   (frozen?))))}
-  [minion]
-  ;if the minion's cannot-attack => true, frozen => true
-  (println "minion :" (minion :name) "frozen? " (get-in minion [:effects :cannot-attack]))
-  (let [frozen (get-in minion [:effects :cannot-attack])]
-    (if (nil? frozen) false frozen)))
-
 (defn valid-attack?
   "Checks if the attack is valid"
   {:test (fn []
@@ -172,7 +159,7 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not (frozen? attacker)))))
+         (not ((get-minion-effects attacker) :cannot-attack)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
