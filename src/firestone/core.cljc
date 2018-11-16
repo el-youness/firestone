@@ -216,9 +216,11 @@
   [state id]
   (-> (let [effects (get-minion-effects (get-minion state id))]
         (if (contains? effects :deathrattle)
-          ((get-definition (effects :deathrattle)) state id)
-          state))
-      (remove-minion id)))
+          (let [deathrattle (get-definition (effects :deathrattle))
+                owner-id (get-owner state id)]
+            (-> (remove-minion state id)
+                (deathrattle owner-id)))
+          (remove-minion state id)))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."
