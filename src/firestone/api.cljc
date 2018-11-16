@@ -28,7 +28,8 @@
                                     summon-minion
                                     draw-card
                                     restore-mana
-                                    add-to-max-mana]]))
+                                    add-to-max-mana
+                                    handle-triggers]]))
 
 (defn end-turn
   "Ends the turn of the playing hero"
@@ -113,7 +114,8 @@
                                          (create-minion "War Golem" :id "wg")]}])))}
   [state attacker-id target-id]
   (if (valid-attack? state (get-owner state attacker-id) attacker-id target-id)
-    (let [state (update-minion state attacker-id :attacks-performed-this-turn 1)
+    (let [state (-> (update-minion state attacker-id :attacks-performed-this-turn 1)
+                    (handle-triggers :on-attack target-id))
           attacker-attack (get-attack state attacker-id)]
       (if (hero? state target-id)
         (damage-hero state target-id attacker-attack)

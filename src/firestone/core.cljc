@@ -24,7 +24,8 @@
                                          get-mana
                                          add-minion-to-board
                                          get-card-from-hand
-                                         get-minion-effects]]))
+                                         get-effects
+                                         get-secrets]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -134,7 +135,7 @@
   (seq-contains? (:minion-ids-summoned-this-turn state) id))
 
 (defn hero?
-  "Checks if the character with given id is a hero"
+  "Checks if the character with given id is a hero."
   {:test (fn []
            (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
                    (hero? "h1")))
@@ -146,7 +147,7 @@
      :hero))
 
 (defn valid-attack?
-  "Checks if the attack is valid"
+  "Checks if the attack is valid."
   {:test (fn []
            ; Should be able to attack an enemy minion
            (is (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
@@ -193,11 +194,11 @@
                     (count))
                 1))}
   [state event & args]
-  (->> (get-minions state)
-       (reduce (fn [state minion]
-                 (let [effects (get-minion-effects minion)]
+  (->> (concat (get-minions state) (get-secrets state))
+       (reduce (fn [state entity]
+                 (let [effects (get-effects entity)]
                    (if (contains? effects event)
-                     ((get-definition (effects event)) state (:id minion) args)
+                     ((get-definition (effects event)) state (:id entity) args)
                      state)))
                state)))
 
@@ -214,7 +215,7 @@
                     (count))
                 1))}
   [state id]
-  (-> (let [effects (get-minion-effects (get-minion state id))]
+  (-> (let [effects (get-effects (get-minion state id))]
         (if (contains? effects :deathrattle)
           (let [deathrattle (get-definition (effects :deathrattle))
                 owner-id (get-owner state id)]
@@ -314,7 +315,9 @@
            )}
   ([state player-id card position]
    (if (< (count (get-minions state player-id)) 7)
-     (let [minion (create-minion (:name card))]
+     (let [minion (create-minion (if (string? card)
+                                   card
+                                   (:name card)))]
        (add-minion-to-board state {:player-id player-id :minion minion :position position}))
      state))
   ([state player-id card]
