@@ -77,14 +77,14 @@
            (is= (create-secret "Snake Trap" :id "s")
                 {:name        "Snake Trap"
                  :id          "s"
-                 :on-attack   "Snake Trap effect"
+                 :effects     {:on-attack "Snake Trap effect"}
                  :entity-type :secret}))}
   [name & kvs]
   (let [definition (get-definition name)
-        secret (into {:name        name
-                      :entity-type :secret
-                      }
-                     (select-keys definition [:on-damage :on-attack]))]
+        secret {:name        name
+                :entity-type :secret
+                :effects     (select-keys definition [:on-damage :on-attack])
+                }]
     (if (empty? kvs)
       secret
       (apply assoc secret kvs))))
@@ -191,10 +191,10 @@
   ([state player-id]
    (:secrets (get-player state player-id)))
   ([state]
-    (->> (:players state)
-         (vals)
-         (map :secrets)
-         (apply concat))))
+   (->> (:players state)
+        (vals)
+        (map :secrets)
+        (apply concat))))
 
 (defn get-hero-id
   "Returns the hero id for the given player-id."
@@ -647,29 +647,8 @@
        (vals)
        (map :hero)))
 
-(defn get-minion-effects
-  "Gets the effects map from the given minion."
-  {:test (fn []
-           (is= (-> (create-minion "Imp")
-                    (get-minion-effects))
-                {:extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-minion "Acolyte of Pain")
-                    (get-minion-effects))
-                {:on-damage    "Acolyte of Pain effect"
-                 :extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                    (get-minion-effects "imp"))
-                {:extra-attack 0
-                 :extra-health 0}))}
-  ([minion]
-   (:effects minion))
-  ([state id]
-   (get-minion-effects (get-minion state id))))
-
 (defn get-character
-  "Returns the character with the given id from the state."
+  "Returns the character or secret with the given id from the state."
   {:test (fn []
            (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
                     (get-character "h1")
@@ -681,9 +660,30 @@
                 "Imp"))}
   [state id]
   (->> (concat (get-minions state)
-               (get-heroes state))
+               (get-heroes state)
+               (get-secrets state))
        (filter (fn [c] (= (:id c) id)))
        (first)))
+
+(defn get-effects
+  "Gets the effects map from the given minion or secret."
+  {:test (fn []
+           (is= (-> (create-minion "Imp")
+                    (get-effects))
+                {:extra-attack 0
+                 :extra-health 0})
+           (is= (-> (create-minion "Acolyte of Pain")
+                    (get-effects))
+                {:on-damage    "Acolyte of Pain effect"
+                 :extra-attack 0
+                 :extra-health 0})
+           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (get-effects "s"))
+                {:on-attack "Snake Trap effect"}))}
+  ([entity]
+   (:effects entity))
+  ([state id]
+   (get-effects (get-character state id))))
 
 (defn get-card-from-hand
   "Returns the card with the given id from the hand."
