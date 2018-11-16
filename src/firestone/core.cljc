@@ -23,9 +23,11 @@
                                          get-character
                                          get-mana
                                          add-minion-to-board
+                                         add-secret-to-player
                                          get-card-from-hand
                                          get-effects
-                                         get-secrets]]))
+                                         get-secrets
+                                         create-secret]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -50,7 +52,7 @@
      (- (if (map? (:effects character))
           (+ (:health definition) (get-in character [:effects :extra-health]))
           (:health definition))
-       (:damage-taken character))))
+        (:damage-taken character))))
   ([state id]
    (get-health (get-character state id))))
 
@@ -67,7 +69,7 @@
   [state id]
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
-    (+ (:attack definition) (get-in minion [:effects :extra-attack])) ))
+    (+ (:attack definition) (get-in minion [:effects :extra-attack]))))
 
 (defn get-cost
   "Returns the cost of the minion with the given name."
@@ -214,12 +216,12 @@
   [state id]
   (let [minion (get-minion state id)
         new-owner-id (if (= (get-owner state id) "p1")
-                    "p2"
-                    "p1")]
+                       "p2"
+                       "p1")]
     (-> (remove-minion state id)
         (add-minion-to-board {:player-id new-owner-id
-                              :minion minion
-                              :position 0}))))
+                              :minion    minion
+                              :position  0}))))
 
 (defn destroy-minion
   "Causes a minion on the board to die. Should trigger deathrattles and other on death effects."
@@ -283,7 +285,7 @@
                 (as-> (get-definition "Rexxar") $
                       (- ($ :health) 7))))}
   [state id damage]
-  (let [state (update-hero state id  :damage-taken (partial + damage))]
+  (let [state (update-hero state id :damage-taken (partial + damage))]
     (if (> (get-health state id) 0)
       state
       ; TODO: game should be over
@@ -443,15 +445,15 @@
         card-type (get-card-type state card-id)]
     (and (<= card-cost available-mana)
          (if (= card-type :minion)
-             (< (count minions-on-board) 7)
-             true))))
+           (< (count minions-on-board) 7)
+           true))))
 
 (defn valid-target?
   "Checks if the target of a card is valid"
   {:test (fn []
            ; A card with :target-type :all-minions can target minion
            (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
-                                  :hand [(create-card "Bananas" :id "c1")]}])
+                                  :hand    [(create-card "Bananas" :id "c1")]}])
                    (valid-target? "p1" "c1" "i1")))
            ; A card with :target-type :all-minions cannot target hero
            (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
@@ -463,10 +465,10 @@
                    (valid-target? "p2" "c1" "i1")))
            ; A card with :target-type :enemy-minions cannot target friendly minion
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
-                                  :hand [(create-card "Mind Control" :id "c1")]}])
-                   (valid-target? "p1" "c1" "i1")))
+                                      :hand    [(create-card "Mind Control" :id "c1")]}])
+                       (valid-target? "p1" "c1" "i1")))
            ; A card with no :target-type cannot have a valid target
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]}])
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1") (create-minion "Imp" :id "i2")]}])
                        (valid-target? "p1" "i1" "i2"))))}
   [state player-id card-id target-id]
   (let [card (get-card-from-hand state card-id)
@@ -482,12 +484,32 @@
 
           (= target-type :enemy-minions)
           (if (= (get-owner state target-id) player-id)
-              false
-              true)
+            false
+            true)
 
           ; TODO: Add checks for other target-type
           :else
           false)))
+
+(defn play-secret
+  "Puts a secret into play if there is space."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                1)
+           ; Cannot have more than 5 secrets in play
+           (is= (-> (create-game [{:secrets ["Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap"]}])
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                5))}
+  [state player-id secret]
+  (println secret)
+  (if (< (count (get-secrets state player-id)) 5)
+    (add-secret-to-player state player-id secret)
+    state))
 
 (defn get-spell-function
   "Get the spell function in the definition of a card"
@@ -495,9 +517,16 @@
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
                       ((get-spell-function (create-card "Bananas")) $ "i1")
                       [(get-attack $ "i1") (get-health $ "i1")])
-                [2 2]))}
+                [2 2])
+           (is= (as-> (create-game []) $
+                      ((get-spell-function (create-card "Snake Trap")) $)
+                      (get-secrets $ "p1")
+                      (count $))
+                1))}
   [card]
-  (:spell (get-definition card)))
+  (if (= (:subtype card) :secret)
+    (fn [state] (play-secret state (:player-id-in-turn state) (create-secret (:name card))))
+    (:spell (get-definition card))))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."
