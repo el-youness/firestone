@@ -2,7 +2,9 @@
   (:require [ysera.test :refer [deftest is is-not is= error?]]
             [ysera.random :refer [random-nth]]
             [firestone.definitions :as definitions]
-            [firestone.api :refer [attack-with-minion]]
+            [firestone.api :refer [attack-with-minion
+                                   play-spell-card
+                                   end-turn]]
             [firestone.definitions :refer [get-definition
                                            get-definitions]]
             [firestone.core :refer [get-attack
@@ -13,6 +15,7 @@
                                     heal-hero]]
             [firestone.construct :refer [create-game
                                          create-minion
+                                         create-card
                                          get-hand
                                          create-hero
                                          update-in-minion
@@ -119,8 +122,11 @@
    "Snake Trap effect"                (defn snake-trap-effect
                                         "Secret: When one of your minions is attacked summon three 1/1 Snakes."
                                         {:test (fn []
-                                                 (is= (as-> (create-game [{:secrets ["Snake Trap"] :minions [(create-minion "War Golem" :id "wg")]}
-                                                                          {:minions [(create-minion "Imp" :id "imp")]}] :player-id-in-turn "p2") $
+                                                 (is= (as-> (create-game [{:hand [(create-card "Snake Trap" :id "st")] :minions [(create-minion "War Golem" :id "wg")]}
+                                                                          {:minions [(create-minion "Imp" :id "imp")]} :player-id-in-turn "p2"]) $
+                                                            (play-spell-card $ "p1" "st" {})
+                                                            (end-turn $)
+                                                            (println $)
                                                             (attack-with-minion $ "imp" "wg")
                                                             (get-minions $ "p1")
                                                             (filter (fn [m] (= (:name m) "Snake")) $)
