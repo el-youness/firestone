@@ -5,7 +5,8 @@
             [firestone.construct :refer [create-game
                                          create-minion
                                          update-in-minion
-                                         get-minion]]))
+                                         get-minion
+                                         get-minion-effects]]))
 
 (def card-definitions
   {
