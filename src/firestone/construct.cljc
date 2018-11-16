@@ -651,8 +651,8 @@
   [state id key function-or-value]
   (let [minion (get-minion state id)]
     (replace-minion state (if (function? function-or-value)
-                            (update minion key function-or-value)
-                            (assoc minion key function-or-value)))))
+                              (update minion key function-or-value)
+                              (assoc minion key function-or-value)))))
 
 (defn update-in-minion
   "Updates the value of the given key nested inside the minion with the given id. If function-or-value is a value it will be the
