@@ -1,3 +1,4 @@
+
 (ns firestone.definition.card
   (:require [firestone.definitions :as definitions]
             [clojure.test :refer [function?]]
@@ -197,8 +198,7 @@
     :type        :minion
     :set         :classic
     :rarity      :rare
-    :description "Whenever a minion takes damage, gain +1 Attack."
-    :on-damage   "Frothing Berserker effect"}
+    :description "Whenever a minion takes damage, gain +1 Attack."}
 
    "Bananas"
    {:name        "Bananas"
@@ -207,19 +207,19 @@
     :set         :classic
     :description "Give a minion +1/+1."
     :target-type :all-minions
-    :spell       (defn banana
-                   {:test (fn []
-                            (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                                                  (banana "i")
-                                                  (get-minion "i"))
-                                       effects (get minion :effects)]
-                                   [(get effects :extra-health)
-                                    (get effects :extra-attack)]
-                                   )
-                                 [1 1]))}
-                   [state target-id]
-                   (-> (update-in-minion state target-id [:effects :extra-health] inc)
-                       (update-in-minion target-id [:effects :extra-attack] inc)))}
+    :spell (defn banana
+             {:test (fn []
+                      (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                                            (banana "i")
+                                            (get-minion "i"))
+                                 effects (get minion :effects)]
+                                [(get effects :extra-health)
+                                 (get effects :extra-attack)]
+                               )
+                           [1 1]))}
+             [state target-id]
+             (-> (update-in-minion state target-id [:effects :extra-health] inc)
+                 (update-in-minion target-id [:effects :extra-attack] inc)))}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"

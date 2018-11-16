@@ -561,15 +561,9 @@
                     (get-minion-effects))
                 {:on-damage "Acolyte of Pain effect"
                  :extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                    (get-minion-effects "imp"))
-                {:extra-attack 0
                  :extra-health 0}))}
-  ([minion]
-   (:effects minion))
-  ([state id]
-    (get-minion-effects (get-minion state id))))
+  [minion]
+  (:effects minion))
 
 (defn get-character
   "Returns the character with the given id from the state."
