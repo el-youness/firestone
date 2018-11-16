@@ -102,6 +102,23 @@
   ([state id]
    (get-card-type (get-card-from-hand state id))))
 
+(defn get-target-type
+  "Returns the type of the card with the given id or entity."
+  {:test (fn []
+           (is= (-> (create-card "Imp" :id "i")
+                    (get-target-type))
+                nil)
+           (is= (-> (create-card "Bananas" :id "i")
+                    (get-target-type))
+                :all-minions)
+           (is= (-> (create-game [{:hand [(create-card "Mind Control" :id "dm")]}])
+                    (get-target-type "dm"))
+                :enemy-minions))}
+  ([card]
+   (get (get-definition (:name card)) :target-type))
+  ([state id]
+   (get-target-type (get-card-from-hand state id))))
+
 (defn get-owner
   "Returns the player-id of the owner of the character with the given id."
   {:test (fn []
@@ -460,14 +477,15 @@
                    (valid-target? "p2" "c1" "i1")))
            ; A card with :target-type :enemy-minions cannot target friendly minion
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
-                                  :hand [(create-card "Mind Control" :id "c1")]}])
+                                      :hand [(create-card "Mind Control" :id "c1")]}])
                    (valid-target? "p1" "c1" "i1")))
            ; A card with no :target-type cannot have a valid target
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]}])
-                       (valid-target? "p1" "i1" "i2"))))}
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
+                                      :hand [(create-card "Imp" :id "i2")]}])
+                       (valid-target? "p1" "i2" "i1"))))}
   [state player-id card-id target-id]
   (let [card (get-card-from-hand state card-id)
-        target-type (:target-type card)]
+        target-type (get-target-type card)]
     (cond (nil? target-type)
           false
 
@@ -485,6 +503,33 @@
           ; TODO: Add checks for other target-type
           :else
           false)))
+
+(defn available-targets
+  "Get all playable cards and their valid targets"
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:minions [(create-minion "Defender" :id "d1")
+                                             (create-minion "Defender" :id "d2")]
+                                   :hand [(create-card "Bananas" :id "b1")]}])
+                    (available-targets "p2" "b1"))
+                ["i1" "i2" "d1" "d2"])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                  {:minions [(create-minion "Defender" :id "d1")]
+                                   :hand [(create-card "Mind Control" :id "mc1")]}])
+                    (available-targets "p2" "mc1"))
+                ["i1"]))}
+  [state player-id card-id]
+  (let [target-type (get-target-type state card-id)
+        targets (cond (= target-type :all-minions)
+                        (get-minions state)
+
+                      (= target-type :enemy-minions)
+                      (get-minions state (if (= player-id "p1") "p2" "p1")))]
+      (map :id targets)))
+
+
+
 
 (defn get-spell-function
   "Get the spell function in the definition of a card"
