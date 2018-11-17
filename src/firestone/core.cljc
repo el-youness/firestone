@@ -40,11 +40,16 @@
            (is= (get-health (create-hero "Jaina Proudmoore" :damage-taken 2)) 28)
            (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
                     (get-health "h1"))
-                30))}
+                30)
+           ; The health of minions with extra-health
+           (is= (get-health (create-minion "War Golem" :effects {:extra-health 3})) 10))}
   ([character]
    {:pre [(map? character) (contains? character :damage-taken)]}
    (let [definition (get-definition character)]
-     (- (:health definition) (:damage-taken character))))
+     (- (if (map? (:effects character))
+          (+ (:health definition) (get-in character [:effects :extra-health]))
+          (:health definition))
+       (:damage-taken character))))
   ([state id]
    (get-health (get-character state id))))
 
@@ -53,11 +58,15 @@
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (get-attack "i"))
-                1))}
+                1)
+           ; Minion with extra-attack effect
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :effects {:extra-attack 2})]}])
+                    (get-attack "wg"))
+                9))}
   [state id]
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
-    (:attack definition)))
+    (+ (:attack definition) (get-in minion [:effects :extra-attack])) ))
 
 (defn get-cost
   "Returns the cost of the minion with the given name."
@@ -74,8 +83,24 @@
   ([card]
    (get (get-definition (:name card)) :mana-cost))
   ([state id]
-   (get-cost (get-card-from-hand state id)))
-  )
+   (get-cost (get-card-from-hand state id))))
+
+(defn get-card-type
+  "Returns the type of the card with the given id or entity."
+  {:test (fn []
+           (is= (-> (create-card "Imp" :id "i")
+                    (get-card-type))
+                :minion)
+           (is= (-> (create-card "Bananas" :id "i")
+                    (get-card-type))
+                :spell)
+           (is= (-> (create-game [{:hand [(create-card "Dalaran Mage" :id "dm")]}])
+                    (get-card-type "dm"))
+                :minion))}
+  ([card]
+   (get (get-definition (:name card)) :type))
+  ([state id]
+   (get-card-type (get-card-from-hand state id))))
 
 (defn get-owner
   "Returns the player-id of the owner of the character with the given id."
@@ -181,6 +206,25 @@
                      state)))
                state)))
 
+(defn change-minion-board-side
+  "Causes a minion on the board to switch board side and owner."
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}]) $
+                      (change-minion-board-side $ "wg")
+                      [(get-owner $ "wg")
+                       (count (get-minions $ "p1"))
+                       (count (get-minions $ "p2"))])
+                ["p2" 0 1]))}
+  [state id]
+  (let [minion (get-minion state id)
+        new-owner-id (if (= (get-owner state id) "p1")
+                    "p2"
+                    "p1")]
+    (-> (remove-minion state id)
+        (add-minion-to-board {:player-id new-owner-id
+                              :minion minion
+                              :position 0}))))
+
 (defn destroy-minion
   "Causes a minion on the board to die. Should trigger deathrattles and other on death effects."
   {:test (fn []
@@ -196,9 +240,11 @@
   [state id]
   (-> (let [effects (get-minion-effects (get-minion state id))]
         (if (contains? effects :deathrattle)
-          ((get-definition (effects :deathrattle)) state id)
-          state))
-      (remove-minion id)))
+          (let [deathrattle (get-definition (effects :deathrattle))
+                owner-id (get-owner state id)]
+            (-> (remove-minion state id)
+                (deathrattle owner-id)))
+          (remove-minion state id)))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."
@@ -247,6 +293,20 @@
       ; TODO: game should be over
       state))
   )
+
+(defn heal-hero
+  "Reduces damage taken of a hero by the given amount."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1" :damage-taken 10)}])
+                    (heal-hero "h1" 5)
+                    (get-health "h1"))
+                25)
+           (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1" :damage-taken 10)}])
+                    (heal-hero "h1" 20)
+                    (get-health "h1"))
+                30))}
+  [state id amount]
+  (update-hero state id :damage-taken (fn [x] (max (- x amount) 0))))
 
 (defn summon-minion
   "Plays a minion card-"
@@ -365,7 +425,7 @@
            )))
 
 (defn playable?
-  "checks if a card is playable on the board for a specific player"
+  "Checks if a card is playable on the board for a specific player"
   {:test (fn []
            (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
                    (playable? "p1" "c1"))
@@ -381,10 +441,65 @@
   [state player-id card-id]
   (let [available-mana (get-mana state player-id)
         card-cost (get-cost state card-id)
-        minions-on-board (get-minions state player-id)]
+        minions-on-board (get-minions state player-id)
+        card-type (get-card-type state card-id)]
     (and (<= card-cost available-mana)
-         (< (count minions-on-board) 7)))
-  )
+         (if (= card-type :minion)
+             (< (count minions-on-board) 7)
+             true))))
+
+(defn valid-target?
+  "Checks if the target of a card is valid"
+  {:test (fn []
+           ; A card with :target-type :all-minions can target minion
+           (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
+                                  :hand [(create-card "Bananas" :id "c1")]}])
+                   (valid-target? "p1" "c1" "i1")))
+           ; A card with :target-type :all-minions cannot target hero
+           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
+                                      :hero (create-hero "Anduin Wrynn")}])
+                       (valid-target? "p1" "c1" "h1")))
+           ; A card with :target-type :enemy-minions can target enemy minion
+           (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                 {:hand [(create-card "Mind Control" :id "c1")]}])
+                   (valid-target? "p2" "c1" "i1")))
+           ; A card with :target-type :enemy-minions cannot target friendly minion
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
+                                  :hand [(create-card "Mind Control" :id "c1")]}])
+                   (valid-target? "p1" "c1" "i1")))
+           ; A card with no :target-type cannot have a valid target
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]}])
+                       (valid-target? "p1" "i1" "i2"))))}
+  [state player-id card-id target-id]
+  (let [card (get-card-from-hand state card-id)
+        target-type (:target-type card)]
+    (cond (nil? target-type)
+          false
+
+          (nil? (get-minion state target-id))
+          false
+
+          (= target-type :all-minions)
+          true
+
+          (= target-type :enemy-minions)
+          (if (= (get-owner state target-id) player-id)
+              false
+              true)
+
+          ; TODO: Add checks for other target-type
+          :else
+          false)))
+
+(defn get-spell-function
+  "Get the spell function in the definition of a card"
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
+                      ((get-spell-function (create-card "Bananas")) $ "i1")
+                      [(get-attack $ "i1") (get-health $ "i1")])
+                [2 2]))}
+  [card]
+  (:spell (get-definition card)))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."

@@ -1,5 +1,16 @@
 (ns firestone.definition.card
-  (:require [firestone.definitions :as definitions]))
+  (:require [firestone.definitions :as definitions]
+            [clojure.test :refer [function?]]
+            [ysera.test :refer [is is-not is= error?]]
+            [firestone.construct :refer [create-game
+                                         create-minion
+                                         update-minion
+                                         update-in-minion
+                                         get-minion
+                                         get-minions
+                                         get-minion-effects]]
+            [firestone.core :refer [change-minion-board-side
+                                    get-owner]]))
 
 (def card-definitions
   {
@@ -124,9 +135,9 @@
     :type        :minion
     :set         :goblins-vs-gnomes
     :rarity      :legendary
+    :race        :mech
     :description "Deathrattle: Summon a random Legendary minion."
-    :deathrattle (fn [state change-to-your-args]
-                   )}
+    :deathrattle "Sneed's Old Shredder deathrattle"}
 
    "King Mukla"
    {:name        "King Mukla"
@@ -162,7 +173,16 @@
     :type        :spell
     :set         :basic
     :rarity      :none
-    :description "Take control of an enemy minion."}
+    :description "Take control of an enemy minion."
+    :target-type :enemy-minions
+    :spell       (defn mind-control
+                   {:test (fn []
+                            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                                       (mind-control "imp")
+                                       (get-owner "imp"))
+                                 "p2"))}
+                   [state target-id]
+                   (change-minion-board-side state target-id))}
 
    "Deranged Doctor"
    {:name        "Deranged Doctor"
@@ -172,7 +192,8 @@
     :type        :minion
     :set         :the-witchwood
     :rarity      :common
-    :description "Deathrattle: Restore 8 Health to your hero."}
+    :description "Deathrattle: Restore 8 Health to your hero."
+    :deathrattle "Deranged Doctor deathrattle"}
 
    "Sylvanas Windrunner"
    {:name        "Sylvanas Windrunner"
@@ -192,14 +213,29 @@
     :type        :minion
     :set         :classic
     :rarity      :rare
-    :description "Whenever a minion takes damage, gain +1 Attack."}
+    :description "Whenever a minion takes damage, gain +1 Attack."
+    :on-damage   "Frothing Berserker effect"}
 
    "Bananas"
    {:name        "Bananas"
     :mana-cost   1
     :type        :spell
     :set         :classic
-    :description "Give a minion +1/+1."}
+    :description "Give a minion +1/+1."
+    :target-type :all-minions
+    :spell       (defn banana
+                   {:test (fn []
+                            (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                                                  (banana "i")
+                                                  (get-minion "i"))
+                                       effects (get minion :effects)]
+                                   [(get effects :extra-health)
+                                    (get effects :extra-attack)]
+                                   )
+                                 [1 1]))}
+                   [state target-id]
+                   (-> (update-in-minion state target-id [:effects :extra-health] inc)
+                       (update-in-minion target-id [:effects :extra-attack] inc)))}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"
