@@ -520,25 +520,26 @@
                                   {:minions [(create-minion "Defender" :id "d1")
                                              (create-minion "Defender" :id "d2")]}])
                     (valid-plays))
-                [{:card-id "b1" :targets ["i1" "i2" "d1" "d2"]}
-                 {:card-id "mc1" :targets ["d1" "d2"]}
-                 {:card-id "i3"}])
+                {"b1"  ["i1" "i2" "d1" "d2"]
+                 "mc1" ["d1" "d2"]
+                 "i3"  []})
            (is= (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
                     (valid-plays))
-                []))}
+                {}))}
   [state]
   (let [player-in-turn (:player-id-in-turn state)]
-    (remove nil? (map (fn [card-id]
-                        (if (playable? state player-in-turn card-id)
-                          (let [targets (available-targets state player-in-turn card-id)]
-                            (if (empty? targets)
-                              (if (spell-with-target? state card-id)
-                                nil
-                                {:card-id card-id})
-                              {:card-id card-id :targets targets}))
-                          nil))
-
-                      (map :id (get-hand state player-in-turn))))))
+    (reduce (fn [plays card-id]
+              (if (playable? state player-in-turn card-id)
+                (let [targets (available-targets state player-in-turn card-id)]
+                  (if (empty? targets)
+                    (if (spell-with-target? state card-id)
+                      plays
+                      (assoc plays card-id []))
+                    (assoc plays card-id targets)))
+                plays)
+              )
+            {}
+            (map :id (get-hand state player-in-turn)))))
 
 (defn get-spell-function
   "Get the spell function in the definition of a card"
