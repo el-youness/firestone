@@ -522,9 +522,14 @@
            (is= (-> (create-game [{:max-mana 3}])
                     (add-to-max-mana "p1" 2)
                     (get-mana "p1"))
-                5))}
+                5)
+           (is= (-> (create-game)
+                    (add-to-max-mana "p1" 2)
+                    (get-mana "p1"))
+                10))}
   [state player-id amount]
-  (update-in state [:players player-id :max-mana] (partial + amount)))
+  (let [max-mana (get-in state [:players player-id :max-mana])]
+    (assoc-in state [:players player-id :max-mana] (+ max-mana (min (- 10 max-mana) amount)))))
 
 (defn reset-minion-attack-this-turn
   "resets :attack-this-turn back to 0 for all minions of a given player"
