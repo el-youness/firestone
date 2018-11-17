@@ -49,6 +49,15 @@
 (defn create-minion
   "Creates a minion from its definition by the given minion name. The additional key-values will override the default values."
   {:test (fn []
+           (is= (create-minion "Ancient Watcher" :id "i" :attacks-performed-this-turn 1)
+                {:attacks-performed-this-turn 1
+                 :damage-taken                0
+                 :entity-type                 :minion
+                 :name                        "Ancient Watcher"
+                 :id                          "i"
+                 :effects                     {:cannot-attack true
+                                               :extra-attack 0
+                                               :extra-health 0}})
            (is= (create-minion "Acolyte of Pain" :id "i" :attacks-performed-this-turn 1)
                 {:attacks-performed-this-turn 1
                  :damage-taken                0
@@ -64,7 +73,8 @@
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (assoc (select-keys definition [:on-damage :deathrattle])
+
+                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle])
                                                     :extra-attack 0
                                                     :extra-health 0)}]
     (if (empty? kvs)
