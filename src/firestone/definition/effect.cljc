@@ -17,7 +17,10 @@
                                          create-hero
                                          update-in-minion
                                          get-minions
-                                         get-hero-id]]))
+                                         get-hero-id
+                                         create-card
+                                         add-card-to-hand
+                                         opposing-player-id]]))
 
 (def effect-definitions
   {
@@ -112,6 +115,19 @@
                                                           (get-health "h2"))
                                                       29))}
                                         [state player-id]
-                                        (heal-hero state (get-hero-id state player-id) 8))})
+                                        (heal-hero state (get-hero-id state player-id) 8))
+   "King Mukla battelcry"             (defn king-mukla-battlecry
+                                        "Battlecry: Give your opponent 2 Bananas."
+                                        {:test (fn []
+                                                 (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
+                                                          ((effect-definitions "King Mukla battelcry") "km")
+                                                          (get-hand "p2")
+                                                          (->> (map #(:name %))))
+                                                      ["Bananas" "Bananas"]))}
+                                        [state minion-id]
+                                        (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
+                                              card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
+                                          (reduce add-card-to-hand state [card-description
+                                                                          card-description])))})
 
 (definitions/add-definitions! effect-definitions)

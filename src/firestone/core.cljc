@@ -339,7 +339,11 @@
   ([state player-id card position]
    (if (< (count (get-minions state player-id)) 7)
      (let [minion (create-minion (:name card))]
-       (add-minion-to-board state {:player-id player-id :minion minion :position position}))
+       (-> state
+           (add-minion-to-board {:player-id player-id :minion minion :position position})
+           (handle-triggers :on-summon (:id minion)))
+
+       )
      state))
   ([state player-id card]
    (summon-minion state player-id card 0)))
