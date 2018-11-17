@@ -525,3 +525,17 @@
                 5))}
   [state player-id amount]
   (update-in state [:players player-id :max-mana] (partial + amount)))
+
+(defn reset-minion-attack-this-turn
+  "resets :attack-this-turn back to 0 for all minions of a given player"
+  {:test (fn []
+           (is= (-> {:players {"p1" {:minions [(create-minion "Imp" :attacks-performed-this-turn 1)
+                                               (create-minion "Ogre Magi" :attacks-performed-this-turn 1)]}}}
+                    (reset-minion-attack-this-turn "p1"))
+                {:players {"p1" {:minions [(create-minion "Imp")
+                                           (create-minion "Ogre Magi")]}}}))}
+  [state player-id]
+  (assoc-in state [:players player-id :minions]
+            (map (fn [minion] (assoc minion :attacks-performed-this-turn 0))
+                 (get-minions state player-id)))
+  )
