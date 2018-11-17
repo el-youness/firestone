@@ -785,3 +785,12 @@
   (update-in state [:players player-id :hand]
              (fn [cards]
                (remove (fn [c] (= (:id c) id)) cards))))
+(defn opposing-player-id
+  "Returns the id of the other player w/ regards to player-id"
+  {:test (fn []
+           (is= (opposing-player-id "p1")
+                "p2")
+           (is= (opposing-player-id "p2")
+                "p1"))}
+  [player-id]
+  (if (= "p1" player-id) "p2" "p1"))
