@@ -93,9 +93,8 @@
                                           (get-minions "imp")
                                           (count))
                                       0))}
-                        ([state target-id]
-                         (destroy-minion state target-id))
-                        ([state] state))}
+                        [state target-id]
+                        (destroy-minion state target-id))}
 
    "Eater of Secrets"
    {:name        "Eater of Secrets"

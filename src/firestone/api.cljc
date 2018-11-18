@@ -23,6 +23,7 @@
                                     get-owner
                                     get-spell-function
                                     get-battlecry-function
+                                    battlecry-minion-with-target?
                                     consume-mana
                                     get-cost
                                     summon-minion
@@ -173,8 +174,10 @@
     (-> (if (nil? battlecry-function)
           state
           (if (nil? target-id)
-            ((get-battlecry-function card) state)
-            ((get-battlecry-function card) state target-id)))
+            (if (battlecry-minion-with-target? state card-id)
+              state
+              (battlecry-function state))
+            (battlecry-function state target-id)))
         (consume-mana player-id (get-cost card))
         (summon-minion player-id card position)
         (remove-card-from-hand player-id card-id))))
