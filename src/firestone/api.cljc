@@ -28,7 +28,7 @@
                                     summon-minion
                                     draw-card
                                     restore-mana
-                                    add-to-max-man
+                                    add-to-max-mana
                                     handle-triggers
                                     reset-minion-attack-this-turn]]))
 

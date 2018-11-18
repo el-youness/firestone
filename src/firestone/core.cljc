@@ -506,7 +506,6 @@
                     (count))
                 5))}
   [state player-id secret]
-  (println secret)
   (if (< (count (get-secrets state player-id)) 5)
     (add-secret-to-player state player-id secret)
     state))

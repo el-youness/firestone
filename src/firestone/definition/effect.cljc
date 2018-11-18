@@ -126,7 +126,6 @@
                                                                           {:minions [(create-minion "Imp" :id "imp")]} :player-id-in-turn "p2"]) $
                                                             (play-spell-card $ "p1" "st" {})
                                                             (end-turn $)
-                                                            (println $)
                                                             (attack-with-minion $ "imp" "wg")
                                                             (get-minions $ "p1")
                                                             (filter (fn [m] (= (:name m) "Snake")) $)
