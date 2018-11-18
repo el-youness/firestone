@@ -15,7 +15,8 @@
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
-                                    get-health]]
+                                    get-health
+                                    valid-plays]]
             [firestone.api :refer [play-minion-card]]))
 
 (def card-definitions
@@ -95,28 +96,26 @@
                             ; Opponent has one secret.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
                                                      {:secrets ["Snake Trap"]}]) $
-                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       (play-minion-card $ "p1" "es" (valid-plays $) {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m2") (get-health $ "m2")])
                                  [0 3 5])
                             ; Opponent has two secret.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
                                                      {:secrets ["Snake Trap" "Snake Trap"]}]) $
-                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       (play-minion-card $ "p1" "es" (valid-plays $) {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
                                  [0 4 6])
                             ; Oppenent has no secrets.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
-                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       (play-minion-card $ "p1" "es" (valid-plays $) {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
                                  [0 2 4]))}
                    [state eater-of-secrets-id]
-                   (println state)
                    (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
                                        "p2"
                                        "p1")]
                      (let [number-of-secrets (count (get-secrets state opponent-id))]
-                       (println number-of-secrets)
-                       (-> () (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
+                       (-> (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
                            (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))))))}
 
    "Arcane Golem"
@@ -151,15 +150,15 @@
     :race      :beast}
 
    "Ancient Watcher"
-   {:name        "Ancient Watcher"
-    :attack      4
-    :health      5
-    :mana-cost   2
-    :type        :minion
-    :set         :classic
-    :rarity      :rare
-    :description "Can't attack."
-    :cannot-attack   true}
+   {:name          "Ancient Watcher"
+    :attack        4
+    :health        5
+    :mana-cost     2
+    :type          :minion
+    :set           :classic
+    :rarity        :rare
+    :description   "Can't attack."
+    :cannot-attack true}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"

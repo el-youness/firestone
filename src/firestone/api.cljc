@@ -29,21 +29,22 @@
                                     restore-mana
                                     add-to-max-mana
                                     handle-triggers
-                                    reset-minion-attack-this-turn]]))
+                                    reset-minion-attack-this-turn
+                                    get-battlecry-function]]))
 
 (defn end-turn
   "Ends the turn of the playing hero"
   {:test (fn []
            ; The mana increments at the beginning of a turn, a card is drawn and the minion's attacks are reset
            (is= (end-turn (create-game [{:max-mana 5
-                                         :deck [(create-card "Imp" :id "i1")]
-                                         :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 1)]}
+                                         :deck     [(create-card "Imp" :id "i1")]
+                                         :minions  [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 1)]}
                                         {:minions [(create-minion "Imp" :id "i2")]}]
                                        :player-id-in-turn "p2"
                                        :minion-ids-summoned-this-turn ["i2"]))
                 (create-game [{:max-mana 6
-                               :hand [(create-card "Imp" :id "i1")]
-                               :minions [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 0)]}
+                               :hand     [(create-card "Imp" :id "i1")]
+                               :minions  [(create-minion "Imp" :id "i3" :attacks-performed-this-turn 0)]}
                               {:minions [(create-minion "Imp" :id "i2")]}]
                              :player-id-in-turn "p1"
                              :minion-ids-summoned-this-turn []))
@@ -51,7 +52,7 @@
            ; Player without a card in the deck gets fatigue damage
            (is= (end-turn (create-game [{:hero (create-hero "Jaina Proudmoore")}]
                                        :player-id-in-turn "p2"))
-                (create-game [{:fatigue 2  :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}]
+                (create-game [{:fatigue 2 :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}]
                              :player-id-in-turn "p1")))}
   [state]
   (let [old-pid (get state :player-id-in-turn)]
@@ -164,10 +165,10 @@
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
                              :minion-ids-summoned-this-turn ["m1"]))
            ; Not enough mana
-           (is= (as-> (create-game [{:hand [(create-minion "War Golem" :id "wg")]
+           (is= (as-> (create-game [{:hand      [(create-minion "War Golem" :id "wg")]
                                      :used-mana 4}]) $
                       (play-minion-card $ "p1" "wg" (valid-plays $) {:position 0}))
-                (create-game [{:hand [(create-minion "War Golem" :id "wg")]
+                (create-game [{:hand      [(create-minion "War Golem" :id "wg")]
                                :used-mana 4}]))
            ; No space on board
            (is= (as-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"]
