@@ -173,8 +173,14 @@
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg")))
-           ;Should not be able to attack if "cannot-attack" is true
-           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "i")]}
+           ; Should not be able to attack if "cannot-attack" is true
+           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                     {:minions [(create-minion "War Golem" :id "wg")]}])
+                       (valid-attack? "p1" "aw" "wg")))
+           ; Should not be able to attack if "cannot-attack" is true
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen true
+                                                                                       :extra-attack 0
+                                                                                       :extra-health 0})]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
@@ -184,7 +190,8 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not ((get-minion-effects attacker) :cannot-attack)))))
+         (not ((get-minion-effects attacker) :cannot-attack))
+         (not ((get-minion-effects attacker) :frozen)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
