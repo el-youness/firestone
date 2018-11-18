@@ -102,6 +102,23 @@
   ([state id]
    (get-card-type (get-card-from-hand state id))))
 
+(defn get-target-type
+  "Returns the type of the card with the given id or entity."
+  {:test (fn []
+           (is= (-> (create-card "Imp" :id "i")
+                    (get-target-type))
+                nil)
+           (is= (-> (create-card "Bananas" :id "i")
+                    (get-target-type))
+                :all-minions)
+           (is= (-> (create-game [{:hand [(create-card "Mind Control" :id "dm")]}])
+                    (get-target-type "dm"))
+                :enemy-minions))}
+  ([card]
+   (get (get-definition (:name card)) :target-type))
+  ([state id]
+   (get-target-type (get-card-from-hand state id))))
+
 (defn get-owner
   "Returns the player-id of the owner of the character with the given id."
   {:test (fn []
@@ -454,48 +471,86 @@
              (< (count minions-on-board) 7)
              true))))
 
-(defn valid-target?
-  "Checks if the target of a card is valid"
+(defn spell-with-target?
+  "Checks if a card is a spell that requires a target."
   {:test (fn []
-           ; A card with :target-type :all-minions can target minion
-           (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
-                                  :hand [(create-card "Bananas" :id "c1")]}])
-                   (valid-target? "p1" "c1" "i1")))
-           ; A card with :target-type :all-minions cannot target hero
-           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "c1")]
-                                      :hero (create-hero "Anduin Wrynn")}])
-                       (valid-target? "p1" "c1" "h1")))
-           ; A card with :target-type :enemy-minions can target enemy minion
-           (is (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
-                                 {:hand [(create-card "Mind Control" :id "c1")]}])
-                   (valid-target? "p2" "c1" "i1")))
-           ; A card with :target-type :enemy-minions cannot target friendly minion
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
-                                  :hand [(create-card "Mind Control" :id "c1")]}])
-                   (valid-target? "p1" "c1" "i1")))
-           ; A card with no :target-type cannot have a valid target
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i1")(create-minion "Imp" :id "i2")]}])
-                       (valid-target? "p1" "i1" "i2"))))}
-  [state player-id card-id target-id]
-  (let [card (get-card-from-hand state card-id)
-        target-type (:target-type card)]
-    (cond (nil? target-type)
-          false
+           (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                       (spell-with-target? "i")))
+           (is (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
+                   (spell-with-target? "b1"))))}
+  [state card-id]
+  (let [target-type (get-target-type state card-id)]
+    (if (and (= (get-card-type state card-id) :spell)
+             (or (= target-type :all-minions)
+                 (= target-type :enemy-minions)
+                 (= target-type :friendly-minions)))
+      true
+      false))
 
-          (nil? (get-minion state target-id))
-          false
+  )
 
-          (= target-type :all-minions)
-          true
+(defn available-targets
+  "Get all playable cards and their valid targets"
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:minions [(create-minion "Defender" :id "d1")
+                                             (create-minion "Defender" :id "d2")]
+                                   :hand    [(create-card "Bananas" :id "b1")]}])
+                    (available-targets "p2" "b1"))
+                ["i1" "i2" "d1" "d2"])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                  {:minions [(create-minion "Defender" :id "d1")]
+                                   :hand    [(create-card "Mind Control" :id "mc1")]}])
+                    (available-targets "p2" "mc1"))
+                ["i1"]))}
+  [state player-id card-id]
+  (let [target-type (get-target-type state card-id)
+        targets (cond (= target-type :all-minions)
+                      (get-minions state)
 
-          (= target-type :enemy-minions)
-          (if (= (get-owner state target-id) player-id)
-              false
-              true)
+                      (= target-type :enemy-minions)
+                      (get-minions state (if (= player-id "p1") "p2" "p1"))
 
-          ; TODO: Add checks for other target-type
-          :else
-          false)))
+                      (= target-type :friendly-minions)
+                      (get-minions state (if (= player-id "p1") "p1" "p2"))
+
+                      ; TODO: Add checks for other target-type
+                      :else
+                      [])]
+    (map :id targets)))
+
+(defn valid-plays
+  "Get all playable cards and their valid targets"
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]
+                                   :hand    [(create-card "Bananas" :id "b1")
+                                             (create-card "Mind Control" :id "mc1")
+                                             (create-card "Imp" :id "i3")]}
+                                  {:minions [(create-minion "Defender" :id "d1")
+                                             (create-minion "Defender" :id "d2")]}])
+                    (valid-plays))
+                {"b1"  ["i1" "i2" "d1" "d2"]
+                 "mc1" ["d1" "d2"]
+                 "i3"  []})
+           (is= (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
+                    (valid-plays))
+                {}))}
+  [state]
+  (let [player-in-turn (:player-id-in-turn state)]
+    (reduce (fn [plays card-id]
+              (if (playable? state player-in-turn card-id)
+                (let [targets (available-targets state player-in-turn card-id)]
+                  (if (empty? targets)
+                    (if (spell-with-target? state card-id)
+                      plays
+                      (assoc plays card-id []))
+                    (assoc plays card-id targets)))
+                plays)
+              )
+            {}
+            (map :id (get-hand state player-in-turn)))))
 
 (defn get-spell-function
   "Get the spell function in the definition of a card"
