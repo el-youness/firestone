@@ -204,7 +204,7 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not ((get-minion-effects attacker) :cannot-attack)))))
+         (not ((get-effects attacker) :cannot-attack)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
