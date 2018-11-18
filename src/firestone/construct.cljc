@@ -66,7 +66,15 @@
                  :id                          "i"
                  :effects                      {:on-damage  "Acolyte of Pain effect"
                                                 :extra-attack 0
-                                                :extra-health 0}}))}
+                                                :extra-health 0}})
+           (is= (create-minion "King Mukla")
+                {:attacks-performed-this-turn 0
+                 :damage-taken                0
+                 :effects                     {:extra-attack    0
+                                               :extra-health    0
+                                               :on-playing-card "King Mukla battelcry"}
+                 :entity-type                 :minion
+                 :name                        "King Mukla"}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
@@ -74,7 +82,10 @@
                 :name                        name
                 :attacks-performed-this-turn 0
 
-                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle])
+                :effects                     (assoc (select-keys definition [:on-damage
+                                                                             :cannot-attack
+                                                                             :deathrattle
+                                                                             :on-playing-card])
                                                     :extra-attack 0
                                                     :extra-health 0)}]
     (if (empty? kvs)
