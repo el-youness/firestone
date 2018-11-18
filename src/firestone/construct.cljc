@@ -74,7 +74,7 @@
                 :name                        name
                 :attacks-performed-this-turn 0
 
-                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle])
+                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen])
                                                     :extra-attack 0
                                                     :extra-health 0)}]
     (if (empty? kvs)

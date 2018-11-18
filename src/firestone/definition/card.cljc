@@ -10,7 +10,8 @@
                                          get-minions
                                          get-minion-effects]]
             [firestone.core :refer [change-minion-board-side
-                                    get-owner]]))
+                                    get-owner
+                                    damage-minion]]))
 
 (def card-definitions
   {
@@ -155,7 +156,20 @@
     :type        :spell
     :set         :basic
     :rarity      :none
-    :description "Deal 3 damage to a character and Freeze it."}
+    :description "Deal 3 damage to a character and Freeze it."
+    :target-type :all-minions
+    :spell        (defn frostbolt
+                    {:test (fn  []
+                             (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
+                                                   (frostbolt "i")
+                                                   (get-minion "i"))
+                                        effects (get minion :effects)]
+                                    [(get effects :frozen) (get minion :damage-taken)])
+                                  [true 3]))}
+                    [state target-id]
+                    (-> (damage-minion state target-id 3)
+                        (update-in-minion target-id [:effects :frozen] true)))
+    }
 
    "Cabal Shadow Priest"
    {:name        "Cabal Shadow Priest"
