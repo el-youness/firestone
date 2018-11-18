@@ -12,7 +12,8 @@
                                     get-owner
                                     summon-minion
                                     get-health
-                                    heal-hero]]
+                                    heal-hero
+                                    valid-plays]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          create-card
@@ -124,7 +125,7 @@
                                         {:test (fn []
                                                  (is= (as-> (create-game [{:hand [(create-card "Snake Trap" :id "st")] :minions [(create-minion "War Golem" :id "wg")]}
                                                                           {:minions [(create-minion "Imp" :id "imp")]} :player-id-in-turn "p2"]) $
-                                                            (play-spell-card $ "p1" "st" {})
+                                                            (play-spell-card $ "p1" "st" (valid-plays $) {})
                                                             (end-turn $)
                                                             (attack-with-minion $ "imp" "wg")
                                                             (get-minions $ "p1")
