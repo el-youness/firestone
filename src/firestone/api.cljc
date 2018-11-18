@@ -131,10 +131,10 @@
                       [(get-health $ "i") (get-attack $ "i")])
                 [2 2])
            ; Play spell card that can only target enemy minions
-           (is= (as-> (create-game [{:hand [(create-card "Mind Control" :id "mc1")]}
-                                    {:minions [(create-minion "Imp" :id "i")]}]) $
-                      (play-spell-card $ "p1" "mc1" {:target-id "i"})
-                      (get-owner $ "i"))
+           (is= (-> (create-game [{:hand [(create-card "Mind Control" :id "mc1")]}
+                                    {:minions [(create-minion "Imp" :id "i")]}])
+                      (play-spell-card "p1" "mc1" {:target-id "i"})
+                      (get-owner "i"))
                 "p1"))}
   [state player-id card-id {target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
@@ -147,8 +147,8 @@
 (defn play-minion-card
   "Play a minion card from the hand if possible."
   {:test (fn []
-           (is= (as-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}]) $
-                      (play-minion-card $ "p1" "wg" {:position 0}))
+           (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
+                      (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions   ["War Golem"]
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
                              :minion-ids-summoned-this-turn ["m1"])))}
