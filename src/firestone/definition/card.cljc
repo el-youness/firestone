@@ -124,7 +124,8 @@
     :type        :minion
     :set         :classic
     :rarity      :rare
-    :description "Can't attack."}
+    :description "Can't attack."
+    :cannot-attack   true}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"
