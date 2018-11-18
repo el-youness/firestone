@@ -196,15 +196,20 @@
                     (handle-triggers :on-damage "m1")
                     (get-hand "p1")
                     (count))
-                1))}
+                1)
+           (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
+                    (handle-triggers :on-playing-card "km")
+                    (get-hand "p2")
+                    (->> (map #(:name %))))
+                ["Bananas" "Bananas"]))}
   [state event & args]
-  (->> (get-minions state)
-       (reduce (fn [state minion]
-                 (let [effects (get-minion-effects minion)]
-                   (if (contains? effects event)
-                     ((get-definition (effects event)) state (:id minion) args)
-                     state)))
-               state)))
+  ;TODO triggers from heroes, weapons, secrets, cards... everything!
+  (reduce (fn [state minion]
+            (let [effects (get-minion-effects minion)]
+              (if (contains? effects event)
+                ((get-definition (effects event)) state (:id minion) args)
+                state)))
+          state (get-minions state)))
 
 (defn change-minion-board-side
   "Causes a minion on the board to switch board side and owner."
