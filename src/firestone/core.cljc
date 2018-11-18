@@ -1,5 +1,6 @@
 (ns firestone.core
-  (:require [ysera.test :refer [is is-not is= error?]]
+  (:require [clojure.test :refer [function?]]
+            [ysera.test :refer [is is-not is= error?]]
             [ysera.collections :refer [seq-contains?]]
             [firestone.definitions :refer [get-definition]]
             [firestone.construct :refer [create-card
@@ -465,6 +466,25 @@
              (< (count minions-on-board) 7)
              true))))
 
+(defn get-target-condition-function
+  "Get the target condition function in the definition of a card."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                    ((get-target-condition-function (create-card "Big Game Hunter")) "wg")
+                    (get-minions)
+                    (count))
+                0)
+           (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]
+                                     :hand    [(create-card "Big Game Hunter" :id "bgh")]}]) $
+                      ((get-target-condition-function $ "bgh") $ "wg")
+                      (get-minions $)
+                      (count $))
+                0))}
+  ([card]
+   (:target-condition (get-definition card)))
+  ([state card-id]
+   (get-target-condition-function (get-card-from-hand state card-id))))
+
 (defn spell-with-target?
   "Checks if a card is a spell that requires a target."
   {:test (fn []
@@ -477,9 +497,7 @@
     (if (and (= (get-card-type state card-id) :spell)
              (not (= target-type :none)))
       true
-      false))
-
-  )
+      false)))
 
 (defn available-targets
   "Takes the id of a card and returns its valid targets"
@@ -495,7 +513,16 @@
                                   {:minions [(create-minion "Defender" :id "d1")]
                                    :hand    [(create-card "Mind Control" :id "mc1")]}])
                     (available-targets "p2" "mc1"))
-                ["i1"]))}
+                ["i1"])
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg1") "Imp"]}
+                                  {:minions [(create-minion "War Golem" :id "wg2")]
+                                   :hand    [(create-card "Big Game Hunter" :id "bgh")]}])
+                    (available-targets "p2" "bgh"))
+                ["wg1" "wg2"])
+           (is= (-> (create-game [{:minions ["Imp"]
+                                   :hand    [(create-card "Big Game Hunter" :id "bgh")]}])
+                    (available-targets "p1" "bgh"))
+                []))}
   [state player-id card-id]
   (let [target-type (get-target-type state card-id)
         targets (cond (= target-type :all-minions)
@@ -509,26 +536,32 @@
 
                       ; TODO: Add checks for other target-type
                       :else
-                      [])]
-    (map :id targets)))
+                      [])
+        targets-ids (map :id targets)]
+    (let [target-cond-func (get-target-condition-function state card-id)]
+      (if (nil? target-cond-func)
+        targets-ids
+        (filter (fn [target-id] (target-cond-func state target-id)) targets-ids)))))
 
 (defn valid-plays
-  "Get all playable cards and their valid targets"
+  "Get all playable cards and their valid targets."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
-                                             (create-minion "Imp" :id "i2")]
+                                             (create-minion "War Golem" :id "wg1")]
                                    :hand    [(create-card "Bananas" :id "b1")
                                              (create-card "Mind Control" :id "mc1")
-                                             (create-card "Imp" :id "i3")]}
+                                             (create-card "Imp" :id "i3")
+                                             (create-card "Big Game Hunter" :id "bgh1")]}
                                   {:minions [(create-minion "Defender" :id "d1")
                                              (create-minion "Defender" :id "d2")]}])
                     (valid-plays))
-                {"b1"  ["i1" "i2" "d1" "d2"]
+                {"b1"  ["i1" "wg1" "d1" "d2"]
                  "mc1" ["d1" "d2"]
-                 "i3"  []})
-           (is= (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
+                 "i3"  []
+                 "bgh1" ["wg1"]})
+           (is= (-> (create-game [{:hand ["Bananas" (create-card "Big Game Hunter" :id "bgh")]}])
                     (valid-plays))
-                {}))}
+                {"bgh" []}))}
   [state]
   (let [player-in-turn (:player-id-in-turn state)]
     (reduce (fn [plays card-id]
@@ -545,7 +578,7 @@
             (map :id (get-hand state player-in-turn)))))
 
 (defn get-spell-function
-  "Get the spell function in the definition of a card"
+  "Get the spell function in the definition of a card."
   {:test (fn []
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
                       ((get-spell-function (create-card "Bananas")) $ "i1")
@@ -553,6 +586,17 @@
                 [2 2]))}
   [card]
   (:spell (get-definition card)))
+
+(defn get-battlecry-function
+  "Get the battlecry function in the definition of a card."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                      ((get-battlecry-function (create-card "Big Game Hunter")) "wg")
+                      (get-minions)
+                      (count))
+                0))}
+  [card]
+  (:battlecry (get-definition card)))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."

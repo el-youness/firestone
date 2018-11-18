@@ -80,8 +80,12 @@
     :target-condition (defn attack-over-seven?
                         {:test (fn []
                                  (is (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                                         (attack-over-seven? "wg"))))}
-                        [state target-id] (>= (get-attack state target-id) 7))
+                                         (attack-over-seven? "wg")))
+                                 (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                                         (attack-over-seven? "i"))))}
+                        [state target-id]
+                        {:pre [(map? state)(string? target-id)]}
+                        (>= (get-attack state target-id) 7))
     :battlecry        (defn big-game-hunter
                         {:test (fn []
                                  (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
