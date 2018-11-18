@@ -469,17 +469,11 @@
 (defn get-target-condition-function
   "Get the target condition function in the definition of a card."
   {:test (fn []
-           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                    ((get-target-condition-function (create-card "Big Game Hunter")) "wg")
-                    (get-minions)
-                    (count))
-                0)
-           (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]
+           (is (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                    ((get-target-condition-function (create-card "Big Game Hunter")) "wg")))
+           (is (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]
                                      :hand    [(create-card "Big Game Hunter" :id "bgh")]}]) $
-                      ((get-target-condition-function $ "bgh") $ "wg")
-                      (get-minions $)
-                      (count $))
-                0))}
+                      ((get-target-condition-function $ "bgh") $ "wg"))))}
   ([card]
    (:target-condition (get-definition card)))
   ([state card-id]
