@@ -10,7 +10,8 @@
                                     get-owner
                                     summon-minion
                                     get-health
-                                    heal-hero]]
+                                    heal-hero
+                                    add-to-max-mana]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          get-hand
@@ -20,7 +21,8 @@
                                          get-hero-id
                                          create-card
                                          add-card-to-hand
-                                         opposing-player-id]]))
+                                         opposing-player-id
+                                         get-mana]]))
 
 (def effect-definitions
   {
@@ -130,6 +132,19 @@
                                                 card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
                                             (reduce add-card-to-hand state [card-description
                                                                             card-description]))
+                                          state))
+   "Arcane Golem battlecry"           (defn arcane-golem-battlecry
+                                        "Battlecry: Give your opponent a Mana Crystal."
+                                        {:test (fn []
+                                                 (is= (-> (create-game [{:minions [(create-minion "Arcane Golem" :id "ag")]}
+                                                                        {:max-mana 5}])
+                                                          ((effect-definitions "Arcane Golem battlecry") "ag" ["ag"] )
+                                                          (get-mana "p2"))
+                                                      6))}
+                                        [state minion-id [golem-id] ]
+                                        (if (= minion-id golem-id)
+                                          (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
+                                            (add-to-max-mana state opponent-player-id 1))
                                           state))})
 
 (definitions/add-definitions! effect-definitions)

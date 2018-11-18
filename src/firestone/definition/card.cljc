@@ -93,7 +93,8 @@
     :type        :minion
     :set         :classic
     :rarity      :rare
-    :description "Battlecry: Give your opponent a Mana Crystal."}
+    :description "Battlecry: Give your opponent a Mana Crystal."
+    :on-playing-card "Arcane Golem battlecry"}
 
    "Acolyte of Pain"
    {:name        "Acolyte of Pain"
