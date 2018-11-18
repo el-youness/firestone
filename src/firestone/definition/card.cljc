@@ -148,7 +148,7 @@
     :set         :classic
     :rarity      :legendary
     :description "Battlecry: Give your opponent 2 Bananas."
-    :battlecry "King Mukla battelcry"}
+    :on-playing-card "King Mukla battelcry"}
 
    "Frostbolt"
    {:name        "Frostbolt"
