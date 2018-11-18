@@ -6,6 +6,7 @@
                                          create-minion
                                          get-minion
                                          get-minions
+                                         get-hand
                                          create-hero
                                          get-character
                                          update-minion
@@ -28,7 +29,8 @@
                                     summon-minion
                                     draw-card
                                     restore-mana
-                                    add-to-max-mana]]))
+                                    add-to-max-mana
+                                    handle-triggers]]))
 
 (defn end-turn
   "Ends the turn of the playing hero"
@@ -171,11 +173,21 @@
            ; No space on board
            (is= (-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])
                     (play-minion-card "p1" "wg" {:position 0}))
-                (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}])))}
+                (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"] :hand [(create-minion "War Golem" :id "wg")]}]))
+           ; Handle battlecries
+           (is= (-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}])
+                    (play-minion-card "p1" "km" {:position 0})
+                    (get-hand "p2")
+                    (->> (map #(:name %))))
+                ["Bananas" "Bananas"])
+           )}
   [state player-id card-id {position :position target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
     (if (playable? state player-id card-id)
       (-> (consume-mana state player-id (get-cost card))
           (summon-minion player-id card position)
-          (remove-card-from-hand player-id card-id))
+          (remove-card-from-hand player-id card-id)
+          ;(as-> $ (last (:minion-ids-summoned-this-turn $)))
+          (as-> $ (handle-triggers $ :on-playing-card (last (:minion-ids-summoned-this-turn $)) target-id))
+          )
       state)))
