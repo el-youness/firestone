@@ -559,8 +559,6 @@
 (defn unfreeze-minions
   "Unfreezes all characters of a player that are Frozen if the conditions are met"
   {:test (fn []
-           ; if an enemy character is frozen during "p1" turn, it will thaw at the start of "p1" next turn
-           ; if "p1" character is frozen before attacking (unfreezes at the end of turn)
            (is= (-> (create-game [{:minions [(create-minion "Imp"
                                                             :id "m1"
                                                             :attacks-performed-this-turn 0
@@ -571,7 +569,6 @@
                     (get-minion "m1")
                     (get-in [:effects :frozen]))
                 false)
-           ; if "p1" character is frozen after attacking (unfreezes at the end of next turn)
            (is= (-> (create-game [{:minions [(create-minion "Imp"
                                                             :id "m1"
                                                             :attacks-performed-this-turn 1
@@ -581,8 +578,7 @@
                     (unfreeze-minions)
                     (get-minion "m1")
                     (get-in [:effects :frozen]))
-                true)
-           )}
+                true))}
   [state]
   (->> (get-minions state (get state :player-id-in-turn))
        (reduce (fn [state minion]
