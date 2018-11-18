@@ -124,62 +124,33 @@
            ; Play spell card that can target all minions
            (is= (as-> (create-game [{:hand    [(create-card "Bananas" :id "b1")]
                                      :minions [(create-minion "Imp" :id "i")]}]) $
-                      (play-spell-card $ "p1" "b1" (valid-plays $) {:target-id "i"})
+                      (play-spell-card $ "p1" "b1" {:target-id "i"})
                       [(get-health $ "i") (get-attack $ "i")])
                 [2 2])
            ; Play spell card that can only target enemy minions
-           (is= (as-> (create-game [{:hand [(create-card "Mind Control" :id "mc1")]}
-                                    {:minions [(create-minion "Imp" :id "i")]}]) $
-                      (play-spell-card $ "p1" "mc1" (valid-plays $) {:target-id "i"})
-                      (get-owner $ "i"))
-                "p1")
-           ; Not enough mana
-           (is= (as-> (create-game [{:hand      [(create-card "Bananas" :id "b1")]
-                                     :minions   [(create-minion "Imp" :id "i")]
-                                     :used-mana 10}]) $
-                      (play-spell-card $ "p1" "b1" (valid-plays $) "i")
-                      [(get-health $ "i") (get-attack $ "i")])
-                [1 1]))}
-  [state player-id card-id valid-plays {target-id :target-id}]
-  (if (contains? valid-plays card-id)
-    (let [valid-targets (get valid-plays card-id)]
-      (if (or (empty? valid-targets)
-              (seq-contains? valid-targets target-id))
-        (let [card (get-card-from-hand state card-id)]
-          (-> (if (empty? target-id)
-                ((get-spell-function card) state)
-                ((get-spell-function card) state target-id))
-              (consume-mana player-id (get-cost card))
-              (remove-card-from-hand player-id card-id)))
-        ;else
-        state))
-
-    state))
+           (is= (-> (create-game [{:hand [(create-card "Mind Control" :id "mc1")]}
+                                    {:minions [(create-minion "Imp" :id "i")]}])
+                      (play-spell-card "p1" "mc1" {:target-id "i"})
+                      (get-owner "i"))
+                "p1"))}
+  [state player-id card-id {target-id :target-id}]
+  (let [card (get-card-from-hand state card-id)]
+    (-> (if (nil? target-id)
+          ((get-spell-function card) state)
+          ((get-spell-function card) state target-id))
+        (consume-mana player-id (get-cost card))
+        (remove-card-from-hand player-id card-id))))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
   {:test (fn []
-           (is= (as-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}]) $
-                      (play-minion-card $ "p1" "wg" (valid-plays $) {:position 0}))
+           (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
+                      (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions   ["War Golem"]
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
-                             :minion-ids-summoned-this-turn ["m1"]))
-           ; Not enough mana
-           (is= (as-> (create-game [{:hand      [(create-minion "War Golem" :id "wg")]
-                                     :used-mana 4}]) $
-                      (play-minion-card $ "p1" "wg" (valid-plays $) {:position 0}))
-                (create-game [{:hand      [(create-minion "War Golem" :id "wg")]
-                               :used-mana 4}]))
-           ; No space on board
-           (is= (as-> (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"]
-                                     :hand    [(create-minion "War Golem" :id "wg")]}]) $
-                      (play-minion-card $ "p1" "wg" (valid-plays $) {:position 0}))
-                (create-game [{:minions ["Imp" "Imp" "Imp" "Imp" "Imp" "Imp" "Imp"]
-                               :hand    [(create-minion "War Golem" :id "wg")]}])))}
-  [state player-id card-id valid-plays {position :position target-id :target-id}]
+                             :minion-ids-summoned-this-turn ["m1"])))}
+  [state player-id card-id {position :position target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
-    (if (contains? valid-plays card-id)
-      (-> (consume-mana state player-id (get-cost card))
-          (summon-minion player-id card position)
-          (remove-card-from-hand player-id card-id))
-      state)))
+    (-> (consume-mana state player-id (get-cost card))
+        (summon-minion player-id card position)
+        (remove-card-from-hand player-id card-id))))

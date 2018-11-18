@@ -96,18 +96,18 @@
                             ; Opponent has one secret.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
                                                      {:secrets ["Snake Trap"]}]) $
-                                       (play-minion-card $ "p1" "es" (valid-plays $) {:position 0})
+                                       (play-minion-card $ "p1" "es" {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m2") (get-health $ "m2")])
                                  [0 3 5])
                             ; Opponent has two secret.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
                                                      {:secrets ["Snake Trap" "Snake Trap"]}]) $
-                                       (play-minion-card $ "p1" "es" (valid-plays $) {:position 0})
+                                       (play-minion-card $ "p1" "es" {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
                                  [0 4 6])
                             ; Oppenent has no secrets.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
-                                       (play-minion-card $ "p1" "es" (valid-plays $) {:position 0})
+                                       (play-minion-card $ "p1" "es" {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
                                  [0 2 4]))}
                    [state eater-of-secrets-id]
