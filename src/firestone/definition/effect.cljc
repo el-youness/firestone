@@ -120,14 +120,16 @@
                                         "Battlecry: Give your opponent 2 Bananas."
                                         {:test (fn []
                                                  (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
-                                                          ((effect-definitions "King Mukla battelcry") "km")
+                                                          ((effect-definitions "King Mukla battelcry") "km" "km")
                                                           (get-hand "p2")
                                                           (->> (map #(:name %))))
                                                       ["Bananas" "Bananas"]))}
-                                        [state minion-id]
-                                        (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
-                                              card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
-                                          (reduce add-card-to-hand state [card-description
-                                                                          card-description])))})
+                                        [state minion-id mukla-id]
+                                        (if (= minion-id mukla-id)
+                                          (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
+                                                card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
+                                            (reduce add-card-to-hand state [card-description
+                                                                            card-description]))
+                                          state))})
 
 (definitions/add-definitions! effect-definitions)
