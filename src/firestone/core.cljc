@@ -17,7 +17,7 @@
                                          get-heroes
                                          get-minion
                                          get-minions
-                                         update-minion
+                                         update-in-minion
                                          remove-minion
                                          update-hero
                                          get-character
@@ -537,7 +537,7 @@
     (assoc-in state [:players player-id :max-mana] (+ max-mana (min (- 10 max-mana) amount)))))
 
 (defn reset-minion-attack-this-turn
-  "resets :attack-this-turn back to 0 for all minions of a given player"
+  "Resets :attack-this-turn back to 0 for all minions of a given player"
   {:test (fn []
            (is= (-> {:players {"p1" {:minions [(create-minion "Imp" :attacks-performed-this-turn 1)
                                                (create-minion "Ogre Magi" :attacks-performed-this-turn 1)]}}}
@@ -547,5 +547,42 @@
   [state player-id]
   (assoc-in state [:players player-id :minions]
             (map (fn [minion] (assoc minion :attacks-performed-this-turn 0))
-                 (get-minions state player-id)))
-  )
+                 (get-minions state player-id))))
+
+(defn unfreeze-minions
+  "Unfreezes all characters of a player that are Frozen if the conditions are met"
+  {:test (fn []
+           ; if an enemy character is frozen during "p1" turn, it will thaw at the start of "p1" next turn
+           ; if "p1" character is frozen before attacking (unfreezes at the end of turn)
+           (is= (-> (create-game [{:minions [(create-minion "Imp"
+                                                            :id "m1"
+                                                            :attacks-performed-this-turn 0
+                                                            :effects {:frozen  true
+                                                                      :extra-attack 0
+                                                                      :extra-health 0})]}])
+                    (unfreeze-minions)
+                    (get-minion "m1")
+                    (get-in [:effects :frozen]))
+                false)
+           ; if "p1" character is frozen after attacking (unfreezes at the end of next turn)
+           (is= (-> (create-game [{:minions [(create-minion "Imp"
+                                                            :id "m1"
+                                                            :attacks-performed-this-turn 1
+                                                            :effects {:frozen  true
+                                                                      :extra-attack 0
+                                                                      :extra-health 0})]}])
+                    (unfreeze-minions)
+                    (get-minion "m1")
+                    (get-in [:effects :frozen]))
+                true)
+           )}
+  [state]
+  (->> (get-minions state (get state :player-id-in-turn))
+       (reduce (fn [state minion]
+                 (println "cond" (and (get-in minion [:effects :frozen]) (= (get minion :attacks-performed-this-turn) 0)))
+                 (if (and (get-in minion [:effects :frozen]) (= (get minion :attacks-performed-this-turn) 0))
+                   (update-in-minion state (get minion :id) [:effects :frozen] false)
+                   state))
+                 state)
+       )
+)
