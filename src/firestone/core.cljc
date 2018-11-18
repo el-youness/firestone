@@ -475,16 +475,14 @@
   [state card-id]
   (let [target-type (get-target-type state card-id)]
     (if (and (= (get-card-type state card-id) :spell)
-             (or (= target-type :all-minions)
-                 (= target-type :enemy-minions)
-                 (= target-type :friendly-minions)))
+             (not (= target-type :none)))
       true
       false))
 
   )
 
 (defn available-targets
-  "Get all playable cards and their valid targets"
+  "Takes the id of a card and returns its valid targets"
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "Imp" :id "i2")]}
