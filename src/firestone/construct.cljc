@@ -291,16 +291,18 @@
            )}
   [state {player-id :player-id card :card}]
   {:pre [(map? state) (string? player-id) (map? card)]}
-  (let [[state id] (if (contains? card :id)
-                     [state (:id card)]
-                     (let [[state value] (generate-id state)]
-                       [state (str "c" value)]))]
-    (update-in state
-               [:players player-id :hand]
-               (fn [cards]
-                 (conj cards
-                       (assoc card :owner-id player-id
-                                   :id id))))))
+  ; Check that the hand is not full
+  (if (< (count (get-hand state player-id)) 10)
+    (let [[state id] (if (contains? card :id)
+                       [state (:id card)]
+                       (let [[state value] (generate-id state)]
+                         [state (str "c" value)]))]
+      (update-in state
+                 [:players player-id :hand]
+                 (fn [cards]
+                   (conj cards (assoc card :owner-id player-id
+                                           :id id)))))
+    state))
 
 (defn add-minion-to-board
   "Adds a minion with a given position to a player's minions and updates the other minions' positions."

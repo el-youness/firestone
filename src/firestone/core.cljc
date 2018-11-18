@@ -403,10 +403,8 @@
        (damage-hero state (get-hero-id state player-id) damage))
      (let [card (first (get-cards-from-deck state player-id 1))]
        (let [state (remove-card-from-deck state player-id (:id card))]
-         ; Check that the hand is not full
-         (if (< (count (get-hand state player-id)) 10)
-           (add-card-to-hand state {:player-id player-id :card card})
-           state))))))
+         (add-card-to-hand state {:player-id player-id :card card})
+         )))))
 
 (defn mulligan
   "Take x cards from player 1's deck and y cards from player 2's deck. The cards are removed from the
