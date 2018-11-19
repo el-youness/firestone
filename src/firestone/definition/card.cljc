@@ -132,13 +132,13 @@
                                        [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
                                  [0 2 4]))}
                    [state eater-of-secrets-id]
-                   (println "In EoS battlecry: " state)
                    (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
                                        "p2"
                                        "p1")]
                      (let [number-of-secrets (count (get-secrets state opponent-id))]
                        (-> (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
-                           (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))))))}
+                           (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))
+                           (remove-secrets opponent-id)))))}
 
    "Arcane Golem"
    {:name        "Arcane Golem"

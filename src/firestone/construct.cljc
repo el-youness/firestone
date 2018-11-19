@@ -897,3 +897,13 @@
   (update-in state [:players player-id :secrets]
              (fn [secret]
                (remove (fn [s] (= (:id s) id)) secret))))
+
+(defn remove-secrets
+  "Removes all secrets from a player."
+  {:test (fn []
+           (is= (-> (create-game [{:secrets ["Snake Trap" "Snake Trap"]}])
+                    (remove-secrets "p1")
+                    (get-secrets))
+                []))}
+  [state player-id]
+  (assoc-in state [:players player-id :secrets] []))
