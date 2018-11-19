@@ -7,7 +7,7 @@
                                          get-minion
                                          get-minions
                                          create-hero
-                                         get-character
+                                         get-board-entity
                                          update-minion
                                          create-card
                                          get-card-from-hand
@@ -22,6 +22,8 @@
                                     valid-plays
                                     get-owner
                                     get-spell-function
+                                    get-battlecry-function
+                                    battlecry-minion-with-target?
                                     consume-mana
                                     get-cost
                                     summon-minion
@@ -144,13 +146,35 @@
 (defn play-minion-card
   "Play a minion card from the hand if possible."
   {:test (fn []
+           ; Play minion
            (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
-                      (play-minion-card "p1" "wg" {:position 0}))
+                    (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions   ["War Golem"]
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
-                             :minion-ids-summoned-this-turn ["m1"])))}
+                             :minion-ids-summoned-this-turn ["m1"]))
+           ; Play battlecry minion when there is an available target
+           (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
+                                  {:minions [(create-card "War Golem" :id "wg")]}])
+                    (play-minion-card "p1" "bgh" {:position 0 :target-id "wg"})
+                    (get-minions "p2")
+                    (count))
+                0)
+           ; Play battlecry minion when there are no available targets
+           (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}])
+                    (play-minion-card "p1" "bgh" {:position 0})
+                    (get-minions "p1")
+                    (count))
+                1))}
   [state player-id card-id {position :position target-id :target-id}]
-  (let [card (get-card-from-hand state card-id)]
-    (-> (consume-mana state player-id (get-cost card))
+  (let [card (get-card-from-hand state card-id)
+        battlecry-function (get-battlecry-function card)]
+    (-> (if (nil? battlecry-function)
+          state
+          (if (nil? target-id)
+            (if (battlecry-minion-with-target? state card-id)
+              state
+              (battlecry-function state))
+            (battlecry-function state target-id)))
+        (consume-mana player-id (get-cost card))
         (summon-minion player-id card position)
         (remove-card-from-hand player-id card-id))))

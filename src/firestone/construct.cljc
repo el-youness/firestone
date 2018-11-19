@@ -94,8 +94,7 @@
   (let [definition (get-definition name)
         secret {:name        name
                 :entity-type :secret
-                :effects     (select-keys definition [:on-damage :on-attack])
-                }]
+                :effects     (select-keys definition [:on-damage :on-attack])}]
     (if (empty? kvs)
       secret
       (apply assoc secret kvs))))
@@ -190,8 +189,7 @@
                     (get-deck "p1"))
                 []))}
   ([state player-id]
-   (:deck (get-player state player-id)))
-  )
+   (:deck (get-player state player-id))))
 
 (defn get-secrets
   "Returns the secrets for the given player-id."
@@ -658,17 +656,21 @@
        (vals)
        (map :hero)))
 
-(defn get-character
-  "Returns the character or secret with the given id from the state."
+(defn get-board-entity
+  "Returns the hero, minion or secret with the given id from the state."
   {:test (fn []
            (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
-                    (get-character "h1")
+                    (get-board-entity "h1")
                     (:name))
                 "Jaina Proudmoore")
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (get-character "i")
+                    (get-board-entity "i")
                     (:name))
-                "Imp"))}
+                "Imp")
+           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (get-board-entity "s")
+                    (:name))
+                "Snake Trap"))}
   [state id]
   (->> (concat (get-minions state)
                (get-heroes state)
@@ -694,7 +696,7 @@
   ([entity]
    (:effects entity))
   ([state id]
-   (get-effects (get-character state id))))
+   (get-effects (get-board-entity state id))))
 
 (defn get-card-from-hand
   "Returns the card with the given id from the hand."
@@ -734,12 +736,12 @@
   {:test (fn []
            (is= (-> (create-game (create-empty-state))
                     (replace-hero (create-hero "Rexxar" :id "h1"))
-                    (get-character "h1")
+                    (get-board-entity "h1")
                     (:name))
                 "Rexxar"))}
   [state new-hero]
   (let [owner-id (or (:owner-id new-hero)
-                     (:owner-id (get-character state (:id new-hero))))]
+                     (:owner-id (get-board-entity state (:id new-hero))))]
     (assoc-in state [:players owner-id :hero] new-hero)))
 
 (defn update-minion
@@ -788,16 +790,16 @@
   {:test (fn []
            (is= (-> (create-game)
                     (update-hero "h1" :damage-taken inc)
-                    (get-character "h1")
+                    (get-board-entity "h1")
                     (:damage-taken))
                 1)
            (is= (-> (create-game)
                     (update-hero "h1" :damage-taken 2)
-                    (get-character "h1")
+                    (get-board-entity "h1")
                     (:damage-taken))
                 2))}
   [state id key function-or-value]
-  (let [hero (get-character state id)]
+  (let [hero (get-board-entity state id)]
     (replace-hero state (if (function? function-or-value)
                           (update hero key function-or-value)
                           (assoc hero key function-or-value)))))
