@@ -615,7 +615,7 @@
   "Get the battlecry function in the definition of a card."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                      ((get-battlecry-function (create-card "Big Game Hunter")) "wg")
+                      ((get-battlecry-function (create-card "Big Game Hunter")) "m1" "wg")
                       (get-minions)
                       (count))
                 0))}

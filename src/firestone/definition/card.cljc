@@ -11,7 +11,8 @@
                                          get-minion
                                          get-minions
                                          get-secrets
-                                         get-effects]]
+                                         get-effects
+                                         remove-secrets]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -95,11 +96,11 @@
     :battlecry        (defn big-game-hunter
                         {:test (fn []
                                  (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                                          (big-game-hunter "wg")
+                                          (big-game-hunter "m1" "wg")
                                           (get-minions "imp")
                                           (count))
                                       0))}
-                        [state target-id]
+                        [state _ target-id]
                         (destroy-minion state target-id))}
 
    "Eater of Secrets"

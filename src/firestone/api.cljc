@@ -170,11 +170,13 @@
         battlecry-function (get-battlecry-function card)
         state (-> (consume-mana state player-id (get-cost card))
                   (summon-minion player-id card position)
-                  (remove-card-from-hand player-id card-id))]
+                  (remove-card-from-hand player-id card-id))
+        minion-id (-> (:minion-ids-summoned-this-turn state)
+                      (last))]
     (if battlecry-function
       (if target-id
-        (battlecry-function state target-id)
+        (battlecry-function state minion-id target-id)
         (if (battlecry-minion-with-target? card)
           state
-          (battlecry-function state)))
+          (battlecry-function state minion-id)))
       state)))
