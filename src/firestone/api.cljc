@@ -131,9 +131,9 @@
                 [2 2])
            ; Play spell card that can only target enemy minions
            (is= (-> (create-game [{:hand [(create-card "Mind Control" :id "mc1")]}
-                                    {:minions [(create-minion "Imp" :id "i")]}])
-                      (play-spell-card "p1" "mc1" {:target-id "i"})
-                      (get-owner "i"))
+                                  {:minions [(create-minion "Imp" :id "i")]}])
+                    (play-spell-card "p1" "mc1" {:target-id "i"})
+                    (get-owner "i"))
                 "p1"))}
   [state player-id card-id {target-id :target-id}]
   (let [card (get-card-from-hand state card-id)]
@@ -167,14 +167,14 @@
                 1))}
   [state player-id card-id {position :position target-id :target-id}]
   (let [card (get-card-from-hand state card-id)
-        battlecry-function (get-battlecry-function card)]
-    (-> (if (nil? battlecry-function)
+        battlecry-function (get-battlecry-function card)
+        state (-> (consume-mana state player-id (get-cost card))
+                  (summon-minion player-id card position)
+                  (remove-card-from-hand player-id card-id))]
+    (if battlecry-function
+      (if target-id
+        (battlecry-function state target-id)
+        (if (battlecry-minion-with-target? card)
           state
-          (if (nil? target-id)
-            (if (battlecry-minion-with-target? state card-id)
-              state
-              (battlecry-function state))
-            (battlecry-function state target-id)))
-        (consume-mana player-id (get-cost card))
-        (summon-minion player-id card position)
-        (remove-card-from-hand player-id card-id))))
+          (battlecry-function state)))
+      state)))

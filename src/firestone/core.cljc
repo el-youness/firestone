@@ -636,12 +636,18 @@
            ; False for a minion without battlecry
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
                        (battlecry-minion-with-target? "i"))))}
-  [state card-id]
-  (if (and (= (get-card-type state card-id) :minion)
-           (not (nil? (get-battlecry-function state card-id)))
-           (get-target-type state card-id))
-    true
-    false))
+  ([state card-id]
+   (if (and (= (get-card-type state card-id) :minion)
+            (not (nil? (get-battlecry-function state card-id)))
+            (get-target-type state card-id))
+     true
+     false))
+  ([card]
+   (if (and (= (get-card-type card) :minion)
+            (not (nil? (get-battlecry-function card)))
+            (get-target-type card))
+     true
+     false)))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."
