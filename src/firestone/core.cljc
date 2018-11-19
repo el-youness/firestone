@@ -21,7 +21,7 @@
                                          update-minion
                                          remove-minion
                                          update-hero
-                                         get-character
+                                         get-board-entity
                                          get-mana
                                          add-minion-to-board
                                          add-secret-to-player
@@ -55,7 +55,7 @@
           (:health definition))
         (:damage-taken character))))
   ([state id]
-   (get-health (get-character state id))))
+   (get-health (get-board-entity state id))))
 
 (defn get-attack
   "Returns the attack of the minion with the given id."
@@ -141,7 +141,7 @@
                 nil)
            )}
   [state id]
-  (:owner-id (get-character state id)))
+  (:owner-id (get-board-entity state id)))
 
 (defn sleepy?
   "Checks if the minion with given id is sleepy."
@@ -162,7 +162,7 @@
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
                        (hero? "imp"))))}
   [state id]
-  (= (-> (get-character state id)
+  (= (-> (get-board-entity state id)
          (get :entity-type))
      :hero))
 
@@ -200,7 +200,7 @@
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
-        target (get-character state target-id)]
+        target (get-board-entity state target-id)]
     (and (= (:player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))

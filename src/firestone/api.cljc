@@ -7,7 +7,7 @@
                                          get-minion
                                          get-minions
                                          create-hero
-                                         get-character
+                                         get-board-entity
                                          update-minion
                                          create-card
                                          get-card-from-hand
