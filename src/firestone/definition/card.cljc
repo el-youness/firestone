@@ -131,6 +131,7 @@
                                        [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
                                  [0 2 4]))}
                    [state eater-of-secrets-id]
+                   (println "In EoS battlecry: " state)
                    (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
                                        "p2"
                                        "p1")]

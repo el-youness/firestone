@@ -631,15 +631,15 @@
            (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}])
                    (battlecry-minion-with-target? "bgh")))
            ; False for a minion with battlecry that does not need a target
-           (is-not (-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}])
-                       (battlecry-minion-with-target? "km")))
+           (is-not (-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}])
+                       (battlecry-minion-with-target? "es")))
            ; False for a minion without battlecry
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
                        (battlecry-minion-with-target? "i"))))}
   [state card-id]
   (if (and (= (get-card-type state card-id) :minion)
            (not (nil? (get-battlecry-function state card-id)))
-           (not (= (get-target-type state card-id) :none)))
+           (get-target-type state card-id))
     true
     false))
 
