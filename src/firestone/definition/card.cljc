@@ -10,7 +10,9 @@
                                          get-minions
                                          get-minion-effects]]
             [firestone.core :refer [change-minion-board-side
-                                    get-owner]]))
+                                    get-attack
+                                    get-owner
+                                    destroy-minion]]))
 
 (def card-definitions
   {
@@ -66,14 +68,33 @@
     :rarity    :none}
 
    "Big Game Hunter"
-   {:name        "Big Game Hunter"
-    :attack      4
-    :health      2
-    :mana-cost   5
-    :type        :minion
-    :set         :classic
-    :rarity      :epic
-    :description "Battlecry: Destroy a minion with an Attack of 7 or more."}
+   {:name             "Big Game Hunter"
+    :attack           4
+    :health           2
+    :mana-cost        5
+    :type             :minion
+    :set              :classic
+    :rarity           :epic
+    :description      "Battlecry: Destroy a minion with an Attack of 7 or more."
+    :target-type      :all-minions
+    :target-condition (defn attack-over-seven?
+                        {:test (fn []
+                                 (is (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                                         (attack-over-seven? "wg")))
+                                 (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                                             (attack-over-seven? "i"))))}
+                        [state target-id]
+                        {:pre [(map? state) (string? target-id)]}
+                        (>= (get-attack state target-id) 7))
+    :battlecry        (defn big-game-hunter
+                        {:test (fn []
+                                 (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                                          (big-game-hunter "wg")
+                                          (get-minions "imp")
+                                          (count))
+                                      0))}
+                        [state target-id]
+                        (destroy-minion state target-id))}
 
    "Eater of Secrets"
    {:name        "Eater of Secrets"
@@ -117,15 +138,15 @@
     :race      :beast}
 
    "Ancient Watcher"
-   {:name        "Ancient Watcher"
-    :attack      4
-    :health      5
-    :mana-cost   2
-    :type        :minion
-    :set         :classic
-    :rarity      :rare
-    :description "Can't attack."
-    :cannot-attack   true}
+   {:name          "Ancient Watcher"
+    :attack        4
+    :health        5
+    :mana-cost     2
+    :type          :minion
+    :set           :classic
+    :rarity        :rare
+    :description   "Can't attack."
+    :cannot-attack true}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"
@@ -178,8 +199,8 @@
     :spell       (defn mind-control
                    {:test (fn []
                             (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                                       (mind-control "imp")
-                                       (get-owner "imp"))
+                                     (mind-control "imp")
+                                     (get-owner "imp"))
                                  "p2"))}
                    [state target-id]
                    (change-minion-board-side state target-id))}
