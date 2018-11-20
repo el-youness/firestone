@@ -532,17 +532,16 @@
   (update-in state [:players player-id :max-mana] (partial + amount)))
 
 (defn get-spell-damage
-  "Get the total spell-damage a player has"
-  {:test (fn []
-           ; Both Dalara Mage and Ogre Magi have spell-damage effects
-           (is= (as-> (create-game [{:minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}]) $
-                      [(get-spell-damage $ "p1") (get-spell-damage $ "p2")])
-                [2 0])
-           )}
-  [state player-id]
-  (reduce + (->> (get-minions state player-id)
-                 (map (fn [minion]
-                        (println minion)
-                        (if (nil? (get-in minion [:effects :spell-damage]))
-                          0
-                          (get-in minion [:effects :spell-damage])))))))
+    "Returns the total spell-damage a player has"
+    {:test (fn []
+             ; Both Dalaran Mage and Ogre Magi have spell-damage effects, so we test a player with 2 spell-damage and another with none
+             (is= (as-> (create-game [{:minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}]) $
+                        [(get-spell-damage $ "p1") (get-spell-damage $ "p2")])
+                  [2 0])
+             )}
+    [state player-id]
+    (reduce + (->> (get-minions state player-id)
+                   (map (fn [minion]
+                          (if (nil? (get-in minion [:effects :spell-damage]))
+                            0
+                            (get-in minion [:effects :spell-damage])))))))
