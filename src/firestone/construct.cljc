@@ -120,6 +120,7 @@
                                                        :deck    []
                                                        :hand    []
                                                        :minions []
+                                                       :secrets   []
                                                        :hero    (create-hero "Jaina Proudmoore" :id "h1" :owner-id "p1")
                                                        :max-mana 10
                                                        :used-mana 0
@@ -129,6 +130,7 @@
                                                        :deck    []
                                                        :hand    []
                                                        :minions []
+                                                       :secrets   []
                                                        :hero    (create-hero "Jaina Proudmoore" :id "h2" :owner-id "p2")
                                                        :max-mana 10
                                                        :used-mana 0
@@ -148,6 +150,7 @@
                                                           :deck    []
                                                           :hand    []
                                                           :minions []
+                                                          :secrets   []
                                                           :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
                                                           :max-mana 10
                                                           :used-mana 0
@@ -421,6 +424,7 @@
                                                                                 :id "m1"
                                                                                 :owner-id "p1"
                                                                                 :position 0)]
+                                                       :secrets   []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero
@@ -434,6 +438,7 @@
                                                        :deck    []
                                                        :hand    []
                                                        :minions []
+                                                       :secrets   []
                                                        :hero    {:name         "Anduin Wrynn"
                                                                  :id           "h2"
                                                                  :entity-type  :hero
@@ -448,13 +453,14 @@
            ; Test to create game with cards in the hand and deck
            (is= (create-game [{:attacks-performed-this-turn 1
                                :hand [(create-card "Imp")] :deck [(create-card "Imp")]}
-                              {:hero (create-hero "Anduin Wrynn")}])
+                              {:hero (create-hero "Anduin Wrynn") :secrets [(create-secret "Snake Trap")]}])
                 {:player-id-in-turn             "p1"
                  :players                       {"p1" {:id      "p1"
                                                        :attacks-performed-this-turn 1
                                                        :deck    [(create-card "Imp" :id "c2" :owner-id "p1")]
                                                        :hand    [(create-card "Imp" :id "c1" :owner-id "p1")]
                                                        :minions []
+                                                       :secrets   []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero
@@ -468,6 +474,7 @@
                                                        :deck    []
                                                        :hand    []
                                                        :minions []
+                                                       :secrets   [(create-secret "Snake Trap" :id "s3" :owner-id "p2")]
                                                        :hero    {:name         "Anduin Wrynn"
                                                                  :id           "h2"
                                                                  :entity-type  :hero
@@ -486,6 +493,7 @@
                                                        :deck    []
                                                        :hand    []
                                                        :minions []
+                                                       :secrets   []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h1"
                                                                  :entity-type  :hero
@@ -499,6 +507,7 @@
                                                        :deck    []
                                                        :hand    []
                                                        :minions []
+                                                       :secrets   []
                                                        :hero    {:name         "Jaina Proudmoore"
                                                                  :id           "h2"
                                                                  :entity-type  :hero
@@ -565,46 +574,41 @@
                                $
                                (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck   (:deck player-data)})
                                             data))
-                     ; Add mana and fatigue and attacks-performed-this-turn to the players
-                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue aptt :attacks-performed-this-turn}]
-                             $
-                             (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck (:deck player-data)})
-                                          data))
 
-                     ; Add secrets
-                     (reduce (fn [state {player-id :player-id secrets :secrets}]
-                               (reduce (fn [state secret] (add-secret-to-player state player-id (if (string? secret)
-                                                                                                  (create-secret secret)
-                                                                                                  secret)))
-                                       state
-                                       secrets
-                                       ))
-                             $
-                             (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :secrets (:secrets player-data)})
-                                          data))
+                             ; Add secrets
+                             (reduce (fn [state {player-id :player-id secrets :secrets}]
+                                       (reduce (fn [state secret] (add-secret-to-player state player-id (if (string? secret)
+                                                                                                          (create-secret secret)
+                                                                                                          secret)))
+                                               state
+                                               secrets
+                                               ))
+                                     $
+                                     (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :secrets (:secrets player-data)})
+                                                  data))
 
-                     ; Add mana and fatigue to the players
-                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue}]
-                               (-> (assoc-in state [:players player-id :max-mana] max-mana)
-                                   (assoc-in [:players player-id :used-mana] used-mana)
-                                   (assoc-in [:players player-id :fatigue] fatigue)
-                                   (assoc-in [:players player-id :attacks-performed-this-turn] aptt)))
-                             $
-                             (map-indexed (fn [index player-data]
-                                            {:player-id (str "p" (inc index))
-                                             :fatigue   (if (nil? (:fatigue player-data))
-                                                          1
-                                                          (:fatigue player-data))
-                                             :max-mana  (if (nil? (:max-mana player-data))
-                                                          10
-                                                          (:max-mana player-data))
-                                             :used-mana (if (nil? (:used-mana player-data))
-                                                          0
-                                                          (:used-mana player-data))
-                                             :attacks-performed-this-turn (if (nil? (:attacks-performed-this-turn player-data))
-                                                          0
-                                                          (:attacks-performed-this-turn player-data))})
-                                          data)))]
+                             ; Add mana and fatigue to the players
+                             (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue aptt :attacks-performed-this-turn}]
+                                       (-> (assoc-in state [:players player-id :max-mana] max-mana)
+                                           (assoc-in [:players player-id :used-mana] used-mana)
+                                           (assoc-in [:players player-id :fatigue] fatigue)
+                                           (assoc-in [:players player-id :attacks-performed-this-turn] aptt)))
+                                     $
+                                     (map-indexed (fn [index player-data]
+                                                    {:player-id                   (str "p" (inc index))
+                                                     :fatigue                     (if (nil? (:fatigue player-data))
+                                                                                    1
+                                                                                    (:fatigue player-data))
+                                                     :max-mana                    (if (nil? (:max-mana player-data))
+                                                                                    10
+                                                                                    (:max-mana player-data))
+                                                     :used-mana                   (if (nil? (:used-mana player-data))
+                                                                                    0
+                                                                                    (:used-mana player-data))
+                                                     :attacks-performed-this-turn (if (nil? (:attacks-performed-this-turn player-data))
+                                                                                    0
+                                                                                    (:attacks-performed-this-turn player-data))})
+                                                  data)))]
      (if (empty? kvs)
        state
        (apply assoc state kvs))))

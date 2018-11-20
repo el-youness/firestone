@@ -29,6 +29,7 @@
                                          get-mana
                                          add-minion-to-board
                                          add-secret-to-player
+                                         get-minion-effects
                                          get-card-from-hand
                                          get-effects
                                          get-secrets
