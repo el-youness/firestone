@@ -4,15 +4,22 @@
             [ysera.test :refer [is is-not is= error?]]
             [firestone.construct :refer [create-game
                                          create-minion
+                                         create-card
+                                         create-secret
                                          update-minion
                                          update-in-minion
                                          get-minion
                                          get-minions
-                                         get-minion-effects]]
+                                         get-secrets
+                                         get-effects
+                                         remove-secrets]]
             [firestone.core :refer [change-minion-board-side
-                                    get-attack
                                     get-owner
-                                    destroy-minion]]))
+                                    get-attack
+                                    get-health
+                                    valid-plays
+                                    destroy-minion]]
+            [firestone.api :refer [play-minion-card]]))
 
 (def card-definitions
   {
@@ -89,11 +96,11 @@
     :battlecry        (defn big-game-hunter
                         {:test (fn []
                                  (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                                          (big-game-hunter "wg")
+                                          (big-game-hunter "m1" "wg")
                                           (get-minions "imp")
                                           (count))
                                       0))}
-                        [state target-id]
+                        [state _ target-id]
                         (destroy-minion state target-id))}
 
    "Eater of Secrets"
@@ -104,7 +111,34 @@
     :type        :minion
     :set         :whispers-of-the-old-gods
     :rarity      :rare
-    :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."}
+    :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."
+    :battlecry   (defn eater-of-secrets-battlecry
+                   {:test (fn []
+                            ; Opponent has one secret.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
+                                                     {:secrets ["Snake Trap"]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m2") (get-health $ "m2")])
+                                 [0 3 5])
+                            ; Opponent has two secret.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
+                                                     {:secrets ["Snake Trap" "Snake Trap"]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
+                                 [0 4 6])
+                            ; Oppenent has no secrets.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
+                                 [0 2 4]))}
+                   [state eater-of-secrets-id]
+                   (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
+                                       "p2"
+                                       "p1")]
+                     (let [number-of-secrets (count (get-secrets state opponent-id))]
+                       (-> (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
+                           (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))
+                           (remove-secrets opponent-id)))))}
 
    "Arcane Golem"
    {:name        "Arcane Golem"
@@ -273,9 +307,11 @@
    {:name        "Snake Trap"
     :mana-cost   2
     :type        :spell
+    :subtype     :secret
     :set         :classic
     :rarity      :epic
-    :description "Secret: When one of your minions is attacked summon three 1/1 Snakes."}
+    :description "Secret: When one of your minions is attacked summon three 1/1 Snakes."
+    :on-attack   "Snake Trap effect"}
    })
 
 (definitions/add-definitions! card-definitions)
