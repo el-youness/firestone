@@ -30,7 +30,7 @@
                                     restore-mana
                                     add-to-max-mana
                                     reset-minion-attack-this-turn
-                                    unfreeze-minions]]))
+                                    unfreeze-characters]]))
 
 (defn end-turn
   "Ends the turn of the playing hero"
@@ -59,7 +59,7 @@
     (let [new-pid (if (= "p1" old-pid) "p2" "p1")]
       (-> state
           ;TODO: trigger the "end of turn" card effects
-          (unfreeze-minions)
+          (unfreeze-characters)
           (assoc :player-id-in-turn new-pid
                  :minion-ids-summoned-this-turn [])
           (draw-card new-pid)
