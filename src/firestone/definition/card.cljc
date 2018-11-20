@@ -84,12 +84,12 @@
     :rarity           :epic
     :description      "Battlecry: Destroy a minion with an Attack of 7 or more."
     :target-type      :all-minions
-    :target-condition (defn attack-over-seven?
+    :target-condition (defn attack-seven-or-more?
                         {:test (fn []
                                  (is (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                                         (attack-over-seven? "wg")))
+                                         (attack-seven-or-more? "wg")))
                                  (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                                             (attack-over-seven? "i"))))}
+                                             (attack-seven-or-more? "i"))))}
                         [state target-id]
                         {:pre [(map? state) (string? target-id)]}
                         (>= (get-attack state target-id) 7))
@@ -97,7 +97,7 @@
                         {:test (fn []
                                  (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
                                           (big-game-hunter "m1" "wg")
-                                          (get-minions "imp")
+                                          (get-minions "p1")
                                           (count))
                                       0))}
                         [state _ target-id]
@@ -126,7 +126,7 @@
                                        (play-minion-card $ "p1" "es" {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
                                  [0 4 6])
-                            ; Oppenent has no secrets.
+                            ; Opponent has no secrets.
                             (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
                                        (play-minion-card $ "p1" "es" {:position 0})
                                        [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
@@ -213,14 +213,38 @@
     :description "Deal 3 damage to a character and Freeze it."}
 
    "Cabal Shadow Priest"
-   {:name        "Cabal Shadow Priest"
-    :attack      4
-    :health      5
-    :mana-cost   6
-    :type        :minion
-    :set         :classic
-    :rarity      :epic
-    :description "Battlecry: Take control of an enemy minion that has 2 or less Attack."}
+   {:name             "Cabal Shadow Priest"
+    :attack           4
+    :health           5
+    :mana-cost        6
+    :type             :minion
+    :set              :classic
+    :rarity           :epic
+    :description      "Battlecry: Take control of an enemy minion that has 2 or less Attack."
+    :target-type      :enemy-minions
+    :target-condition (defn attack-two-or-less?
+                        {:test (fn []
+                                 (is (-> (create-game [{:minions [(create-minion "Defender" :id "d")]}])
+                                         (attack-two-or-less? "d")))
+                                 (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}])
+                                             (attack-two-or-less? "aw"))))}
+                        [state target-id]
+                        {:pre [(map? state) (string? target-id)]}
+                        (<= (get-attack state target-id) 2))
+    :battlecry        (defn cabal-shadow-priest
+                        {:test (fn []
+                                 (is= (as-> (create-game [{:minions [(create-minion "Defender" :id "d")]}]) $
+                                          (cabal-shadow-priest $ "m1" "d")
+
+                                          [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
+                                      [0 1])
+                                 (is= (as-> (create-game [{:hand [(create-card "Cabal Shadow Priest" :id "c")]}
+                                                          {:minions [(create-minion "Defender" :id "d")]}]) $
+                                            (play-minion-card $ "p1" "c" {:position 0 :target-id "d"})
+                                            [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
+                                      [2 0]))}
+                        [state _ target-id]
+                        (change-minion-board-side state target-id))}
 
    "Mind Control"
    {:name        "Mind Control"
