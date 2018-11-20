@@ -6,12 +6,16 @@
                                          create-minion
                                          update-minion
                                          update-in-minion
+                                         update-in-hero
+                                         get-character
                                          get-minion
                                          get-minions
+                                         get-hero
                                          get-minion-effects]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
-                                    damage-minion]]))
+                                    damage-minion
+                                    damage-hero]]))
 
 (def card-definitions
   {
@@ -165,11 +169,19 @@
                                                    (get-minion "i"))
                                         effects (get minion :effects)]
                                     [(get effects :frozen) (get minion :damage-taken)])
+                                  [true 3])
+                             (is= (let [hero (-> (create-game)
+                                                 (frostbolt "h1")
+                                                 (get-character "h1"))
+                                        effects (get hero :effects)]
+                                    [(get effects :frozen) (get hero :damage-taken)])
                                   [true 3]))}
                     [state target-id]
-                    (-> (damage-minion state target-id 3)
-                        (update-in-minion target-id [:effects :frozen] true)))
-    }
+                    (if (= (:entity-type (get-character state target-id)) :minion)
+                      (-> (damage-minion state target-id 3)
+                          (update-in-minion target-id [:effects :frozen] true))
+                      (-> (damage-hero state target-id 3)
+                          (update-in-hero target-id [:effects :frozen] true))))}
 
    "Cabal Shadow Priest"
    {:name        "Cabal Shadow Priest"

@@ -180,7 +180,7 @@
            (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "aw" "wg")))
-           ; Should not be able to attack if "cannot-attack" is true
+           ; Should not be able to attack if "frozen" is true
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen true
                                                                                        :extra-attack 0
                                                                                        :extra-health 0})]}
