@@ -213,14 +213,33 @@
     :description "Deal 3 damage to a character and Freeze it."}
 
    "Cabal Shadow Priest"
-   {:name        "Cabal Shadow Priest"
-    :attack      4
-    :health      5
-    :mana-cost   6
-    :type        :minion
-    :set         :classic
-    :rarity      :epic
-    :description "Battlecry: Take control of an enemy minion that has 2 or less Attack."}
+   {:name             "Cabal Shadow Priest"
+    :attack           4
+    :health           5
+    :mana-cost        6
+    :type             :minion
+    :set              :classic
+    :rarity           :epic
+    :description      "Battlecry: Take control of an enemy minion that has 2 or less Attack."
+    :target-type      :enemy-minions
+    :target-condition (defn attack-two-or-less?
+                        {:test (fn []
+                                 (is (-> (create-game [{:minions [(create-minion "Defender" :id "d")]}])
+                                         (attack-two-or-less? "d")))
+                                 (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}])
+                                             (attack-two-or-less? "aw"))))}
+                        [state target-id]
+                        {:pre [(map? state) (string? target-id)]}
+                        (<= (get-attack state target-id) 2))
+    :battlecry        (defn cabal-shadow-priest
+                        {:test (fn []
+                                 (is= (as-> (create-game [{:minions [(create-minion "Defender" :id "d")]}]) $
+                                          (cabal-shadow-priest $ "m1" "d")
+
+                                          [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
+                                      [0 1]))}
+                        [state _ target-id]
+                        (change-minion-board-side state target-id))}
 
    "Mind Control"
    {:name        "Mind Control"
