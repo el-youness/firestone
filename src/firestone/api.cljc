@@ -30,6 +30,8 @@
                                     draw-card
                                     restore-mana
                                     add-to-max-mana
+                                    reset-minion-attack-this-turn
+                                    unfreeze-characters
                                     handle-triggers
                                     reset-minion-attack-this-turn
                                     get-battlecry-function]]))
@@ -68,6 +70,7 @@
           (restore-mana new-pid)
           ;TODO: reset hero power
           ;TODO: trigger the "beginning of turn" card effects
+          (unfreeze-characters)
           (reset-minion-attack-this-turn new-pid)))))
 
 (defn attack-with-minion

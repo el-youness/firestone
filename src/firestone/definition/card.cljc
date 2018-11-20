@@ -8,15 +8,21 @@
                                          create-secret
                                          update-minion
                                          update-in-minion
+                                         update-in-hero
+                                         get-character
                                          get-minion
                                          get-minions
                                          get-secrets
                                          get-effects
-                                         remove-secrets]]
+                                         remove-secrets
+                                         get-hero
+                                         get-minion-effects]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
                                     get-health
+                                    damage-minion
+                                    damage-hero
                                     valid-plays
                                     destroy-minion]]
             [firestone.api :refer [play-minion-card]]))
@@ -210,7 +216,28 @@
     :type        :spell
     :set         :basic
     :rarity      :none
-    :description "Deal 3 damage to a character and Freeze it."}
+    :description "Deal 3 damage to a character and Freeze it."
+    :target-type :all-minions
+    :spell        (defn frostbolt
+                    {:test (fn  []
+                             (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
+                                                   (frostbolt "i")
+                                                   (get-minion "i"))
+                                        effects (get minion :effects)]
+                                    [(get effects :frozen) (get minion :damage-taken)])
+                                  [true 3])
+                             (is= (let [hero (-> (create-game)
+                                                 (frostbolt "h1")
+                                                 (get-character "h1"))
+                                        effects (get hero :effects)]
+                                    [(get effects :frozen) (get hero :damage-taken)])
+                                  [true 3]))}
+                    [state target-id]
+                    (if (= (:entity-type (get-character state target-id)) :minion)
+                      (-> (damage-minion state target-id 3)
+                          (update-in-minion target-id [:effects :frozen] true))
+                      (-> (damage-hero state target-id 3)
+                          (update-in-hero target-id [:effects :frozen] true))))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"

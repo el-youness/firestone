@@ -19,8 +19,12 @@
                                          get-minion
                                          get-minions
                                          update-minion
+                                         update-in-minion
                                          remove-minion
                                          update-hero
+                                         update-in-hero
+                                         get-hero
+                                         get-character
                                          get-board-entity
                                          get-mana
                                          add-minion-to-board
@@ -194,8 +198,14 @@
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg")))
-           ;Should not be able to attack if "cannot-attack" is true
-           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "i")]}
+           ; Should not be able to attack if "cannot-attack" is true
+           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                     {:minions [(create-minion "War Golem" :id "wg")]}])
+                       (valid-attack? "p1" "aw" "wg")))
+           ; Should not be able to attack if "frozen" is true
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen true
+                                                                                       :extra-attack 0
+                                                                                       :extra-health 0})]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
@@ -205,7 +215,8 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not ((get-effects attacker) :cannot-attack)))))
+         (not ((get-minion-effects attacker) :cannot-attack))
+         (not ((get-minion-effects attacker) :frozen)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -685,7 +696,7 @@
     (assoc-in state [:players player-id :max-mana] (+ max-mana (min (- 10 max-mana) amount)))))
 
 (defn reset-minion-attack-this-turn
-  "resets :attack-this-turn back to 0 for all minions of a given player"
+  "Resets :attack-this-turn back to 0 for all minions of a given player"
   {:test (fn []
            (is= (-> {:players {"p1" {:minions [(create-minion "Imp" :attacks-performed-this-turn 1)
                                                (create-minion "Ogre Magi" :attacks-performed-this-turn 1)]}}}
@@ -695,5 +706,59 @@
   [state player-id]
   (assoc-in state [:players player-id :minions]
             (map (fn [minion] (assoc minion :attacks-performed-this-turn 0))
-                 (get-minions state player-id)))
+                 (get-minions state player-id))))
+
+(defn unfreeze-characters
+  "Unfreezes all characters of the player in turn that are Frozen if the conditions are met"
+  {:test (fn []
+           ; Minion frozen and didn't attack yet => should be unfrozen
+           (is= (-> (create-game [{:minions [(create-minion "Imp"
+                                                            :id "m1"
+                                                            :attacks-performed-this-turn 0
+                                                            :effects {:frozen  true
+                                                                      :extra-attack 0
+                                                                      :extra-health 0})]}])
+                    (unfreeze-characters)
+                    (get-minion "m1")
+                    (get-in [:effects :frozen]))
+                false)
+           ; Minion frozen and already attacked => should stay frozen
+           (is= (-> (create-game [{:minions [(create-minion "Imp"
+                                                            :id "m1"
+                                                            :attacks-performed-this-turn 1
+                                                            :effects {:frozen  true
+                                                                      :extra-attack 0
+                                                                      :extra-health 0})]}])
+                    (unfreeze-characters)
+                    (get-minion "m1")
+                    (get-in [:effects :frozen]))
+                true)
+           ; Hero frozen and didn't attack yet => should be unfrozen
+           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
+                    (unfreeze-characters)
+                    (get-hero "p1")
+                    (get-in [:effects :frozen]))
+                false)
+           ; Hero frozen and already attacked => should still be frozen
+           (is= (-> (create-game [{:attacks-performed-this-turn 1 :hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
+                    (unfreeze-characters)
+                    (get-hero "p1")
+                    (get-in [:effects :frozen]))
+                true))}
+  [state]
+  (let [player (get-player state (get state :player-id-in-turn)) hero (get-hero state (:id player))]
+    ; on minions
+    (as-> (get-minions state (:id player)) $
+          (reduce (fn [state minion]
+                   (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
+                     (update-in-minion state (:id minion) [:effects :frozen] false)
+                     state))
+                   state $)
+          ; on hero
+          (if (and (not (nil? (get-in hero [:effects :frozen]))) (= (:attacks-performed-this-turn player) 0))
+            (update-in-hero $ (:id hero) [:effects :frozen] false)
+            $))
+
+
   )
+)

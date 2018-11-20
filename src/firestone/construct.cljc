@@ -19,7 +19,12 @@
            (is= (create-hero "Jaina Proudmoore" :damage-taken 10)
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
-                 :damage-taken 10}))}
+                 :damage-taken 10})
+           (is= (create-hero "Jaina Proudmoore" :effects {:frozen true})
+                {:name         "Jaina Proudmoore"
+                 :entity-type  :hero
+                 :damage-taken 0
+                 :effects      {:frozen true}}))}
   [name & kvs]
   (let [hero {:name         name
               :entity-type  :hero
@@ -75,7 +80,7 @@
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle])
+                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen])
                                                     :extra-attack 0
                                                     :extra-health 0)}]
     (if (empty? kvs)
@@ -110,30 +115,22 @@
            (is= (create-empty-state [(create-hero "Jaina Proudmoore")
                                      (create-hero "Jaina Proudmoore")])
                 {:player-id-in-turn             "p1"
-                 :players                       {"p1" {:id        "p1"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   []
-                                                       :secrets   []
-                                                       :hero      {:name         "Jaina Proudmoore"
-                                                                   :id           "h1"
-                                                                   :damage-taken 0
-                                                                   :entity-type  :hero
-                                                                   :owner-id     "p1"}
-                                                       :max-mana  10
+                 :players                       {"p1" {:id      "p1"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    (create-hero "Jaina Proudmoore" :id "h1" :owner-id "p1")
+                                                       :max-mana 10
                                                        :used-mana 0
-                                                       :fatigue   1}
-                                                 "p2" {:id        "p2"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   []
-                                                       :secrets   []
-                                                       :hero      {:name         "Jaina Proudmoore"
-                                                                   :id           "h2"
-                                                                   :damage-taken 0
-                                                                   :entity-type  :hero
-                                                                   :owner-id     "p2"}
-                                                       :max-mana  10
+                                                       :fatigue 1}
+                                                 "p2" {:id      "p2"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    (create-hero "Jaina Proudmoore" :id "h2" :owner-id "p2")
+                                                       :max-mana 10
                                                        :used-mana 0
                                                        :fatigue   1}}
                  :counter                       1
@@ -146,13 +143,13 @@
      {:player-id-in-turn             "p1"
       :players                       (->> heroes
                                           (map-indexed (fn [index hero]
-                                                         {:id        (str "p" (inc index))
-                                                          :deck      []
-                                                          :hand      []
-                                                          :minions   []
-                                                          :secrets   []
-                                                          :hero      (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
-                                                          :max-mana  10
+                                                         {:id      (str "p" (inc index))
+                                                          :attacks-performed-this-turn 0
+                                                          :deck    []
+                                                          :hand    []
+                                                          :minions []
+                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
+                                                          :max-mana 10
                                                           :used-mana 0
                                                           :fatigue   1}))
                                           (reduce (fn [a v]
@@ -416,66 +413,67 @@
                               {:hero (create-hero "Anduin Wrynn")}]
                              :player-id-in-turn "p2")
                 {:player-id-in-turn             "p2"
-                 :players                       {"p1" {:id        "p1"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   [(create-minion "Imp"
-                                                                                  :id "m1"
-                                                                                  :owner-id "p1"
-                                                                                  :position 0)]
-                                                       :secrets   []
-                                                       :hero      {:name         "Jaina Proudmoore"
-                                                                   :id           "h1"
-                                                                   :entity-type  :hero
-                                                                   :damage-taken 0
-                                                                   :owner-id     "p1"}
-                                                       :max-mana  10
+                 :players                       {"p1" {:id      "p1"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions [(create-minion "Imp"
+                                                                                :id "m1"
+                                                                                :owner-id "p1"
+                                                                                :position 0)]
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p1"}
+                                                       :max-mana 10
                                                        :used-mana 0
-                                                       :fatigue   1}
-                                                 "p2" {:id        "p2"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   []
-                                                       :secrets   []
-                                                       :hero      {:name         "Anduin Wrynn"
-                                                                   :id           "h2"
-                                                                   :entity-type  :hero
-                                                                   :damage-taken 0
-                                                                   :owner-id     "p2"}
-                                                       :max-mana  10
+                                                       :fatigue 1}
+                                                 "p2" {:id      "p2"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Anduin Wrynn"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :damage-taken 0
+                                                                 :owner-id     "p2"}
+                                                       :max-mana 10
                                                        :used-mana 0
                                                        :fatigue   1}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []})
 
            ; Test to create game with cards in the hand and deck
-           (is= (create-game [{:hand [(create-card "Imp")] :deck [(create-card "Imp")]}
-                              {:hero (create-hero "Anduin Wrynn") :secrets [(create-secret "Snake Trap")]}])
+           (is= (create-game [{:attacks-performed-this-turn 1
+                               :hand [(create-card "Imp")] :deck [(create-card "Imp")]}
+                              {:hero (create-hero "Anduin Wrynn")}])
                 {:player-id-in-turn             "p1"
-                 :players                       {"p1" {:id        "p1"
-                                                       :deck      [(create-card "Imp" :id "c2" :owner-id "p1")]
-                                                       :hand      [(create-card "Imp" :id "c1" :owner-id "p1")]
-                                                       :minions   []
-                                                       :secrets   []
-                                                       :hero      {:name         "Jaina Proudmoore"
-                                                                   :id           "h1"
-                                                                   :entity-type  :hero
-                                                                   :owner-id     "p1"
-                                                                   :damage-taken 0}
-                                                       :max-mana  10
+                 :players                       {"p1" {:id      "p1"
+                                                       :attacks-performed-this-turn 1
+                                                       :deck    [(create-card "Imp" :id "c2" :owner-id "p1")]
+                                                       :hand    [(create-card "Imp" :id "c1" :owner-id "p1")]
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p1"
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
                                                        :used-mana 0
-                                                       :fatigue   1}
-                                                 "p2" {:id        "p2"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   []
-                                                       :secrets   [(create-secret "Snake Trap" :id "s3" :owner-id "p2")]
-                                                       :hero      {:name         "Anduin Wrynn"
-                                                                   :id           "h2"
-                                                                   :entity-type  :hero
-                                                                   :owner-id     "p2"
-                                                                   :damage-taken 0}
-                                                       :max-mana  10
+                                                       :fatigue 1}
+                                                 "p2" {:id      "p2"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Anduin Wrynn"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p2"
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
                                                        :used-mana 0
                                                        :fatigue   1}}
                  :counter                       4
@@ -483,30 +481,30 @@
            ; Test to add mana
            (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
                 {:player-id-in-turn             "p1"
-                 :players                       {"p1" {:id        "p1"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   []
-                                                       :secrets   []
-                                                       :hero      {:name         "Jaina Proudmoore"
-                                                                   :id           "h1"
-                                                                   :entity-type  :hero
-                                                                   :owner-id     "p1"
-                                                                   :damage-taken 0}
-                                                       :max-mana  10
+                 :players                       {"p1" {:id      "p1"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h1"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p1"
+                                                                 :damage-taken 0}
+                                                       :max-mana 10
                                                        :used-mana 0
-                                                       :fatigue   1}
-                                                 "p2" {:id        "p2"
-                                                       :deck      []
-                                                       :hand      []
-                                                       :minions   []
-                                                       :secrets   []
-                                                       :hero      {:name         "Jaina Proudmoore"
-                                                                   :id           "h2"
-                                                                   :entity-type  :hero
-                                                                   :owner-id     "p2"
-                                                                   :damage-taken 0}
-                                                       :max-mana  5
+                                                       :fatigue 1}
+                                                 "p2" {:id      "p2"
+                                                       :attacks-performed-this-turn 0
+                                                       :deck    []
+                                                       :hand    []
+                                                       :minions []
+                                                       :hero    {:name         "Jaina Proudmoore"
+                                                                 :id           "h2"
+                                                                 :entity-type  :hero
+                                                                 :owner-id     "p2"
+                                                                 :damage-taken 0}
+                                                       :max-mana 5
                                                        :used-mana 2
                                                        :fatigue   4}}
                  :counter                       1
@@ -564,6 +562,11 @@
                                        state
                                        deck
                                        ))
+                               $
+                               (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck   (:deck player-data)})
+                                            data))
+                     ; Add mana and fatigue and attacks-performed-this-turn to the players
+                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue aptt :attacks-performed-this-turn}]
                              $
                              (map-indexed (fn [index player-data] {:player-id (str "p" (inc index)) :deck (:deck player-data)})
                                           data))
@@ -584,7 +587,8 @@
                      (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue}]
                                (-> (assoc-in state [:players player-id :max-mana] max-mana)
                                    (assoc-in [:players player-id :used-mana] used-mana)
-                                   (assoc-in [:players player-id :fatigue] fatigue)))
+                                   (assoc-in [:players player-id :fatigue] fatigue)
+                                   (assoc-in [:players player-id :attacks-performed-this-turn] aptt)))
                              $
                              (map-indexed (fn [index player-data]
                                             {:player-id (str "p" (inc index))
@@ -596,7 +600,10 @@
                                                           (:max-mana player-data))
                                              :used-mana (if (nil? (:used-mana player-data))
                                                           0
-                                                          (:used-mana player-data))})
+                                                          (:used-mana player-data))
+                                             :attacks-performed-this-turn (if (nil? (:attacks-performed-this-turn player-data))
+                                                          0
+                                                          (:attacks-performed-this-turn player-data))})
                                           data)))]
      (if (empty? kvs)
        state
@@ -655,6 +662,56 @@
   (->> (:players state)
        (vals)
        (map :hero)))
+
+(defn get-hero
+  "Returns a hero for the given player-id."
+  {:test (fn []
+           (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}{:hero (create-hero "Anduin Wrynn")}]) $
+                    [((get-hero $ "p1") :name) ((get-hero $ "p2") :name)])
+                ["Jaina Proudmoore" "Anduin Wrynn"]))}
+  [state owner-id]
+  (->> (get-heroes state)
+       (filter (fn [h] (= (:owner-id h) owner-id)))
+       (first))
+  )
+
+(defn get-character
+  "Returns the character with the given id from the state."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :id "h1")}])
+                    (get-character "h1")
+                    (:name))
+                "Jaina Proudmoore")
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (get-character "i")
+                    (:name))
+                "Imp"))}
+  [state id]
+  (->> (concat (get-minions state)
+               (get-heroes state))
+       (filter (fn [c] (= (:id c) id)))
+       (first)))
+
+(defn get-minion-effects
+  "Gets the effects map from the given minion."
+  {:test (fn []
+           (is= (-> (create-minion "Imp")
+                    (get-minion-effects))
+                {:extra-attack 0
+                 :extra-health 0})
+           (is= (-> (create-minion "Acolyte of Pain")
+                    (get-minion-effects))
+                {:on-damage "Acolyte of Pain effect"
+                 :extra-attack 0
+                 :extra-health 0})
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                    (get-minion-effects "imp"))
+                {:extra-attack 0
+                 :extra-health 0}))}
+  ([minion]
+   (:effects minion))
+  ([state id]
+    (get-minion-effects (get-minion state id))))
 
 (defn get-board-entity
   "Returns the hero, minion or secret with the given id from the state."
@@ -803,6 +860,21 @@
     (replace-hero state (if (function? function-or-value)
                           (update hero key function-or-value)
                           (assoc hero key function-or-value)))))
+
+(defn update-in-hero
+  "Updates the value of the given key nested inside the hero with the given id. If function-or-value is a value it will be the
+   new value, else if it is a function it will be applied on the existing value to produce the new value."
+  {:test (fn []
+           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
+                    (update-in-hero "h1" [:effects :frozen] false)
+                    (get-character "h1")
+                    (get-in [:effects :frozen]))
+                false))}
+  [state id keys function-or-value]
+  (let [hero (get-character state id)]
+    (replace-hero state (if (function? function-or-value)
+                          (update-in hero keys function-or-value)
+                          (assoc-in hero keys function-or-value)))))
 
 (defn remove-minion
   "Removes a minion with the given id from the state."
