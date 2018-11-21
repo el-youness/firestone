@@ -696,12 +696,12 @@
   (let [max-mana (get-in state [:players player-id :max-mana])]
     (assoc-in state [:players player-id :max-mana] (+ max-mana (min (- 10 max-mana) amount)))))
 
-(defn get-spell-damage
+(defn get-player-spell-damage
   "Returns the total spell-damage a player has"
   {:test (fn []
            ; Both Dalaran Mage and Ogre Magi have spell-damage effects, so we test a player with 2 spell-damage and another with none
            (is= (as-> (create-game [{:minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}]) $
-                      [(get-spell-damage $ "p1") (get-spell-damage $ "p2")])
+                      [(get-player-spell-damage $ "p1") (get-player-spell-damage $ "p2")])
                 [2 0])
            )}
   [state player-id]
@@ -710,6 +710,31 @@
                         (if (nil? (get-in minion [:effects :spell-damage]))
                           0
                           (get-in minion [:effects :spell-damage])))))))
+
+(defn deal-spell-damage
+  "Deals damage to a character taking into account the spell-damage"
+  {:test (fn []
+           ; Hero has {:spell-damage 2} deals spell damage to opposing hero
+           (is= (-> (create-game [{:hero (create-hero "Uther Lightbringer") :minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}
+                                  {:hero (create-hero "Jaina Proudmoore")}])
+                    (deal-spell-damage "p1" "h1" 3)
+                    (get-health "h1"))
+                (as-> (get-definition "Jaina Proudmoore") $
+                      (- ($ :health) 5)))
+           ; Hero has {:spell-damage 2} deals spell damage to opposing minoin
+           (is= (-> (create-game [{:hero (create-hero "Uther Lightbringer") :minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}
+                                  {:hero (create-hero "Jaina Proudmoore") :minions [(create-minion "War Golem" :id "wg")]}])
+                    (deal-spell-damage "p1" "wg" 3)
+                    (get-health "wg"))
+                (as-> (get-definition "War Golem") $
+                      (- ($ :health) 5)))
+           )}
+  [state player-id target-id damage]
+  (let [total-damage (+ damage (get-player-spell-damage state player-id))
+        target (get-character state target-id)]
+   (if (= (:entity-type target) :hero)
+     (damage-hero state target-id total-damage)
+     (damage-minion state target-id total-damage))))
 
 (defn reset-minion-attack-this-turn
   "Resets :attack-this-turn back to 0 for all minions of a given player"
