@@ -705,16 +705,29 @@
        (map :hero)))
 
 (defn get-hero
-  "Returns a hero for the given player-id."
+  "Returns the hero for the given player-id."
   {:test (fn []
-           (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}{:hero (create-hero "Anduin Wrynn")}]) $
+           (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}
+                                    {:hero (create-hero "Anduin Wrynn")}]) $
                     [((get-hero $ "p1") :name) ((get-hero $ "p2") :name)])
                 ["Jaina Proudmoore" "Anduin Wrynn"]))}
   [state owner-id]
   (->> (get-heroes state)
        (filter (fn [h] (= (:owner-id h) owner-id)))
-       (first))
-  )
+       (first)))
+
+(defn get-hero-power
+  "Returns the hero-power for the given player-id."
+  {:test (fn []
+           (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}
+                                    {:hero (create-hero "Anduin Wrynn")}]) $
+                      [((get-hero-power $ "p1") :name) ((get-hero-power $ "p2") :name)])
+                ["Fireblast" "Lesser Heal"]))}
+  [state owner-id]
+  (->> (get-heroes state)
+       (filter (fn [h] (= (:owner-id h) owner-id)))
+       (first)
+       :hero-power))
 
 (defn get-character
   "Returns the character with the given id from the state."
