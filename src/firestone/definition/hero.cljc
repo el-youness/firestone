@@ -35,12 +35,14 @@
    {:name        "Fireblast"
     :mana-cost   2
     :type        :hero-power
+    :target-type :all-minions
     :description "Deal 1 damage."}
 
    "Lesser Heal"
    {:name        "Lesser Heal"
     :mana-cost   2
     :type        :hero-power
+    :target-type :all-minions
     :description "Restore 2 health."}
 
    "Reinforce"
@@ -53,6 +55,7 @@
    {:name        "Steady Shot"
     :mana-cost   2
     :type        :hero-power
+    :target-type :enemy-hero
     :description "Deal 2 damage to the enemy hero."}
 
    })
