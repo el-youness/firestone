@@ -124,35 +124,6 @@
                                         [state player-id]
                                         (heal-hero state (get-hero-id state player-id) 8))
 
-   "King Mukla battelcry"             (defn king-mukla-battlecry
-                                        "Battlecry: Give your opponent 2 Bananas."
-                                        {:test (fn []
-                                                 (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
-                                                          ((effect-definitions "King Mukla battelcry") "km" ["km"] )
-                                                          (get-hand "p2")
-                                                          (->> (map #(:name %))))
-                                                      ["Bananas" "Bananas"]))}
-                                        [state minion-id [mukla-id] ]
-                                        (if (= minion-id mukla-id)
-                                          (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
-                                                card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
-                                            (reduce add-card-to-hand state [card-description
-                                                                            card-description]))
-                                          state))
-   "Arcane Golem battlecry"           (defn arcane-golem-battlecry
-                                        "Battlecry: Give your opponent a Mana Crystal."
-                                        {:test (fn []
-                                                 (is= (-> (create-game [{:minions [(create-minion "Arcane Golem" :id "ag")]}
-                                                                        {:max-mana 5}])
-                                                          ((effect-definitions "Arcane Golem battlecry") "ag" ["ag"] )
-                                                          (get-mana "p2"))
-                                                      6))}
-                                        [state minion-id [golem-id] ]
-                                        (if (= minion-id golem-id)
-                                          (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
-                                            (add-to-max-mana state opponent-player-id 1))
-                                          state))})
-
    ; Secrets
    "Snake Trap effect"                (defn snake-trap-effect
                                         "Secret: When one of your minions is attacked summon three 1/1 Snakes."
