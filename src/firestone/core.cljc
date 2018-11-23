@@ -183,6 +183,54 @@
          (get :entity-type))
      :hero))
 
+(defn hero-power?
+  "Checks if the given entity-id is a hero power."
+  {:test (fn []
+           (is (-> (create-game)
+                   (hero-power? "hp1")))
+           (is-not (hero-power? (create-card "Imp"))))}
+  ([entity]
+   (= (:type (get-definition entity)) :hero-power))
+  ([state entity-id]
+   (let [entity (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))]
+     (if (nil? entity)
+       false
+       (hero-power? entity)))))
+
+(defn minion-card?
+  "Checks if the card or the card with the given id is a minion card."
+  {:test (fn []
+           (is (minion-card? (create-card "Imp")))
+           (is (minion-card? "Imp"))
+           (is (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                   (minion-card? "i")))
+           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "b")]}])
+                       (minion-card? "b"))))}
+  ([card]
+   (= (:type (get-definition card)) :minion))
+  ([state id]
+   (let [card (get-card-from-hand state id)]
+     (if (nil? card)
+       false
+       (minion-card? card)))))
+
+(defn secret-card?
+  "Checks if the card or the card with the given id is a secret card."
+  {:test (fn []
+           (is (secret-card? (create-card "Snake Trap")))
+           (is (secret-card? "Snake Trap"))
+           (is (-> (create-game [{:hand [(create-card "Snake Trap" :id "s")]}])
+                   (secret-card? "s")))
+           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "b")]}])
+                       (secret-card? "b"))))}
+  ([card]
+   (= (:subtype (get-definition card)) :secret))
+  ([state id]
+   (let [card (get-card-from-hand state id)]
+     (if (nil? card)
+       false
+       (secret-card? card)))))
+
 (defn valid-attack?
   "Checks if the attack is valid."
   {:test (fn []
@@ -216,7 +264,7 @@
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "aw" "wg")))
            ; Should not be able to attack if "frozen" is true
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen true
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen       true
                                                                                        :extra-attack 0
                                                                                        :extra-health 0})]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
@@ -393,8 +441,7 @@
                                          (create-minion "War Golem")
                                          (create-minion "War Golem")
                                          (create-minion "War Golem")
-                                         (create-minion "War Golem")]}]))
-           )}
+                                         (create-minion "War Golem")]}])))}
   ([state player-id card position]
    (if (< (count (get-minions state player-id)) 7)
      (let [minion (create-minion (if (string? card)
@@ -431,8 +478,7 @@
            (is= (-> (create-game)
                     (draw-card "p1")
                     (draw-card "p1"))
-                (create-game [{:fatigue 3 :hero (create-hero "Jaina Proudmoore" :damage-taken 3)}]))
-           )}
+                (create-game [{:fatigue 3 :hero (create-hero "Jaina Proudmoore" :damage-taken 3)}])))}
   ([state player-id]
    {:pre [(map? state) (string? player-id)]}
     ; Check if there are cards in the deck
@@ -465,8 +511,7 @@
            ; Test mulligan when the players' decks are empty
            (is= (-> (create-game)
                     (mulligan 1 1))
-                (create-game))
-           )}
+                (create-game)))}
   ([state x y]
    {:pre [(map? state) (number? x) (number? y)]}
    (reduce (fn [state {player-id :player-id cards :cards}]
@@ -481,33 +526,55 @@
                           (let [player-id (str "p" (inc index))]
                             {:player-id player-id
                              :cards     (get-cards-from-deck state player-id amount)}))
-                        [x y])
+                        [x y]))))
 
-           )))
+(defn secret-active?
+  "Returns true if the player has an active secret with the given name."
+  {:test (fn []
+           (is (-> (create-game [{:secrets ["Snake Trap"]}])
+                   (secret-active? "p1" "Snake Trap")))
+           (is-not (-> (create-game)
+                       (secret-active? "p1" "Snake Trap")))
+           (is (-> (create-game [{} {:secrets ["Snake Trap"]}])
+                   (secret-active? "p2" (create-secret "Snake Trap")))))}
+  [state player-id secret]
+  (> (->> (get-secrets state player-id)
+          (filter (fn [v] (= (:name v) (if (string? secret)
+                                         secret
+                                         (:name secret)))))
+          (count))
+     0))
 
 (defn playable?
-  "Checks if a card or hero power is playable on the board for a specific player."
+  "Checks if a card or hero power is playable for a specific player."
   {:test (fn []
            (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
                    (playable? "p1" "c1")))
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 0}])
                        (playable? "p1" "c1")))
-           (is-not (-> (create-game [{:max-mana 5 :hand [(create-card "Imp" :id "c1")]
+           (is-not (-> (create-game [{:max-mana 5
+                                      :hand     [(create-card "Imp" :id "c1")]
                                       :minions  ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
                        (playable? "p1" "c1")))
            (is (-> (create-game)
-                   (playable? "p1" "hp1"))))}
-  [state player-id card-id]
+                   (playable? "p1" "hp1")))
+           ; Secret not playable if same secret already in play.
+           (is-not (-> (create-game [{:hand    [(create-card "Snake Trap" :id "c1")]
+                                      :secrets ["Snake Trap"]}])
+                       (playable? "p1" "c1"))))}
+  [state player-id entity-id]
   (let [available-mana (get-mana state player-id)
-        cost (get-cost state card-id)
-        minions-on-board (get-minions state player-id)
-        type (get-entity-type state card-id)]
+        cost (get-cost state entity-id)
+        minions-on-board (get-minions state player-id)]
     (and (<= cost available-mana)
-         (if (= type :minion)
+         (if (hero-power? state entity-id)
+           (not (:used (get-hero-power state player-id)))
+           true)
+         (if (minion-card? state entity-id)
            (< (count minions-on-board) 7)
            true)
-         (if (= type :hero-power)
-           (not (:used (get-hero-power state player-id)))
+         (if (secret-card? state entity-id)
+           (not (secret-active? state player-id (get-card-from-hand state entity-id)))
            true))))
 
 (defn spell-with-target?
@@ -515,13 +582,13 @@
   {:test (fn []
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
                        (spell-with-target? "i")))
+           (is-not (-> (create-game [{:hand [(create-card "Snake Trap" :id "s")]}])
+                       (spell-with-target? "s")))
            (is (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
                    (spell-with-target? "b1"))))}
   [state card-id]
-  (if (and (= (get-entity-type state card-id) :spell)
-           (not (= (get-target-type state card-id) :none)))
-    true
-    false))
+  (and (= (get-entity-type state card-id) :spell)
+       (get-target-type state card-id)))
 
 (defn get-target-condition-function
   "Get the target condition function in the definition of a card or hero power."
@@ -586,7 +653,7 @@
                   (= target-type :friendly-minions)
                   (get-minions state (if (= player-id "p1") "p1" "p2"))
 
-                  ; TODO: Add checks for other target-type.
+                  ; TODO: Might need checks for other target-type.
                   :else
                   [])
         targets-ids (map :id targets)]
@@ -601,6 +668,7 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "War Golem" :id "wg1")]
                                    :hand    [(create-card "Bananas" :id "b1")
+                                             (create-card "Snake Trap" :id "st")
                                              (create-card "Mind Control" :id "mc1")
                                              (create-card "Imp" :id "i3")
                                              (create-card "Big Game Hunter" :id "bgh1")]}
@@ -610,6 +678,7 @@
                 {"b1"   ["i1" "wg1" "d1" "d2"]
                  "mc1"  ["d1" "d2"]
                  "i3"   []
+                 "st"   []
                  "bgh1" ["wg1"]
                  "hp1"  ["i1" "wg1" "d1" "d2" "h1" "h2"]})
            (is= (-> (create-game [{:hero "Uther Lightbringer"
@@ -619,7 +688,12 @@
                     (valid-plays))
                 {"bgh" []
                  "f"   ["h1" "h2"]
-                 "hp1" []}))}
+                 "hp1" []})
+
+           ; Cannot play a secret card if that secret it already in play.
+           (is= (-> (create-game [{:secrets ["Snake Trap"] :hand ["Snake Trap"]}])
+                    (valid-plays))
+                {"hp1" ["h1" "h2"]}))}
   [state]
   (let [player-in-turn (:player-id-in-turn state)]
     (reduce (fn [plays entity-id]
@@ -644,14 +718,21 @@
                     (get-secrets)
                     (count))
                 1)
-           ; Cannot have more than 5 secrets in play
+           ; Cannot have more than 5 secrets in play (need more secrets for better test)
            (is= (-> (create-game [{:secrets ["Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap"]}])
                     (play-secret "p1" (create-secret "Snake Trap"))
                     (get-secrets)
                     (count))
-                5))}
+                5)
+           ; Can only have one of each secret
+           (is= (-> (create-game [{:secrets ["Snake Trap"]}])
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                1))}
   [state player-id secret]
-  (if (< (count (get-secrets state player-id)) 5)
+  (if (and (not (secret-active? state player-id secret))
+           (< (count (get-secrets state player-id)) 5))
     (add-secret-to-player state player-id secret)
     state))
 
