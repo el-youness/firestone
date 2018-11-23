@@ -257,12 +257,7 @@
                     (handle-triggers :on-damage "m1")
                     (get-hand "p1")
                     (count))
-                1)
-           (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
-                    (handle-triggers :on-playing-card "km")
-                    (get-hand "p2")
-                    (->> (map #(:name %))))
-                ["Bananas" "Bananas"]))}
+                1))}
   [state event & args]
   (->> (concat (get-minions state) (get-secrets state))
        (reduce (fn [state entity]

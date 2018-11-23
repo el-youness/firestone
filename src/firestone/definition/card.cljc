@@ -16,7 +16,10 @@
                                          get-effects
                                          remove-secrets
                                          get-hero
-                                         get-minion-effects]]
+                                         get-minion-effects
+                                         opposing-player-id
+                                         add-card-to-hand
+                                         get-hand]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -212,7 +215,20 @@
     :set         :classic
     :rarity      :legendary
     :description "Battlecry: Give your opponent 2 Bananas."
-    :on-playing-card "King Mukla battelcry"}
+    :on-playing-card "King Mukla battelcry"
+    :battlecry    (defn king-mukla
+                    "Battlecry: Give your opponent 2 Bananas."
+                    {:test (fn []
+                             (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
+                                      (king-mukla "km")
+                                      (get-hand "p2")
+                                      (->> (map #(:name %))))
+                                  ["Bananas" "Bananas"]))}
+                    [state minion-id]
+                    (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
+                          card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
+                      (reduce add-card-to-hand state [card-description
+                                                      card-description])))}
 
    "Frostbolt"
    {:name        "Frostbolt"
@@ -266,7 +282,6 @@
                         {:test (fn []
                                  (is= (as-> (create-game [{:minions [(create-minion "Defender" :id "d")]}]) $
                                           (cabal-shadow-priest $ "m1" "d")
-
                                           [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
                                       [0 1])
                                  (is= (as-> (create-game [{:hand [(create-card "Cabal Shadow Priest" :id "c")]
