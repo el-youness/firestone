@@ -587,6 +587,23 @@
             {}
             (map :id (get-hand state player-in-turn)))))
 
+(defn secret-active?
+  "Returns true if the player has an active secret with the given name."
+  {:test (fn []
+           (is (-> (create-game [{:secrets ["Snake Trap"]}])
+                   (secret-active? "p1" "Snake Trap")))
+           (is-not (-> (create-game)
+                       (secret-active? "p1" "Snake Trap")))
+           (is (-> (create-game [{} {:secrets ["Snake Trap"]}])
+                   (secret-active? "p2" (create-secret "Snake Trap")))))}
+  [state player-id secret]
+  (> (->> (get-secrets state player-id)
+          (filter (fn [v] (= (:name v) (if (string? secret)
+                                         secret
+                                         (:name secret)))))
+          (count))
+     0))
+
 (defn play-secret
   "Puts a secret into play if there is space."
   {:test (fn []
@@ -595,14 +612,21 @@
                     (get-secrets)
                     (count))
                 1)
-           ; Cannot have more than 5 secrets in play
+           ; Cannot have more than 5 secrets in play (need more secrets for better test)
            (is= (-> (create-game [{:secrets ["Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap"]}])
                     (play-secret "p1" (create-secret "Snake Trap"))
                     (get-secrets)
                     (count))
-                5))}
+                5)
+           ; Can only have one of each secret
+           (is= (-> (create-game [{:secrets ["Snake Trap"]}])
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                1))}
   [state player-id secret]
-  (if (< (count (get-secrets state player-id)) 5)
+  (if (and (not (secret-active? state player-id secret))
+           (< (count (get-secrets state player-id)) 5))
     (add-secret-to-player state player-id secret)
     state))
 
