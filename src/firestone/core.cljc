@@ -1,5 +1,6 @@
 (ns firestone.core
-  (:require [ysera.test :refer [is is-not is= error?]]
+  (:require [clojure.test :refer [function?]]
+            [ysera.test :refer [is is-not is= error?]]
             [ysera.collections :refer [seq-contains?]]
             [firestone.definitions :refer [get-definition]]
             [firestone.construct :refer [create-card
@@ -18,13 +19,21 @@
                                          get-minion
                                          get-minions
                                          update-minion
+                                         update-in-minion
                                          remove-minion
                                          update-hero
+                                         update-in-hero
+                                         get-hero
                                          get-character
+                                         get-board-entity
                                          get-mana
                                          add-minion-to-board
+                                         add-secret-to-player
+                                         get-minion-effects
                                          get-card-from-hand
-                                         get-minion-effects]]))
+                                         get-effects
+                                         get-secrets
+                                         create-secret]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -49,9 +58,9 @@
      (- (if (map? (:effects character))
           (+ (:health definition) (get-in character [:effects :extra-health]))
           (:health definition))
-       (:damage-taken character))))
+        (:damage-taken character))))
   ([state id]
-   (get-health (get-character state id))))
+   (get-health (get-board-entity state id))))
 
 (defn get-attack
   "Returns the attack of the minion with the given id."
@@ -66,7 +75,7 @@
   [state id]
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
-    (+ (:attack definition) (get-in minion [:effects :extra-attack])) ))
+    (+ (:attack definition) (get-in minion [:effects :extra-attack]))))
 
 (defn get-cost
   "Returns the cost of the minion with the given name."
@@ -82,8 +91,8 @@
                 3))}
   ([card]
    (get (get-definition (:name card)) :mana-cost))
-  ([state id]
-   (get-cost (get-card-from-hand state id))))
+  ([state card-id]
+   (get-cost (get-card-from-hand state card-id))))
 
 (defn get-card-type
   "Returns the type of the card with the given id or entity."
@@ -99,8 +108,8 @@
                 :minion))}
   ([card]
    (get (get-definition (:name card)) :type))
-  ([state id]
-   (get-card-type (get-card-from-hand state id))))
+  ([state card-id]
+   (get-card-type (get-card-from-hand state card-id))))
 
 (defn get-target-type
   "Returns the type of the card with the given id or entity."
@@ -116,8 +125,8 @@
                 :enemy-minions))}
   ([card]
    (get (get-definition (:name card)) :target-type))
-  ([state id]
-   (get-target-type (get-card-from-hand state id))))
+  ([state card-id]
+   (get-target-type (get-card-from-hand state card-id))))
 
 (defn get-owner
   "Returns the player-id of the owner of the character with the given id."
@@ -137,7 +146,7 @@
                 nil)
            )}
   [state id]
-  (:owner-id (get-character state id)))
+  (:owner-id (get-board-entity state id)))
 
 (defn sleepy?
   "Checks if the minion with given id is sleepy."
@@ -151,19 +160,47 @@
   (seq-contains? (:minion-ids-summoned-this-turn state) id))
 
 (defn hero?
-  "Checks if the character with given id is a hero"
+  "Checks if the character with given id is a hero."
   {:test (fn []
            (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
                    (hero? "h1")))
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
                        (hero? "imp"))))}
   [state id]
-  (= (-> (get-character state id)
+  (= (-> (get-board-entity state id)
          (get :entity-type))
      :hero))
 
+(defn minion-card?
+  "Checks if the card or the card with the given id is a minion card."
+  {:test (fn []
+           (is (minion-card? (create-card "Imp")))
+           (is (minion-card? "Imp"))
+           (is (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                   (minion-card? "i")))
+           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "b")]}])
+                       (minion-card? "b"))))}
+  ([card]
+   (= (:type (get-definition card)) :minion))
+  ([state id]
+   (minion-card? (get-card-from-hand state id))))
+
+(defn secret-card?
+  "Checks if the card or the card with the given id is a secret card."
+  {:test (fn []
+           (is (secret-card? (create-card "Snake Trap")))
+           (is (secret-card? "Snake Trap"))
+           (is (-> (create-game [{:hand [(create-card "Snake Trap" :id "s")]}])
+                   (secret-card? "s")))
+           (is-not (-> (create-game [{:hand [(create-card "Bananas" :id "b")]}])
+                       (secret-card? "b"))))}
+  ([card]
+    (= (:subtype (get-definition card)) :secret))
+  ([state id]
+    (secret-card? (get-card-from-hand state id))))
+
 (defn valid-attack?
-  "Checks if the attack is valid"
+  "Checks if the attack is valid."
   {:test (fn []
            ; Should be able to attack an enemy minion
            (is (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
@@ -190,18 +227,25 @@
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg")))
-           ;Should not be able to attack if "cannot-attack" is true
-           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "i")]}
+           ; Should not be able to attack if "cannot-attack" is true
+           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                     {:minions [(create-minion "War Golem" :id "wg")]}])
+                       (valid-attack? "p1" "aw" "wg")))
+           ; Should not be able to attack if "frozen" is true
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen       true
+                                                                                       :extra-attack 0
+                                                                                       :extra-health 0})]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
-        target (get-character state target-id)]
+        target (get-board-entity state target-id)]
     (and (= (:player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not ((get-minion-effects attacker) :cannot-attack)))))
+         (not ((get-minion-effects attacker) :cannot-attack))
+         (not ((get-minion-effects attacker) :frozen)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -213,20 +257,15 @@
                     (handle-triggers :on-damage "m1")
                     (get-hand "p1")
                     (count))
-                1)
-           (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
-                    (handle-triggers :on-playing-card "km")
-                    (get-hand "p2")
-                    (->> (map #(:name %))))
-                ["Bananas" "Bananas"]))}
+                1))}
   [state event & args]
-  ;TODO triggers from heroes, weapons, secrets, cards... everything!
-  (reduce (fn [state minion]
-            (let [effects (get-minion-effects minion)]
-              (if (contains? effects event)
-                ((get-definition (effects event)) state (:id minion) args)
-                state)))
-          state (get-minions state)))
+  (->> (concat (get-minions state) (get-secrets state))
+       (reduce (fn [state entity]
+                 (let [effects (get-effects entity)]
+                   (if (contains? effects event)
+                     ((get-definition (effects event)) state (:id entity) args)
+                     state)))
+               state)))
 
 (defn change-minion-board-side
   "Causes a minion on the board to switch board side and owner."
@@ -240,12 +279,12 @@
   [state id]
   (let [minion (get-minion state id)
         new-owner-id (if (= (get-owner state id) "p1")
-                    "p2"
-                    "p1")]
+                       "p2"
+                       "p1")]
     (-> (remove-minion state id)
         (add-minion-to-board {:player-id new-owner-id
-                              :minion minion
-                              :position 0}))))
+                              :minion    minion
+                              :position  0}))))
 
 (defn destroy-minion
   "Causes a minion on the board to die. Should trigger deathrattles and other on death effects."
@@ -260,7 +299,7 @@
                     (count))
                 1))}
   [state id]
-  (-> (let [effects (get-minion-effects (get-minion state id))]
+  (-> (let [effects (get-effects (get-minion state id))]
         (if (contains? effects :deathrattle)
           (let [deathrattle (get-definition (effects :deathrattle))
                 owner-id (get-owner state id)]
@@ -309,7 +348,7 @@
                 (as-> (get-definition "Rexxar") $
                       (- ($ :health) 7))))}
   [state id damage]
-  (let [state (update-hero state id  :damage-taken (partial + damage))]
+  (let [state (update-hero state id :damage-taken (partial + damage))]
     (if (> (get-health state id) 0)
       state
       ; TODO: game should be over
@@ -360,12 +399,37 @@
            )}
   ([state player-id card position]
    (if (< (count (get-minions state player-id)) 7)
-     (let [minion (create-minion (:name card))]
-       (-> state
-           (add-minion-to-board {:player-id player-id :minion minion :position position})))
+     (let [minion (create-minion (if (string? card)
+                                   card
+                                   (:name card)))]
+       (add-minion-to-board state {:player-id player-id :minion minion :position position}))
      state))
   ([state player-id card]
    (summon-minion state player-id card 0)))
+
+(defn give-card
+  "Adds a card to a given players hand, on the condition that it isn't full."
+  {:test (fn []
+           ; Add a card to an empty players hand
+           (is= (-> (create-game)
+                    (give-card "p2" (create-card "Imp"))
+                    (get-hand "p2")
+                    (count))
+                1)
+           ; Burn a card when the player's hand is full
+           (is= (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp")]}])
+                    (give-card "p1" (create-card "Imp"))
+                    (get-hand "p1")
+                    (count))
+                10))}
+  ([state player-id card]
+   {:pre [(map? state) (string? player-id)]}
+    ; Check if there are cards in the deck
+   (if (< (count (get-hand state player-id)) 10)
+     (add-card-to-hand state {:player-id player-id :card card})
+     state)))
 
 (defn draw-card
   "Draw a card from a player's deck and put it in the hand. This is only done if the hand is not full
@@ -375,16 +439,6 @@
            (is= (-> (create-game [{:deck [(create-card "Imp")]}])
                     (draw-card "p1"))
                 (create-game [{:hand [(create-card "Imp")]}]))
-           ; Test to draw a card when the player's hand is full
-           (is= (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp")]
-                                   :deck [(create-card "War Golem")]}])
-                    (draw-card "p1"))
-                (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp")]}])
-                    (update :counter inc)))
            ; Test that a player takes fatigue damage if there are no cards in the deck
            (is= (-> (create-game)
                     (draw-card "p1"))
@@ -393,8 +447,7 @@
            (is= (-> (create-game)
                     (draw-card "p1")
                     (draw-card "p1"))
-                (create-game [{:fatigue 3 :hero (create-hero "Jaina Proudmoore" :damage-taken 3)}]))
-           )}
+                (create-game [{:fatigue 3 :hero (create-hero "Jaina Proudmoore" :damage-taken 3)}])))}
   ([state player-id]
    {:pre [(map? state) (string? player-id)]}
     ; Check if there are cards in the deck
@@ -403,10 +456,7 @@
        (damage-hero state (get-hero-id state player-id) damage))
      (let [card (first (get-cards-from-deck state player-id 1))]
        (let [state (remove-card-from-deck state player-id (:id card))]
-         ; Check that the hand is not full
-         (if (< (count (get-hand state player-id)) 10)
-           (add-card-to-hand state {:player-id player-id :card card})
-           state))))))
+         (give-card state player-id card))))))
 
 (defn mulligan
   "Take x cards from player 1's deck and y cards from player 2's deck. The cards are removed from the
@@ -447,8 +497,25 @@
 
            )))
 
+(defn secret-active?
+  "Returns true if the player has an active secret with the given name."
+  {:test (fn []
+           (is (-> (create-game [{:secrets ["Snake Trap"]}])
+                   (secret-active? "p1" "Snake Trap")))
+           (is-not (-> (create-game)
+                       (secret-active? "p1" "Snake Trap")))
+           (is (-> (create-game [{} {:secrets ["Snake Trap"]}])
+                   (secret-active? "p2" (create-secret "Snake Trap")))))}
+  [state player-id secret]
+  (> (->> (get-secrets state player-id)
+          (filter (fn [v] (= (:name v) (if (string? secret)
+                                         secret
+                                         (:name secret)))))
+          (count))
+     0))
+
 (defn playable?
-  "Checks if a card is playable on the board for a specific player"
+  "Checks if a card is playable for a specific player."
   {:test (fn []
            (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
                    (playable? "p1" "c1"))
@@ -460,37 +527,50 @@
                                       :minions  ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
                        (playable? "p1" "c1"))
                    )
-           )}
+           ; Secret not playable if same secret already in play.
+           (is-not (-> (create-game [{:hand [(create-card "Snake Trap" :id "c1")] :secrets ["Snake Trap"]}])
+                       (playable? "p1" "c1"))
+                   ))}
   [state player-id card-id]
   (let [available-mana (get-mana state player-id)
         card-cost (get-cost state card-id)
-        minions-on-board (get-minions state player-id)
-        card-type (get-card-type state card-id)]
+        minions-on-board (get-minions state player-id)]
     (and (<= card-cost available-mana)
-         (if (= card-type :minion)
-             (< (count minions-on-board) 7)
-             true))))
+         (if (minion-card? state card-id)
+           (< (count minions-on-board) 7)
+           true)
+         (if (secret-card? state card-id)
+           (not (secret-active? state player-id (get-card-from-hand state card-id)))
+           true))))
 
 (defn spell-with-target?
   "Checks if a card is a spell that requires a target."
   {:test (fn []
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
                        (spell-with-target? "i")))
+           (is-not (-> (create-game [{:hand [(create-card "Snake Trap" :id "s")]}])
+                       (spell-with-target? "s")))
            (is (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
                    (spell-with-target? "b1"))))}
   [state card-id]
-  (let [target-type (get-target-type state card-id)]
-    (if (and (= (get-card-type state card-id) :spell)
-             (or (= target-type :all-minions)
-                 (= target-type :enemy-minions)
-                 (= target-type :friendly-minions)))
-      true
-      false))
+  (and (= (get-card-type state card-id) :spell)
+       (get-target-type state card-id)))
 
-  )
+(defn get-target-condition-function
+  "Get the target condition function in the definition of a card."
+  {:test (fn []
+           (is (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                   ((get-target-condition-function (create-card "Big Game Hunter")) "wg")))
+           (is (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]
+                                    :hand    [(create-card "Big Game Hunter" :id "bgh")]}]) $
+                     ((get-target-condition-function $ "bgh") $ "wg"))))}
+  ([card]
+   (:target-condition (get-definition card)))
+  ([state card-id]
+   (get-target-condition-function (get-card-from-hand state card-id))))
 
 (defn available-targets
-  "Get all playable cards and their valid targets"
+  "Takes the id of a card and returns its valid targets"
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "Imp" :id "i2")]}
@@ -503,7 +583,16 @@
                                   {:minions [(create-minion "Defender" :id "d1")]
                                    :hand    [(create-card "Mind Control" :id "mc1")]}])
                     (available-targets "p2" "mc1"))
-                ["i1"]))}
+                ["i1"])
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg1") "Imp"]}
+                                  {:minions [(create-minion "War Golem" :id "wg2")]
+                                   :hand    [(create-card "Big Game Hunter" :id "bgh")]}])
+                    (available-targets "p2" "bgh"))
+                ["wg1" "wg2"])
+           (is= (-> (create-game [{:minions ["Imp"]
+                                   :hand    [(create-card "Big Game Hunter" :id "bgh")]}])
+                    (available-targets "p1" "bgh"))
+                []))}
   [state player-id card-id]
   (let [target-type (get-target-type state card-id)
         targets (cond (= target-type :all-minions)
@@ -517,24 +606,36 @@
 
                       ; TODO: Add checks for other target-type
                       :else
-                      [])]
-    (map :id targets)))
+                      [])
+        targets-ids (map :id targets)]
+    (let [target-cond-func (get-target-condition-function state card-id)]
+      (if (nil? target-cond-func)
+        targets-ids
+        (filter (fn [target-id] (target-cond-func state target-id)) targets-ids)))))
 
 (defn valid-plays
-  "Get all playable cards and their valid targets"
+  "Get all playable cards and their valid targets."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
-                                             (create-minion "Imp" :id "i2")]
+                                             (create-minion "War Golem" :id "wg1")]
                                    :hand    [(create-card "Bananas" :id "b1")
+                                             (create-card "Snake Trap" :id "st")
                                              (create-card "Mind Control" :id "mc1")
-                                             (create-card "Imp" :id "i3")]}
+                                             (create-card "Imp" :id "i3")
+                                             (create-card "Big Game Hunter" :id "bgh1")]}
                                   {:minions [(create-minion "Defender" :id "d1")
                                              (create-minion "Defender" :id "d2")]}])
                     (valid-plays))
-                {"b1"  ["i1" "i2" "d1" "d2"]
-                 "mc1" ["d1" "d2"]
-                 "i3"  []})
-           (is= (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
+                {"b1"   ["i1" "wg1" "d1" "d2"]
+                 "mc1"  ["d1" "d2"]
+                 "i3"   []
+                 "st"   []
+                 "bgh1" ["wg1"]})
+           (is= (-> (create-game [{:hand ["Bananas" (create-card "Big Game Hunter" :id "bgh")]}])
+                    (valid-plays))
+                {"bgh" []})
+           ; Cannot play a secret card if that secret it already in play.
+           (is= (-> (create-game [{:secrets ["Snake Trap"] :hand ["Snake Trap"]}])
                     (valid-plays))
                 {}))}
   [state]
@@ -552,15 +653,86 @@
             {}
             (map :id (get-hand state player-in-turn)))))
 
+(defn play-secret
+  "Puts a secret into play if there is space."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                1)
+           ; Cannot have more than 5 secrets in play (need more secrets for better test)
+           (is= (-> (create-game [{:secrets ["Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap"]}])
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                5)
+           ; Can only have one of each secret
+           (is= (-> (create-game [{:secrets ["Snake Trap"]}])
+                    (play-secret "p1" (create-secret "Snake Trap"))
+                    (get-secrets)
+                    (count))
+                1))}
+  [state player-id secret]
+  (if (and (not (secret-active? state player-id secret))
+           (< (count (get-secrets state player-id)) 5))
+    (add-secret-to-player state player-id secret)
+    state))
+
 (defn get-spell-function
-  "Get the spell function in the definition of a card"
+  "Get the spell function in the definition of a card."
   {:test (fn []
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
                       ((get-spell-function (create-card "Bananas")) $ "i1")
                       [(get-attack $ "i1") (get-health $ "i1")])
-                [2 2]))}
+                [2 2])
+           (is= (as-> (create-game []) $
+                      ((get-spell-function (create-card "Snake Trap")) $)
+                      (get-secrets $ "p1")
+                      (count $))
+                1))}
   [card]
-  (:spell (get-definition card)))
+  (if (= (:subtype card) :secret)
+    (fn [state] (play-secret state (:player-id-in-turn state) (create-secret (:name card))))
+    (:spell (get-definition card))))
+
+(defn get-battlecry-function
+  "Get the battlecry function in the definition of a card."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
+                    ((get-battlecry-function (create-card "Big Game Hunter")) "m1" "wg")
+                    (get-minions)
+                    (count))
+                0))}
+  ([card]
+   (:battlecry (get-definition card)))
+  ([state card-id]
+   (get-battlecry-function (get-card-from-hand state card-id))))
+
+(defn battlecry-minion-with-target?
+  "Checks if a card is a battlecry minion that requires a target to execute the battlecry."
+  {:test (fn []
+           ; True for a minion with battlecry in need of a target
+           (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}])
+                   (battlecry-minion-with-target? "bgh")))
+           ; False for a minion with battlecry that does not need a target
+           (is-not (-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}])
+                       (battlecry-minion-with-target? "es")))
+           ; False for a minion without battlecry
+           (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                       (battlecry-minion-with-target? "i"))))}
+  ([state card-id]
+   (if (and (= (get-card-type state card-id) :minion)
+            (not (nil? (get-battlecry-function state card-id)))
+            (get-target-type state card-id))
+     true
+     false))
+  ([card]
+   (if (and (= (get-card-type card) :minion)
+            (not (nil? (get-battlecry-function card)))
+            (get-target-type card))
+     true
+     false)))
 
 (defn consume-mana
   "Consume a given amount of a player's mana."
@@ -573,7 +745,7 @@
   (update-in state [:players player-id :used-mana] (partial + amount)))
 
 (defn restore-mana
-  "resets the consumed amount of a player's mana"
+  "resets the consumed amount of a player's mana."
   {:test (fn []
            (is= (-> (create-game [{:used-mana 3}])
                     (restore-mana "p1")
@@ -588,6 +760,78 @@
            (is= (-> (create-game [{:max-mana 3}])
                     (add-to-max-mana "p1" 2)
                     (get-mana "p1"))
-                5))}
+                5)
+           (is= (-> (create-game)
+                    (add-to-max-mana "p1" 2)
+                    (get-mana "p1"))
+                10))}
   [state player-id amount]
-  (update-in state [:players player-id :max-mana] (partial + amount)))
+  (let [max-mana (get-in state [:players player-id :max-mana])]
+    (assoc-in state [:players player-id :max-mana] (+ max-mana (min (- 10 max-mana) amount)))))
+
+(defn reset-minion-attack-this-turn
+  "Resets :attack-this-turn back to 0 for all minions of a given player"
+  {:test (fn []
+           (is= (-> {:players {"p1" {:minions [(create-minion "Imp" :attacks-performed-this-turn 1)
+                                               (create-minion "Ogre Magi" :attacks-performed-this-turn 1)]}}}
+                    (reset-minion-attack-this-turn "p1"))
+                {:players {"p1" {:minions [(create-minion "Imp")
+                                           (create-minion "Ogre Magi")]}}}))}
+  [state player-id]
+  (assoc-in state [:players player-id :minions]
+            (map (fn [minion] (assoc minion :attacks-performed-this-turn 0))
+                 (get-minions state player-id))))
+
+(defn unfreeze-characters
+  "Unfreezes all characters of the player in turn that are Frozen if the conditions are met"
+  {:test (fn []
+           ; Minion frozen and didn't attack yet => should be unfrozen
+           (is= (-> (create-game [{:minions [(create-minion "Imp"
+                                                            :id "m1"
+                                                            :attacks-performed-this-turn 0
+                                                            :effects {:frozen       true
+                                                                      :extra-attack 0
+                                                                      :extra-health 0})]}])
+                    (unfreeze-characters)
+                    (get-minion "m1")
+                    (get-in [:effects :frozen]))
+                false)
+           ; Minion frozen and already attacked => should stay frozen
+           (is= (-> (create-game [{:minions [(create-minion "Imp"
+                                                            :id "m1"
+                                                            :attacks-performed-this-turn 1
+                                                            :effects {:frozen       true
+                                                                      :extra-attack 0
+                                                                      :extra-health 0})]}])
+                    (unfreeze-characters)
+                    (get-minion "m1")
+                    (get-in [:effects :frozen]))
+                true)
+           ; Hero frozen and didn't attack yet => should be unfrozen
+           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
+                    (unfreeze-characters)
+                    (get-hero "p1")
+                    (get-in [:effects :frozen]))
+                false)
+           ; Hero frozen and already attacked => should still be frozen
+           (is= (-> (create-game [{:attacks-performed-this-turn 1 :hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
+                    (unfreeze-characters)
+                    (get-hero "p1")
+                    (get-in [:effects :frozen]))
+                true))}
+  [state]
+  (let [player (get-player state (get state :player-id-in-turn)) hero (get-hero state (:id player))]
+    ; on minions
+    (as-> (get-minions state (:id player)) $
+          (reduce (fn [state minion]
+                    (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
+                      (update-in-minion state (:id minion) [:effects :frozen] false)
+                      state))
+                  state $)
+          ; on hero
+          (if (and (not (nil? (get-in hero [:effects :frozen]))) (= (:attacks-performed-this-turn player) 0))
+            (update-in-hero $ (:id hero) [:effects :frozen] false)
+            $))
+
+    )
+  )

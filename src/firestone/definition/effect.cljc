@@ -2,7 +2,9 @@
   (:require [ysera.test :refer [deftest is is-not is= error?]]
             [ysera.random :refer [random-nth]]
             [firestone.definitions :as definitions]
-            [firestone.api :refer [attack-with-minion]]
+            [firestone.api :refer [attack-with-minion
+                                   play-spell-card
+                                   end-turn]]
             [firestone.definitions :refer [get-definition
                                            get-definitions]]
             [firestone.core :refer [get-attack
@@ -11,9 +13,11 @@
                                     summon-minion
                                     get-health
                                     heal-hero
-                                    add-to-max-mana]]
+                                    add-to-max-mana
+                                    valid-plays]]
             [firestone.construct :refer [create-game
                                          create-minion
+                                         create-card
                                          get-hand
                                          create-hero
                                          update-in-minion
@@ -22,7 +26,8 @@
                                          create-card
                                          add-card-to-hand
                                          opposing-player-id
-                                         get-mana]]))
+                                         get-mana
+                                         remove-secret]]))
 
 (def effect-definitions
   {
@@ -118,6 +123,7 @@
                                                       29))}
                                         [state player-id]
                                         (heal-hero state (get-hero-id state player-id) 8))
+
    "King Mukla battelcry"             (defn king-mukla-battlecry
                                         "Battlecry: Give your opponent 2 Bananas."
                                         {:test (fn []
@@ -146,5 +152,45 @@
                                           (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
                                             (add-to-max-mana state opponent-player-id 1))
                                           state))})
+
+   ; Secrets
+   "Snake Trap effect"                (defn snake-trap-effect
+                                        "Secret: When one of your minions is attacked summon three 1/1 Snakes."
+                                        {:test (fn []
+                                                 (is= (as-> (create-game [{:hand [(create-card "Snake Trap" :id "st")] :minions [(create-minion "War Golem" :id "wg")]}
+                                                                          {:minions [(create-minion "Imp" :id "imp")]} :player-id-in-turn "p2"]) $
+                                                            (play-spell-card $ "p1" "st" {})
+                                                            (end-turn $)
+                                                            (attack-with-minion $ "imp" "wg")
+                                                            (get-minions $ "p1")
+                                                            (filter (fn [m] (= (:name m) "Snake")) $)
+                                                            (count $))
+                                                      3)
+                                                 ; The Snake Trap should only work once
+                                                 (is= (as-> (create-game [{:secrets ["Snake Trap"] :minions [(create-minion "War Golem" :id "wg")]}
+                                                                          {:minions [(create-minion "Imp" :id "imp1") (create-minion "Imp" :id "imp2")]}] :player-id-in-turn "p2") $
+                                                            (attack-with-minion $ "imp1" "wg")
+                                                            (attack-with-minion $ "imp2" "wg")
+                                                            (get-minions $ "p1")
+                                                            (filter (fn [m] (= (:name m) "Snake")) $)
+                                                            (count $))
+                                                      3)
+                                                 ; Snake Trap should not trigger when player with the trap is attacking
+                                                 (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}
+                                                                          {:secrets ["Snake Trap"] :minions [(create-minion "Imp" :id "imp")]}] :player-id-in-turn "p2") $
+                                                            (attack-with-minion $ "imp" "wg")
+                                                            (get-minions $ "p2")
+                                                            (filter (fn [m] (= (:name m) "Snake")) $)
+                                                            (count $))
+                                                      0))}
+                                        [state snake-trap-id [attacked-minion-id]]
+                                        (let [player-id (get-owner state snake-trap-id)]
+                                          (if (= player-id (get-owner state attacked-minion-id))
+                                            (-> (remove-secret state player-id snake-trap-id)
+                                                (summon-minion player-id "Snake")
+                                                (summon-minion player-id "Snake")
+                                                (summon-minion player-id "Snake"))
+                                            state)))
+   })
 
 (definitions/add-definitions! effect-definitions)
