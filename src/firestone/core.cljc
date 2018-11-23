@@ -17,6 +17,7 @@
                                          get-hero-id
                                          get-player
                                          get-heroes
+                                         get-hero-powers
                                          get-minion
                                          get-minions
                                          update-minion
@@ -25,6 +26,7 @@
                                          update-hero
                                          update-in-hero
                                          get-hero
+                                         get-hero-power
                                          get-character
                                          get-board-entity
                                          get-mana
@@ -79,7 +81,7 @@
     (+ (:attack definition) (get-in minion [:effects :extra-attack]))))
 
 (defn get-cost
-  "Returns the cost of the minion with the given name."
+  "Returns the cost of the card or hero power."
   {:test (fn []
            (is= (-> (create-card "Imp" :id "i")
                     (get-cost))
@@ -89,31 +91,36 @@
                 3)
            (is= (-> (create-game [{:hand [(create-card "Dalaran Mage" :id "dm")]}])
                     (get-cost "dm"))
-                3))}
-  ([card]
-   (get (get-definition (:name card)) :mana-cost))
-  ([state card-id]
-   (get-cost (get-card-from-hand state card-id))))
+                3)
+           (is= (-> (create-game)
+                    (get-cost "hp1"))
+                2))}
+  ([source]
+   (get (get-definition (:name source)) :mana-cost))
+  ([state entity-id]
+   (get-cost (or (get-card-from-hand state entity-id)
+                 (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
-(defn get-card-type
-  "Returns the type of the card with the given id or entity."
+(defn get-entity-type
+  "Returns the type of the given id or entity."
   {:test (fn []
            (is= (-> (create-card "Imp" :id "i")
-                    (get-card-type))
+                    (get-entity-type))
                 :minion)
            (is= (-> (create-card "Bananas" :id "i")
-                    (get-card-type))
+                    (get-entity-type))
                 :spell)
            (is= (-> (create-game [{:hand [(create-card "Dalaran Mage" :id "dm")]}])
-                    (get-card-type "dm"))
+                    (get-entity-type "dm"))
                 :minion))}
-  ([card]
-   (get (get-definition (:name card)) :type))
-  ([state card-id]
-   (get-card-type (get-card-from-hand state card-id))))
+  ([entity]
+   (get (get-definition (:name entity)) :type))
+  ([state entity-id]
+   (get-entity-type (or (get-card-from-hand state entity-id)
+                      (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn get-target-type
-  "Returns the target type of the card with the given id or entity."
+  "Returns the target type of the card or hero power with the given id or entity."
   {:test (fn []
            (is= (-> (create-card "Imp" :id "i")
                     (get-target-type))
@@ -123,11 +130,15 @@
                 :all-minions)
            (is= (-> (create-game [{:hand [(create-card "Mind Control" :id "dm")]}])
                     (get-target-type "dm"))
-                :enemy-minions))}
-  ([card]
-   (get (get-definition (:name card)) :target-type))
-  ([state card-id]
-   (get-target-type (get-card-from-hand state card-id))))
+                :enemy-minions)
+           (is= (-> (create-game)
+                    (get-target-type "hp1"))
+                :all))}
+  ([entity]
+   (get (get-definition (:name entity)) :target-type))
+  ([state entity-id]
+   (get-target-type (or (get-card-from-hand state entity-id)
+                        (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn get-owner
   "Returns the player-id of the owner of the character with the given id."
@@ -475,27 +486,28 @@
            )))
 
 (defn playable?
-  "Checks if a card is playable on the board for a specific player"
+  "Checks if a card or hero power is playable on the board for a specific player."
   {:test (fn []
            (is (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 1}])
-                   (playable? "p1" "c1"))
-               )
+                   (playable? "p1" "c1")))
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "c1")] :max-mana 0}])
-                       (playable? "p1" "c1"))
-                   )
+                       (playable? "p1" "c1")))
            (is-not (-> (create-game [{:max-mana 5 :hand [(create-card "Imp" :id "c1")]
                                       :minions  ["War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem" "War Golem"]}])
-                       (playable? "p1" "c1"))
-                   )
-           )}
+                       (playable? "p1" "c1")))
+           (is (-> (create-game)
+                   (playable? "p1" "hp1"))))}
   [state player-id card-id]
   (let [available-mana (get-mana state player-id)
-        card-cost (get-cost state card-id)
+        cost (get-cost state card-id)
         minions-on-board (get-minions state player-id)
-        card-type (get-card-type state card-id)]
-    (and (<= card-cost available-mana)
-         (if (= card-type :minion)
+        type (get-entity-type state card-id)]
+    (and (<= cost available-mana)
+         (if (= type :minion)
            (< (count minions-on-board) 7)
+           true)
+         (if (= type :hero-power)
+           (not (:used (get-hero-power state player-id)))
            true))))
 
 (defn spell-with-target?
@@ -506,23 +518,24 @@
            (is (-> (create-game [{:hand [(create-card "Bananas" :id "b1")]}])
                    (spell-with-target? "b1"))))}
   [state card-id]
-  (if (and (= (get-card-type state card-id) :spell)
+  (if (and (= (get-entity-type state card-id) :spell)
            (not (= (get-target-type state card-id) :none)))
     true
     false))
 
 (defn get-target-condition-function
-  "Get the target condition function in the definition of a card."
+  "Get the target condition function in the definition of a card or hero power."
   {:test (fn []
            (is (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
                    ((get-target-condition-function (create-card "Big Game Hunter")) "wg")))
            (is (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]
                                     :hand    [(create-card "Big Game Hunter" :id "bgh")]}]) $
                      ((get-target-condition-function $ "bgh") $ "wg"))))}
-  ([card]
-   (:target-condition (get-definition card)))
-  ([state card-id]
-   (get-target-condition-function (get-card-from-hand state card-id))))
+  ([entity]
+   (:target-condition (get-definition entity)))
+  ([state entity-id]
+   (get-target-condition-function (or (get-card-from-hand state entity-id)
+                                      (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn available-targets
   "Takes the id of a card, hero or hero power and returns its valid targets"
@@ -552,9 +565,13 @@
                                    :hand    [(create-card "Frostbolt" :id "f")]}
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "p1" "f"))
+                ["i1" "i2" "h1" "h2"])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                  {:minions [(create-minion "Imp" :id "i2")]}])
+                    (available-targets "p1" "hp1"))
                 ["i1" "i2" "h1" "h2"]))}
-  [state player-id source-id]
-  (let [target-type (get-target-type state source-id)
+  [state player-id entity-id]
+  (let [target-type (get-target-type state entity-id)
         targets (cond
                   (= target-type :all)
                   (concat (get-minions state)
@@ -573,13 +590,13 @@
                   :else
                   [])
         targets-ids (map :id targets)]
-    (let [target-cond-func (get-target-condition-function state source-id)]
+    (let [target-cond-func (get-target-condition-function state entity-id)]
       (if (nil? target-cond-func)
         targets-ids
         (filter (fn [target-id] (target-cond-func state target-id)) targets-ids)))))
 
 (defn valid-plays
-  "Get all playable cards and their valid targets."
+  "Get all playable cards and hero powers and their valid targets."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "War Golem" :id "wg1")]
@@ -593,26 +610,31 @@
                 {"b1"   ["i1" "wg1" "d1" "d2"]
                  "mc1"  ["d1" "d2"]
                  "i3"   []
-                 "bgh1" ["wg1"]})
-           (is= (-> (create-game [{:hand ["Bananas" (create-card "Big Game Hunter" :id "bgh")
+                 "bgh1" ["wg1"]
+                 "hp1"  ["i1" "wg1" "d1" "d2" "h1" "h2"]})
+           (is= (-> (create-game [{:hero "Uther Lightbringer"
+                                   :hand ["Bananas"
+                                          (create-card "Big Game Hunter" :id "bgh")
                                           (create-card "Frostbolt" :id "f")]}])
                     (valid-plays))
                 {"bgh" []
-                 "f"   ["h1" "h2"]}))}
+                 "f"   ["h1" "h2"]
+                 "hp1" []}))}
   [state]
   (let [player-in-turn (:player-id-in-turn state)]
-    (reduce (fn [plays card-id]
-              (if (playable? state player-in-turn card-id)
-                (let [targets (available-targets state player-in-turn card-id)]
+    (reduce (fn [plays entity-id]
+              (if (playable? state player-in-turn entity-id)
+                (let [targets (available-targets state player-in-turn entity-id)]
                   (if (empty? targets)
-                    (if (spell-with-target? state card-id)
+                    (if (spell-with-target? state entity-id)
                       plays
-                      (assoc plays card-id []))
-                    (assoc plays card-id targets)))
+                      (assoc plays entity-id []))
+                    (assoc plays entity-id targets)))
                 plays)
               )
             {}
-            (map :id (get-hand state player-in-turn)))))
+            (map :id (conj (get-hand state player-in-turn)
+                           (get-hero-power state player-in-turn))))))
 
 (defn play-secret
   "Puts a secret into play if there is space."
@@ -692,13 +714,13 @@
            (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
                        (battlecry-minion-with-target? "i"))))}
   ([state card-id]
-   (if (and (= (get-card-type state card-id) :minion)
+   (if (and (= (get-entity-type state card-id) :minion)
             (not (nil? (get-battlecry-function state card-id)))
             (get-target-type state card-id))
      true
      false))
   ([card]
-   (if (and (= (get-card-type card) :minion)
+   (if (and (= (get-entity-type card) :minion)
             (not (nil? (get-battlecry-function card)))
             (get-target-type card))
      true

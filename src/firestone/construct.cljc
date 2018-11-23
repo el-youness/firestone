@@ -737,6 +737,18 @@
        (filter (fn [h] (= (:owner-id h) owner-id)))
        (first)))
 
+(defn get-hero-powers
+  "Returns the hero-powers of both players."
+  {:test (fn []
+           (is= (->> (create-game [{:hero (create-hero "Jaina Proudmoore")}
+                                    {:hero (create-hero "Anduin Wrynn")}])
+                      (get-hero-powers)
+                      (map :name))
+                ["Fireblast" "Lesser Heal"]))}
+  [state]
+  (->> (get-heroes state)
+       (map :hero-power)))
+
 (defn get-hero-power
   "Returns the hero-power for the given player-id."
   {:test (fn []
