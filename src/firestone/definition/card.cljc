@@ -19,7 +19,8 @@
                                          get-minion-effects
                                          opposing-player-id
                                          add-card-to-hand
-                                         get-hand]]
+                                         get-hand
+                                         get-mana]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -28,7 +29,8 @@
                                     damage-hero
                                     valid-plays
                                     destroy-minion
-                                    valid-attack?]]
+                                    valid-attack?
+                                    add-to-max-mana]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -161,7 +163,16 @@
     :set         :classic
     :rarity      :rare
     :description "Battlecry: Give your opponent a Mana Crystal."
-    :on-playing-card "Arcane Golem battlecry"}
+    :battlecry    (defn arcane-golem-battlecry
+                    {:test (fn []
+                             (is= (-> (create-game [{:minions [(create-minion "Arcane Golem" :id "ag")]}
+                                                    {:max-mana 5}])
+                                      (arcane-golem-battlecry "ag" )
+                                      (get-mana "p2"))
+                                  6))}
+                    [state golem-id]
+                    (let [opponent-player-id (opposing-player-id (get-owner state golem-id))]
+                      (add-to-max-mana state opponent-player-id 1))) }
 
    "Acolyte of Pain"
    {:name        "Acolyte of Pain"
