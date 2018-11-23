@@ -190,13 +190,13 @@
 (defn use-hero-power
   "Use the hero power of the hero belonging to the given player id."
   {:test (fn []
-           ; Use a hero power has no targets
+           ; Use a hero power that has no targets
            (is= (-> (create-game [{:hero "Uther Lightbringer"}])
                     (use-hero-power "p1" {})
                     (get-minions "p1")
                     (count))
                 1)
-           ; Play spell card that can target all minions
+           ; Use a hero power that can target everything on the board
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (use-hero-power "p1" {:target-id "i2"})
@@ -209,5 +209,4 @@
           ((get-hero-power-function hero-power) state)
           ((get-hero-power-function hero-power) state target-id))
         (consume-mana player-id (get-cost hero-power))
-        (update-hero-power player-id :used true)
-        )))
+        (update-hero-power player-id :used true))))
