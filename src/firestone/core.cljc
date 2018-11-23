@@ -6,6 +6,7 @@
             [firestone.construct :refer [create-card
                                          create-game
                                          create-hero
+                                         create-hero-power
                                          create-minion
                                          get-deck
                                          get-cards-from-deck
@@ -623,16 +624,33 @@
     (fn [state] (play-secret state (:player-id-in-turn state) (create-secret (:name card))))
     (:spell (get-definition card))))
 
+(defn get-hero-power-function
+  "Get the hero power function in the definition of the hero power."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
+                    ((get-hero-power-function (create-hero-power "Fireblast")) "i1")
+                    (get-minions)
+                    (count))
+                0)
+           ;(is= (-> (create-game)
+           ;         ((get-spell-function (create-hero-power "Reinforce")))
+           ;         (get-minions)
+           ;         (count))
+           ;     1)
+           )}
+  [hero-power]
+  (:power (get-definition hero-power)))
+
 (defn get-battlecry-function
   "Get the battlecry function in the definition of a card."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                      ((get-battlecry-function (create-card "Big Game Hunter")) "m1" "wg")
-                      (get-minions)
-                      (count))
+                    ((get-battlecry-function (create-card "Big Game Hunter")) "m1" "wg")
+                    (get-minions)
+                    (count))
                 0))}
   ([card]
-  (:battlecry (get-definition card)))
+   (:battlecry (get-definition card)))
   ([state card-id]
    (get-battlecry-function (get-card-from-hand state card-id))))
 

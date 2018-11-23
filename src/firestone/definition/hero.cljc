@@ -1,5 +1,8 @@
 (ns firestone.definition.hero
-  (:require [firestone.definitions :as definitions]))
+  (:require [firestone.definitions :as definitions]
+            [firestone.construct :refer [get-character]]
+            [firestone.core :refer [damage-minion
+                                    damage-hero]]))
 
 (def hero-definitions
   {
@@ -35,8 +38,12 @@
    {:name        "Fireblast"
     :mana-cost   2
     :type        :hero-power
-    :target-type :all-minions
-    :description "Deal 1 damage."}
+    :target-type :all
+    :description "Deal 1 damage."
+    :power       (fn [state target-id]
+                   (if (= (:entity-type (get-character state target-id)) :minion)
+                     (damage-minion state target-id 1)
+                     (damage-hero state target-id 1)))}
 
    "Lesser Heal"
    {:name        "Lesser Heal"

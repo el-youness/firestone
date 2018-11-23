@@ -3,6 +3,21 @@
             [ysera.test :refer [is is-not is= error?]]
             [firestone.definitions :refer [get-definition]]))
 
+(defn create-hero-power
+  "Creates a hero power from its definition by the given hero power name. The additional key-values will override the default values."
+  {:test (fn []
+           (is= (create-hero-power "Fireblast")
+                {:name        "Fireblast"
+                 :type        :hero-power
+                 :target-type :all}))}
+  [name & kvs]
+  (let [definition (get-definition name)
+        hero-power {:name        name
+                    :type        (:type definition)
+                    :target-type (:target-type definition)}]
+    (if (empty? kvs)
+      hero-power
+      (apply assoc hero-power kvs))))
 
 (defn create-hero
   "Creates a hero from its definition by the given hero name. The additional key-values will override the default values."
@@ -13,7 +28,7 @@
                  :damage-taken 0
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all-minions}})
+                                :target-type :all}})
            (is= (create-hero "Jaina Proudmoore" :owner-id "p1")
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -21,14 +36,14 @@
                  :owner-id     "p1"
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all-minions}})
+                                :target-type :all}})
            (is= (create-hero "Jaina Proudmoore" :damage-taken 10)
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 10
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all-minions}})
+                                :target-type :all}})
            (is= (create-hero "Jaina Proudmoore" :effects {:frozen true})
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -36,7 +51,7 @@
                  :effects      {:frozen true}
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all-minions}})
+                                :target-type :all}})
            (is= (create-hero "Jaina Proudmoore" :hero-power (create-hero-power "Reinforce"))
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -52,22 +67,6 @@
     (if (empty? kvs)
       hero
       (apply assoc hero kvs))))
-
-(defn create-hero-power
-  "Creates a hero power from its definition by the given hero power name. The additional key-values will override the default values."
-  {:test (fn []
-           (is= (create-hero-power "Fireblast")
-                {:name        "Fireblast"
-                 :type        :hero-power
-                 :target-type :all-minions}))}
-  [name & kvs]
-  (let [definition (get-definition name)
-        hero-power {:name        name
-                    :type        (:type definition)
-                    :target-type (:target-type definition)}]
-    (if (empty? kvs)
-      hero-power
-      (apply assoc hero-power kvs))))
 
 (defn create-card
   "Creates a card from its definition by the given card name. The additional key-values will override the default values."
