@@ -921,6 +921,21 @@
                           (update hero key function-or-value)
                           (assoc hero key function-or-value)))))
 
+(defn update-hero-power
+  "Updates the value of the given key for the hero power for the given player id. If function-or-value is a value it will be the
+   new value, else if it is a function it will be applied on the existing value to produce the new value."
+  {:test (fn []
+           (is (-> (create-game)
+                   (update-hero-power "p1" :used true)
+                   (get-hero-power "p1")
+                   :used)))}
+  [state player-id key function-or-value]
+  (let [hero (get-hero state player-id)
+        hero-power (get-hero-power state player-id)]
+    (replace-hero state (assoc hero :hero-power (if (function? function-or-value)
+                                                  (update hero-power key function-or-value)
+                                                  (assoc hero-power key function-or-value))))))
+
 (defn update-in-hero
   "Updates the value of the given key nested inside the hero with the given id. If function-or-value is a value it will be the
    new value, else if it is a function it will be applied on the existing value to produce the new value."

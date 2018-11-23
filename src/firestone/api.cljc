@@ -13,7 +13,8 @@
                                          create-card
                                          get-card-from-hand
                                          remove-card-from-hand
-                                         get-player]]
+                                         get-player
+                                         update-hero-power]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -70,7 +71,7 @@
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
-          ;TODO: set hero power as not used
+          (update-hero-power new-pid :used false)
           ;TODO: trigger the "beginning of turn" card effects
           (unfreeze-characters)
           (reset-minion-attack-this-turn new-pid)))))
@@ -208,5 +209,5 @@
           ((get-hero-power-function hero-power) state)
           ((get-hero-power-function hero-power) state target-id))
         (consume-mana player-id (get-cost hero-power))
-        ;TODO: Set as hero-power as used
+        (update-hero-power player-id :used true)
         )))

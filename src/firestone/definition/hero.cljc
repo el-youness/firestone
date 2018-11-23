@@ -66,7 +66,6 @@
    {:name        "Steady Shot"
     :mana-cost   2
     :type        :hero-power
-    :target-type :enemy-hero
     :description "Deal 2 damage to the enemy hero."}
 
    })
