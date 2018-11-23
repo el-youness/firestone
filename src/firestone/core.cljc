@@ -305,6 +305,20 @@
         state
         (destroy-minion state id)))))
 
+(defn heal-minion
+  "Reduces damage taken of a minion by the given amount."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :damage-taken 5)]}])
+                    (heal-minion "wg" 5)
+                    (get-health "wg"))
+                7)
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :damage-taken 6)]}])
+                    (heal-minion "wg" 7)
+                    (get-health "wg"))
+                7))}
+  [state id amount]
+  (update-minion state id :damage-taken (fn [x] (max (- x amount) 0))))
+
 (defn damage-hero
   "Deals damage to the hero with the given id."
   {:test (fn []

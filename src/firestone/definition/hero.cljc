@@ -2,7 +2,9 @@
   (:require [firestone.definitions :as definitions]
             [firestone.construct :refer [create-card
                                          get-character]]
-            [firestone.core :refer [damage-minion
+            [firestone.core :refer [heal-minion
+                                    damage-minion
+                                    heal-hero
                                     damage-hero
                                     summon-minion]]))
 
@@ -51,8 +53,12 @@
    {:name        "Lesser Heal"
     :mana-cost   2
     :type        :hero-power
-    :target-type :all-minions
-    :description "Restore 2 health."}
+    :target-type :all
+    :description "Restore 2 health."
+    :power       (fn [state target-id]
+                   (if (= (:entity-type (get-character state target-id)) :minion)
+                     (heal-minion state target-id 2)
+                     (heal-hero state target-id 2)))}
 
    "Reinforce"
    {:name        "Reinforce"
@@ -66,7 +72,13 @@
    {:name        "Steady Shot"
     :mana-cost   2
     :type        :hero-power
-    :description "Deal 2 damage to the enemy hero."}
+    :description "Deal 2 damage to the enemy hero."
+    :power       (fn [state]
+                   (damage-hero state
+                                (if (= (:player-id-in-turn state) "p1")
+                                  "h2"
+                                  "h1")
+                                2))}
 
    })
 

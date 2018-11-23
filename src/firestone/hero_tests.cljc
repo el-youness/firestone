@@ -4,6 +4,7 @@
             [ysera.test :refer [is is-not is= error?]]
             [firestone.construct :refer [create-game
                                          create-minion
+                                         create-hero
                                          create-card
                                          create-secret
                                          update-minion
@@ -37,9 +38,22 @@
                   (count))
               0))
 
+(deftest lesser-heal-test
+  (is= (-> (create-game [{:hero (create-hero "Anduin Wrynn" :damage-taken 2)
+                          :minions [(create-minion "Imp" :id "i1")]}])
+           (use-hero-power "p1" {:target-id "h1"})
+           (get-health "h1"))
+       30))
+
 (deftest reinforce-test
   (is= (-> (create-game [{:hero "Uther Lightbringer"}])
            (use-hero-power "p1" {})
            (get-minions "p1")
            (count))
        1))
+
+(deftest steady-shot-test
+  (is= (-> (create-game [{:hero "Rexxar"}])
+           (use-hero-power "p1" {})
+           (get-health "h2"))
+       28))
