@@ -222,7 +222,12 @@
                              (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
                                       (king-mukla "km")
                                       (get-hand "p2")
-                                      (->> (map #(:name %))))
+                                      (->> (map :name)))
+                                  ["Bananas" "Bananas"])
+                             (is= (-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}])
+                                      (play-minion-card "p1" "km" {:position 0})
+                                      (get-hand "p2")
+                                      (->> (map :name)))
                                   ["Bananas" "Bananas"]))}
                     [state minion-id]
                     (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
