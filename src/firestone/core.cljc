@@ -113,7 +113,7 @@
    (get-card-type (get-card-from-hand state card-id))))
 
 (defn get-target-type
-  "Returns the type of the card with the given id or entity."
+  "Returns the target type of the card with the given id or entity."
   {:test (fn []
            (is= (-> (create-card "Imp" :id "i")
                     (get-target-type))
@@ -525,7 +525,7 @@
    (get-target-condition-function (get-card-from-hand state card-id))))
 
 (defn available-targets
-  "Takes the id of a card and returns its valid targets"
+  "Takes the id of a card, hero or hero power and returns its valid targets"
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "Imp" :id "i2")]}
@@ -553,8 +553,8 @@
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "p1" "f"))
                 ["i1" "i2" "h1" "h2"]))}
-  [state player-id card-id]
-  (let [target-type (get-target-type state card-id)
+  [state player-id source-id]
+  (let [target-type (get-target-type state source-id)
         targets (cond
                   (= target-type :all)
                   (concat (get-minions state)
@@ -573,7 +573,7 @@
                   :else
                   [])
         targets-ids (map :id targets)]
-    (let [target-cond-func (get-target-condition-function state card-id)]
+    (let [target-cond-func (get-target-condition-function state source-id)]
       (if (nil? target-cond-func)
         targets-ids
         (filter (fn [target-id] (target-cond-func state target-id)) targets-ids)))))

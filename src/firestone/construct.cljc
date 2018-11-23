@@ -158,26 +158,31 @@
            (is= (create-empty-state [(create-hero "Jaina Proudmoore")
                                      (create-hero "Jaina Proudmoore")])
                 {:player-id-in-turn             "p1"
-                 :players                       {"p1" {:id      "p1"
+                 :players                       {"p1" {:id                          "p1"
                                                        :attacks-performed-this-turn 0
-                                                       :deck    []
-                                                       :hand    []
-                                                       :minions []
-                                                       :secrets   []
-                                                       :hero    (create-hero "Jaina Proudmoore" :id "h1" :owner-id "p1")
-                                                       :max-mana 10
-                                                       :used-mana 0
-                                                       :fatigue 1}
-                                                 "p2" {:id      "p2"
+                                                       :deck                        []
+                                                       :hand                        []
+                                                       :minions                     []
+                                                       :secrets                     []
+                                                       :hero                        (create-hero "Jaina Proudmoore"
+                                                                                                 :id "h1"
+                                                                                                 :owner-id "p1"
+                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                       :max-mana                    10
+                                                       :used-mana                   0
+                                                       :fatigue                     1}
+                                                 "p2" {:id                          "p2"
                                                        :attacks-performed-this-turn 0
-                                                       :deck    []
-                                                       :hand    []
-                                                       :minions []
-                                                       :secrets   []
-                                                       :hero    (create-hero "Jaina Proudmoore" :id "h2" :owner-id "p2")
-                                                       :max-mana 10
-                                                       :used-mana 0
-                                                       :fatigue   1}}
+                                                       :deck                        []
+                                                       :hand                        []
+                                                       :minions                     []
+                                                       :secrets                     []
+                                                       :hero                        (create-hero "Jaina Proudmoore" :id "h2"
+                                                                                                 :owner-id "p2"
+                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp2"))
+                                                       :max-mana                    10
+                                                       :used-mana                   0
+                                                       :fatigue                     1}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []}))}
   ([heroes]
@@ -188,16 +193,20 @@
      {:player-id-in-turn             "p1"
       :players                       (->> heroes
                                           (map-indexed (fn [index hero]
-                                                         {:id      (str "p" (inc index))
+                                                         {:id                          (str "p" (inc index))
                                                           :attacks-performed-this-turn 0
-                                                          :deck    []
-                                                          :hand    []
-                                                          :minions []
-                                                          :secrets   []
-                                                          :hero    (assoc hero :id (str "h" (inc index)) :owner-id (str "p" (inc index)))
-                                                          :max-mana 10
-                                                          :used-mana 0
-                                                          :fatigue   1}))
+                                                          :deck                        []
+                                                          :hand                        []
+                                                          :minions                     []
+                                                          :secrets                     []
+                                                          :hero                        (assoc hero :id (str "h" (inc index))
+                                                                                                   :owner-id (str "p" (inc index))
+                                                                                                   :hero-power (assoc (:hero-power hero)
+                                                                                                                 :id
+                                                                                                                 (str "hp" (inc index))))
+                                                          :max-mana                    10
+                                                          :used-mana                   0
+                                                          :fatigue                     1}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
                                                   {}))
@@ -472,7 +481,8 @@
                                                                                                  :id "h1"
                                                                                                  :entity-type :hero
                                                                                                  :damage-taken 0
-                                                                                                 :owner-id "p1")
+                                                                                                 :owner-id "p1"
+                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -486,7 +496,8 @@
                                                                                                  :id "h2"
                                                                                                  :entity-type :hero
                                                                                                  :damage-taken 0
-                                                                                                 :owner-id "p2")
+                                                                                                 :owner-id "p2"
+                                                                                                 :hero-power (create-hero-power "Lesser Heal" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
@@ -508,7 +519,8 @@
                                                                                                  :id "h1"
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p1"
-                                                                                                 :damage-taken 0)
+                                                                                                 :damage-taken 0
+                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -522,7 +534,8 @@
                                                                                                  :id "h2"
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p2"
-                                                                                                 :damage-taken 0)
+                                                                                                 :damage-taken 0
+                                                                                                 :hero-power (create-hero-power "Lesser Heal" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
@@ -541,7 +554,8 @@
                                                                                                  :id "h1"
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p1"
-                                                                                                 :damage-taken 0)
+                                                                                                 :damage-taken 0
+                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -555,7 +569,8 @@
                                                                                                  :id "h2"
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p2"
-                                                                                                 :damage-taken 0)
+                                                                                                 :damage-taken 0
+                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp2"))
                                                        :max-mana                    5
                                                        :used-mana                   2
                                                        :fatigue                     4}}
