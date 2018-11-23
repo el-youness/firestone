@@ -9,12 +9,14 @@
            (is= (create-hero-power "Fireblast")
                 {:name        "Fireblast"
                  :type        :hero-power
-                 :target-type :all}))}
+                 :target-type :all
+                 :used        false}))}
   [name & kvs]
   (let [definition (get-definition name)
         hero-power {:name        name
                     :type        (:type definition)
-                    :target-type (:target-type definition)}]
+                    :target-type (:target-type definition)
+                    :used        false}]
     (if (empty? kvs)
       hero-power
       (apply assoc hero-power kvs))))
@@ -28,7 +30,8 @@
                  :damage-taken 0
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all}})
+                                :target-type :all
+                                :used        false}})
            (is= (create-hero "Jaina Proudmoore" :owner-id "p1")
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -36,14 +39,16 @@
                  :owner-id     "p1"
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all}})
+                                :target-type :all
+                                :used        false}})
            (is= (create-hero "Jaina Proudmoore" :damage-taken 10)
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 10
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all}})
+                                :target-type :all
+                                :used        false}})
            (is= (create-hero "Jaina Proudmoore" :effects {:frozen true})
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
@@ -51,14 +56,16 @@
                  :effects      {:frozen true}
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
-                                :target-type :all}})
+                                :target-type :all
+                                :used        false}})
            (is= (create-hero "Jaina Proudmoore" :hero-power (create-hero-power "Reinforce"))
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0
                  :hero-power   {:name        "Reinforce"
                                 :type        :hero-power
-                                :target-type nil}}))}
+                                :target-type nil
+                                :used        false}}))}
   [name & kvs]
   (let [hero {:name         name
               :entity-type  :hero

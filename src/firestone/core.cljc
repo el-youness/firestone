@@ -545,7 +545,7 @@
                       (= target-type :friendly-minions)
                       (get-minions state (if (= player-id "p1") "p1" "p2"))
 
-                      ; TODO: Add checks for other target-type
+                      ; TODO: Add checks for other target-type. :all and :enemy-hero
                       :else
                       [])
         targets-ids (map :id targets)]
@@ -632,12 +632,11 @@
                     (get-minions)
                     (count))
                 0)
-           ;(is= (-> (create-game)
-           ;         ((get-spell-function (create-hero-power "Reinforce")))
-           ;         (get-minions)
-           ;         (count))
-           ;     1)
-           )}
+           (is= (-> (create-game)
+                    ((get-hero-power-function (create-hero-power "Reinforce")))
+                    (get-minions)
+                    (count))
+                1))}
   [hero-power]
   (:power (get-definition hero-power)))
 
@@ -734,7 +733,7 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp"
                                                             :id "m1"
                                                             :attacks-performed-this-turn 0
-                                                            :effects {:frozen  true
+                                                            :effects {:frozen       true
                                                                       :extra-attack 0
                                                                       :extra-health 0})]}])
                     (unfreeze-characters)
@@ -745,7 +744,7 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp"
                                                             :id "m1"
                                                             :attacks-performed-this-turn 1
-                                                            :effects {:frozen  true
+                                                            :effects {:frozen       true
                                                                       :extra-attack 0
                                                                       :extra-health 0})]}])
                     (unfreeze-characters)
@@ -769,15 +768,11 @@
     ; on minions
     (as-> (get-minions state (:id player)) $
           (reduce (fn [state minion]
-                   (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
-                     (update-in-minion state (:id minion) [:effects :frozen] false)
-                     state))
-                   state $)
+                    (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
+                      (update-in-minion state (:id minion) [:effects :frozen] false)
+                      state))
+                  state $)
           ; on hero
           (if (and (not (nil? (get-in hero [:effects :frozen]))) (= (:attacks-performed-this-turn player) 0))
             (update-in-hero $ (:id hero) [:effects :frozen] false)
-            $))
-
-
-  )
-)
+            $))))

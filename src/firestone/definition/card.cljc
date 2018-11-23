@@ -51,6 +51,16 @@
     :type      :minion
     :rarity    :common}
 
+   "Silver Hand Recruit"
+   {:name      "Silver Hand Recruit"
+    :attack    1
+    :health    1
+    :mana-cost 1
+    :set       :classic
+    :class     :paladin
+    :type      :minion
+    :rarity    :none}
+
    "Imp"
    {:name      "Imp"
     :attack    1

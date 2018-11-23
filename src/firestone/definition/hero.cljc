@@ -1,8 +1,10 @@
 (ns firestone.definition.hero
   (:require [firestone.definitions :as definitions]
-            [firestone.construct :refer [get-character]]
+            [firestone.construct :refer [create-card
+                                         get-character]]
             [firestone.core :refer [damage-minion
-                                    damage-hero]]))
+                                    damage-hero
+                                    summon-minion]]))
 
 (def hero-definitions
   {
@@ -56,7 +58,9 @@
    {:name        "Reinforce"
     :mana-cost   2
     :type        :hero-power
-    :description "Summon a 1/1 Silver Hand Recruit."}
+    :description "Summon a 1/1 Silver Hand Recruit."
+    :power       (fn [state]
+                   (summon-minion state (:player-id-in-turn state) (create-card "Silver Hand Recruit") 0))}
 
    "Steady Shot"
    {:name        "Steady Shot"

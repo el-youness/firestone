@@ -36,3 +36,10 @@
                   (get-minions "p2")
                   (count))
               0))
+
+(deftest reinforce-test
+  (is= (-> (create-game [{:hero "Uther Lightbringer"}])
+           (use-hero-power "p1" {})
+           (get-minions "p1")
+           (count))
+       1))
