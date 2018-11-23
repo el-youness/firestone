@@ -533,21 +533,31 @@
            (is= (-> (create-game [{:minions ["Imp"]
                                    :hand    [(create-card "Big Game Hunter" :id "bgh")]}])
                     (available-targets "p1" "bgh"))
-                []))}
+                [])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]
+                                   :hand    [(create-card "Frostbolt" :id "f")]}
+                                  {:minions [(create-minion "Imp" :id "i2")]}])
+                    (available-targets "p1" "f"))
+                ["i1" "i2" "h1" "h2"]))}
   [state player-id card-id]
   (let [target-type (get-target-type state card-id)
-        targets (cond (= target-type :all-minions)
-                      (get-minions state)
+        targets (cond
+                  (= target-type :all)
+                  (concat (get-minions state)
+                          (get-heroes state))
 
-                      (= target-type :enemy-minions)
-                      (get-minions state (if (= player-id "p1") "p2" "p1"))
+                  (= target-type :all-minions)
+                  (get-minions state)
 
-                      (= target-type :friendly-minions)
-                      (get-minions state (if (= player-id "p1") "p1" "p2"))
+                  (= target-type :enemy-minions)
+                  (get-minions state (if (= player-id "p1") "p2" "p1"))
 
-                      ; TODO: Add checks for other target-type. :all and :enemy-hero
-                      :else
-                      [])
+                  (= target-type :friendly-minions)
+                  (get-minions state (if (= player-id "p1") "p1" "p2"))
+
+                  ; TODO: Add checks for other target-type.
+                  :else
+                  [])
         targets-ids (map :id targets)]
     (let [target-cond-func (get-target-condition-function state card-id)]
       (if (nil? target-cond-func)
@@ -566,13 +576,15 @@
                                   {:minions [(create-minion "Defender" :id "d1")
                                              (create-minion "Defender" :id "d2")]}])
                     (valid-plays))
-                {"b1"  ["i1" "wg1" "d1" "d2"]
-                 "mc1" ["d1" "d2"]
-                 "i3"  []
+                {"b1"   ["i1" "wg1" "d1" "d2"]
+                 "mc1"  ["d1" "d2"]
+                 "i3"   []
                  "bgh1" ["wg1"]})
-           (is= (-> (create-game [{:hand ["Bananas" (create-card "Big Game Hunter" :id "bgh")]}])
+           (is= (-> (create-game [{:hand ["Bananas" (create-card "Big Game Hunter" :id "bgh")
+                                          (create-card "Frostbolt" :id "f")]}])
                     (valid-plays))
-                {"bgh" []}))}
+                {"bgh" []
+                 "f"   ["h1" "h2"]}))}
   [state]
   (let [player-in-turn (:player-id-in-turn state)]
     (reduce (fn [plays card-id]

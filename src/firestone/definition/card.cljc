@@ -227,7 +227,7 @@
     :set         :basic
     :rarity      :none
     :description "Deal 3 damage to a character and Freeze it."
-    :target-type :all-minions
+    :target-type :all
     :spell        (defn frostbolt
                     {:test (fn  []
                              (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
