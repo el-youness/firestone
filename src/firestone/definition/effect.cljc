@@ -13,7 +13,9 @@
                                     summon-minion
                                     get-health
                                     heal-hero
-                                    valid-plays]]
+                                    valid-plays
+                                    change-minion-board-side
+                                    destroy-minion]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          create-card
@@ -22,7 +24,8 @@
                                          update-in-minion
                                          get-minions
                                          get-hero-id
-                                         remove-secret]]))
+                                         remove-secret
+                                         opposing-player-id]]))
 
 (def effect-definitions
   {
@@ -118,6 +121,29 @@
                                                       29))}
                                         [state player-id]
                                         (heal-hero state (get-hero-id state player-id) 8))
+
+   "Sylvanas Windrunner deathrattle"    (defn sylvanas-deathrattle
+                                          "Deathrattle: Take control of a random enemy minion."
+                                          {:test (fn []
+                                                   (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}
+                                                                          {:minions [(create-minion "War Golem" :id "wg")]}])
+                                                            (attack-with-minion "s" "wg")
+                                                            (get-minions "p1")
+                                                            (first)
+                                                            (:name))
+                                                        "War Golem")
+                                                   ; If there are no opposing minions, nothing happens
+                                                   (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}])
+                                                            (destroy-minion "s")
+                                                            (get-minions "p1")
+                                                            (count))
+                                                        0))}
+                                          [state player-id]
+                                          (let [opp-pid (opposing-player-id player-id)
+                                                opp-minions (get-minions state opp-pid) ]
+                                            (if (> (count opp-minions) 0)
+                                              (change-minion-board-side state (:id (rand-nth opp-minions)))
+                                              state)))
 
    ; Secrets
    "Snake Trap effect"                (defn snake-trap-effect
