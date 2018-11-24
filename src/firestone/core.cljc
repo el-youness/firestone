@@ -791,7 +791,7 @@
     ; on minions
     (as-> (get-minions state (:id player)) $
           (reduce (fn [state minion]
-                   (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
+                    (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
                      (update-in-minion state (:id minion) [:effects :frozen] false)
                      state))
                    state $)
