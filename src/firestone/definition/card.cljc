@@ -24,8 +24,11 @@
                                     damage-minion
                                     damage-hero
                                     valid-plays
-                                    destroy-minion]]
-            [firestone.api :refer [play-minion-card]]))
+                                    destroy-minion
+                                    valid-attack?]]
+            [firestone.api :refer [attack-with-minion
+                                   play-minion-card
+                                   end-turn]]))
 
 (def card-definitions
   {
@@ -265,11 +268,21 @@
 
                                           [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
                                       [0 1])
-                                 (is= (as-> (create-game [{:hand [(create-card "Cabal Shadow Priest" :id "c")]}
-                                                          {:minions [(create-minion "Defender" :id "d")]}]) $
+                                 (is= (as-> (create-game [{:hand [(create-card "Cabal Shadow Priest" :id "c")]
+                                                           :deck ["Imp"]}
+                                                          {:minions [(create-minion "Defender" :id "d")]
+                                                           :deck ["Imp"]}]) $
                                             (play-minion-card $ "p1" "c" {:position 0 :target-id "d"})
-                                            [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
-                                      [2 0]))}
+                                            (do (is= (count (get-minions $ "p1")) 2)
+                                                (is= (count (get-minions $ "p2")) 0)
+                                                (is-not (valid-attack? $ "p1" "d" "h2"))
+                                                $)
+                                            (end-turn $)
+                                            (end-turn $)
+                                            (attack-with-minion $ "d" "h2")
+                                            (get-health $ "h2"))
+
+                                      28))}
                         [state _ target-id]
                         (change-minion-board-side state target-id))}
 
