@@ -7,12 +7,14 @@
                                          get-minion
                                          get-minions
                                          create-hero
+                                         get-hero-power
                                          get-board-entity
                                          update-minion
                                          create-card
                                          get-card-from-hand
                                          remove-card-from-hand
-                                         get-player]]
+                                         get-player
+                                         update-hero-power]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -22,6 +24,7 @@
                                     valid-plays
                                     get-owner
                                     get-spell-function
+                                    get-hero-power-function
                                     get-battlecry-function
                                     battlecry-minion-with-target?
                                     consume-mana
@@ -68,7 +71,7 @@
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
-          ;TODO: reset hero power
+          (update-hero-power new-pid :used false)
           ;TODO: trigger the "beginning of turn" card effects
           (unfreeze-characters)
           (reset-minion-attack-this-turn new-pid)))))
@@ -183,3 +186,27 @@
           state
           (battlecry-function state minion-id)))
       state)))
+
+(defn use-hero-power
+  "Use the hero power of the hero belonging to the given player id."
+  {:test (fn []
+           ; Use a hero power that has no targets
+           (is= (-> (create-game [{:hero "Uther Lightbringer"}])
+                    (use-hero-power "p1" {})
+                    (get-minions "p1")
+                    (count))
+                1)
+           ; Use a hero power that can target everything on the board
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                  {:minions [(create-minion "Imp" :id "i2")]}])
+                    (use-hero-power "p1" {:target-id "i2"})
+                    (get-minions "p2")
+                    (count))
+                0))}
+  [state player-id {target-id :target-id}]
+  (let [hero-power (get-hero-power state player-id)]
+    (-> (if (nil? target-id)
+          ((get-hero-power-function hero-power) state)
+          ((get-hero-power-function hero-power) state target-id))
+        (consume-mana player-id (get-cost hero-power))
+        (update-hero-power player-id :used true))))

@@ -54,6 +54,16 @@
     :type      :minion
     :rarity    :common}
 
+   "Silver Hand Recruit"
+   {:name      "Silver Hand Recruit"
+    :attack    1
+    :health    1
+    :mana-cost 1
+    :set       :classic
+    :class     :paladin
+    :type      :minion
+    :rarity    :none}
+
    "Imp"
    {:name      "Imp"
     :attack    1
@@ -220,7 +230,7 @@
     :set         :basic
     :rarity      :none
     :description "Deal 3 damage to a character and Freeze it."
-    :target-type :all-minions
+    :target-type :all
     :spell        (defn frostbolt
                     {:test (fn  []
                              (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
