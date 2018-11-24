@@ -336,7 +336,8 @@
     :type        :minion
     :set         :hall-of-fame
     :rarity      :legendary
-    :description "Deathrattle: Take control of a random enemy minion."}
+    :description "Deathrattle: Take control of a random enemy minion."
+    :deathrattle "Sylvanas Windrunner deathrattle"}
 
    "Frothing Berserker"
    {:name        "Frothing Berserker"
