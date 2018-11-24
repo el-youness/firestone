@@ -780,20 +780,20 @@
            ; Hero has {:spell-damage 2} deals spell damage to opposing hero
            (is= (-> (create-game [{:hero (create-hero "Uther Lightbringer") :minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}
                                   {:hero (create-hero "Jaina Proudmoore")}])
-                    (deal-spell-damage "p1" "h1" 3)
+                    (deal-spell-damage "h1" 3)
                     (get-health "h1"))
                 (as-> (get-definition "Jaina Proudmoore") $
                       (- ($ :health) 5)))
            ; Hero has {:spell-damage 2} deals spell damage to opposing minoin
            (is= (-> (create-game [{:hero (create-hero "Uther Lightbringer") :minions [(create-minion "Dalaran Mage") (create-minion "Ogre Magi")]}
                                   {:hero (create-hero "Jaina Proudmoore") :minions [(create-minion "War Golem" :id "wg")]}])
-                    (deal-spell-damage "p1" "wg" 3)
+                    (deal-spell-damage "wg" 3)
                     (get-health "wg"))
                 (as-> (get-definition "War Golem") $
                       (- ($ :health) 5)))
            )}
-  [state player-id target-id damage]
-  (let [total-damage (+ damage (get-player-spell-damage state player-id))
+  [state target-id damage]
+  (let [total-damage (+ damage (get-player-spell-damage state (state :player-id-in-turn)))
         target (get-character state target-id)]
    (if (= (:entity-type target) :hero)
      (damage-hero state target-id total-damage)

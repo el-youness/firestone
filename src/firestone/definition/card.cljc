@@ -16,7 +16,8 @@
                                          get-effects
                                          remove-secrets
                                          get-hero
-                                         get-minion-effects]]
+                                         get-minion-effects
+                                         get-player]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -25,7 +26,8 @@
                                     damage-hero
                                     valid-plays
                                     destroy-minion
-                                    valid-attack?]]
+                                    valid-attack?
+                                    deal-spell-damage]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -234,13 +236,18 @@
                                                  (get-character "h1"))
                                         effects (get hero :effects)]
                                     [(get effects :frozen) (get hero :damage-taken)])
-                                  [true 3]))}
+                                  [true 3])
+                             (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i") "Dalaran Mage"]}])
+                                                   (frostbolt "i")
+                                                   (get-minion "i"))
+                                        effects (get minion :effects)]
+                                    [(get effects :frozen) (get minion :damage-taken)])
+                                  [true 4]))}
                     [state target-id]
-                    (if (= (:entity-type (get-character state target-id)) :minion)
-                      (-> (damage-minion state target-id 3)
-                          (update-in-minion target-id [:effects :frozen] true))
-                      (-> (damage-hero state target-id 3)
-                          (update-in-hero target-id [:effects :frozen] true))))}
+                    (as-> (deal-spell-damage state target-id 3) $
+                        (if (= (:entity-type (get-character state target-id)) :minion)
+                          (update-in-minion $ target-id [:effects :frozen] true)
+                          (update-in-hero $ target-id [:effects :frozen] true))))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
