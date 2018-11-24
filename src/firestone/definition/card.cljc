@@ -17,7 +17,8 @@
                                          remove-secrets
                                          get-hero
                                          get-minion-effects
-                                         get-player]]
+                                         get-player
+                                         ]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -27,7 +28,8 @@
                                     valid-plays
                                     destroy-minion
                                     valid-attack?
-                                    deal-spell-damage]]
+                                    deal-spell-damage
+                                    hero?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -225,29 +227,26 @@
     :target-type :all-minions
     :spell        (defn frostbolt
                     {:test (fn  []
-                             (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
-                                                   (frostbolt "i")
-                                                   (get-minion "i"))
-                                        effects (get minion :effects)]
-                                    [(get effects :frozen) (get minion :damage-taken)])
+                             (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}]) $
+                                        (frostbolt $ "i")
+                                        (get-minion $ "i")
+                                        [(get-in $ [:effects :frozen]) (get $ :damage-taken)])
                                   [true 3])
-                             (is= (let [hero (-> (create-game)
-                                                 (frostbolt "h1")
-                                                 (get-character "h1"))
-                                        effects (get hero :effects)]
-                                    [(get effects :frozen) (get hero :damage-taken)])
-                                  [true 3])
-                             (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i") "Dalaran Mage"]}])
-                                                   (frostbolt "i")
-                                                   (get-minion "i"))
-                                        effects (get minion :effects)]
-                                    [(get effects :frozen) (get minion :damage-taken)])
-                                  [true 4]))}
+                             (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "i") "Dalaran Mage"]}]) $
+                                        (frostbolt $ "i")
+                                        (get-minion $ "i")
+                                        [(get-in $ [:effects :frozen]) (get $ :damage-taken)])
+                                  [true 4])
+                             (is= (as-> (create-game) $
+                                        (frostbolt $ "h1")
+                                        (get-character $ "h1")
+                                  [(get-in $ [:effects :frozen]) (get $ :damage-taken)])
+                                  [true 3]))}
                     [state target-id]
                     (as-> (deal-spell-damage state target-id 3) $
-                        (if (= (:entity-type (get-character state target-id)) :minion)
-                          (update-in-minion $ target-id [:effects :frozen] true)
-                          (update-in-hero $ target-id [:effects :frozen] true))))}
+                        (if (hero? state target-id)
+                          (update-in-hero $ target-id [:effects :frozen] true)
+                          (update-in-minion $ target-id [:effects :frozen] true))))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
