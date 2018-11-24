@@ -61,7 +61,7 @@
                  (is= (-> ((get-player $ "p2") :hand)
                           (count))
                       1) $))
-         ; If I freeze a friendly minion, Unfreeze at  beginning of next turn if they already attacked
+         ; If I freeze a friendly minion, Unfreeze at the end of next turn if they already attacked
          (as-> (create-game [{:hand [(create-card "Frostbolt" :id "f1")]
                               :deck [(create-card "Imp" :id "i1")]
                               :minions [(create-minion "War Golem" :id "wg" :attacks-performed-this-turn 1)]}
@@ -73,18 +73,15 @@
                  (is= (get minion :attacks-performed-this-turn)
                       1) $)
                (end-turn $)
-               (play-minion-card $ "p2" "i2" {:position 0})
-               (do (is= (-> ((get-player $ "p2") :minions)
-                            (first)
-                            (:name))
-                        "Imp") $)
+
                (let [minion (get-minion $ "wg")]
                  (is= (get-in minion [:effects :frozen])
                       true)
                  (is= (get minion :attacks-performed-this-turn)
                       1) $)
                (end-turn $)
-               #_(do (is= (get-in (get-minion $ "wg") [:effects :frozen])
+               (end-turn $)
+               (do (is= (get-in (get-minion $ "wg") [:effects :frozen])
                         false) $)
                )
 
