@@ -66,6 +66,7 @@
     (let [new-pid (if (= "p1" old-pid) "p2" "p1")]
       (-> state
           ;TODO: trigger the "end of turn" card effects
+          (unfreeze-characters)
           (assoc :player-id-in-turn new-pid
                  :minion-ids-summoned-this-turn [])
           (draw-card new-pid)
@@ -73,8 +74,8 @@
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
           ;TODO: trigger the "beginning of turn" card effects
-          (unfreeze-characters)
-          (reset-minion-attack-this-turn new-pid)))))
+          (reset-minion-attack-this-turn new-pid)
+          ))))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."

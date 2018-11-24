@@ -123,7 +123,7 @@
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen])
+                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen :spell-damage])
                                                     :extra-attack 0
                                                     :extra-health 0)}]
     (if (empty? kvs)
