@@ -1081,3 +1081,11 @@
                 []))}
   [state player-id]
   (assoc-in state [:players player-id :secrets] []))
+  
+  (defn opposing-player-id
+  "Get the other player's id"
+  {:test (fn []
+           (is= (opposing-player-id "p2")
+                "p1" ))}
+  [player-id]
+  (if (= player-id "p1") "p2" "p1"))
