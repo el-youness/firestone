@@ -31,6 +31,7 @@
                                     valid-plays
                                     destroy-minion
                                     valid-attack?
+                                    give-card
                                     add-to-max-mana
                                     deal-spell-damage
                                     hero?]]
@@ -229,10 +230,9 @@
                                       (->> (map :name)))
                                   ["Bananas" "Bananas"]))}
                     [state minion-id]
-                    (let [opponent-player-id (opposing-player-id (get-owner state minion-id))
-                          card-description {:player-id opponent-player-id :card (create-card "Bananas")}]
-                      (reduce add-card-to-hand state [card-description
-                                                      card-description])))}
+                    (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
+                      (-> (give-card state opponent-player-id (create-card "Bananas"))
+                          (give-card       opponent-player-id (create-card "Bananas")))))}
 
    "Frostbolt"
    {:name        "Frostbolt"
