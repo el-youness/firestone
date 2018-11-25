@@ -35,9 +35,7 @@
                                     add-to-max-mana
                                     reset-minion-attack-this-turn
                                     unfreeze-characters
-                                    handle-triggers
-                                    reset-minion-attack-this-turn
-                                    get-battlecry-function]]))
+                                    handle-triggers]]))
 
 (defn end-turn
   "Ends the turn of the playing hero"

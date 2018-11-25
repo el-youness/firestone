@@ -473,6 +473,30 @@
   ([state player-id card]
    (summon-minion state player-id card 0)))
 
+(defn give-card
+  "Adds a card to a given players hand, on the condition that it isn't full."
+  {:test (fn []
+           ; Add a card to an empty players hand
+           (is= (-> (create-game)
+                    (give-card "p2" (create-card "Imp"))
+                    (get-hand "p2")
+                    (count))
+                1)
+           ; Burn a card when the player's hand is full
+           (is= (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
+                                          (create-card "Imp") (create-card "Imp")]}])
+                    (give-card "p1" (create-card "Imp"))
+                    (get-hand "p1")
+                    (count))
+                10))}
+  ([state player-id card]
+   {:pre [(map? state) (string? player-id)]}
+    ; Check if there are cards in the deck
+   (if (< (count (get-hand state player-id)) 10)
+     (add-card-to-hand state {:player-id player-id :card card})
+     state)))
+
 (defn draw-card
   "Draw a card from a player's deck and put it in the hand. This is only done if the hand is not full
   and there are cards in the deck."
@@ -481,16 +505,6 @@
            (is= (-> (create-game [{:deck [(create-card "Imp")]}])
                     (draw-card "p1"))
                 (create-game [{:hand [(create-card "Imp")]}]))
-           ; Test to draw a card when the player's hand is full
-           (is= (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp")]
-                                   :deck [(create-card "War Golem")]}])
-                    (draw-card "p1"))
-                (-> (create-game [{:hand [(create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp") (create-card "Imp") (create-card "Imp")
-                                          (create-card "Imp") (create-card "Imp")]}])
-                    (update :counter inc)))
            ; Test that a player takes fatigue damage if there are no cards in the deck
            (is= (-> (create-game)
                     (draw-card "p1"))
@@ -508,10 +522,7 @@
        (damage-hero state (get-hero-id state player-id) damage))
      (let [card (first (get-cards-from-deck state player-id 1))]
        (let [state (remove-card-from-deck state player-id (:id card))]
-         ; Check that the hand is not full
-         (if (< (count (get-hand state player-id)) 10)
-           (add-card-to-hand state {:player-id player-id :card card})
-           state))))))
+         (give-card state player-id card))))))
 
 (defn mulligan
   "Take x cards from player 1's deck and y cards from player 2's deck. The cards are removed from the

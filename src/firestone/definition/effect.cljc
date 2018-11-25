@@ -5,10 +5,23 @@
             [firestone.definitions :refer [get-definitions]]
             [firestone.core :refer [draw-card
                                     summon-minion
-                                    get-owner
-                                    heal-hero]]
-            [firestone.construct :refer [update-in-minion
+                                    get-health
+                                    heal-hero
+                                    add-to-max-mana
+                                    valid-plays
+                                    get-owner]]
+            [firestone.construct :refer [create-game
+                                         create-minion
+                                         create-card
+                                         get-hand
+                                         create-hero
+                                         update-in-minion
+                                         get-minions
                                          get-hero-id
+                                         create-card
+                                         add-card-to-hand
+                                         opposing-player-id
+                                         get-mana
                                          remove-secret]]))
 
 ; These functions are tested in 'card_test.cljc'
