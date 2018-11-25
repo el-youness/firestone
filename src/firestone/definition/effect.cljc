@@ -3,6 +3,7 @@
             [ysera.random :refer [random-nth]]
             [firestone.definitions :as definitions]
             [firestone.definitions :refer [get-definitions]]
+            [firestone.api :refer [attack-with-minion]]
             [firestone.core :refer [draw-card
                                     summon-minion
                                     get-health
