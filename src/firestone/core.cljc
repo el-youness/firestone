@@ -117,7 +117,7 @@
    (get (get-definition (:name entity)) :type))
   ([state entity-id]
    (get-entity-type (or (get-card-from-hand state entity-id)
-                      (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
+                        (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn get-target-type
   "Returns the target type of the card or hero power with the given id or entity."
@@ -299,24 +299,17 @@
                      state)))
                state)))
 
-(defn change-minion-board-side
-  "Causes a minion on the board to switch board side and owner."
+(defn full-board?
+  "Checks if a player's board is full."
   {:test (fn []
-           (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}]) $
-                      (change-minion-board-side $ "wg")
-                      [(get-owner $ "wg")
-                       (count (get-minions $ "p1"))
-                       (count (get-minions $ "p2"))])
-                ["p2" 0 1]))}
-  [state id]
-  (let [minion (get-minion state id)
-        new-owner-id (if (= (get-owner state id) "p1")
-                       "p2"
-                       "p1")]
-    (-> (remove-minion state id)
-        (add-minion-to-board {:player-id new-owner-id
-                              :minion    minion
-                              :position  0}))))
+           (is-not (-> (create-game)
+                       (full-board? "p1")))
+           (is (-> (create-game [{:minions (repeat 7 "Imp")}])
+                   (full-board? "p1")))
+           (is-not (-> (create-game [{:minions (repeat 7 "Imp")}])
+                       (full-board? "p2"))))}
+  [state player-id]
+  (>= (count (get-minions state player-id)) 7))
 
 (defn destroy-minion
   "Causes a minion on the board to die. Should trigger deathrattles and other on death effects."
@@ -338,6 +331,34 @@
             (-> (remove-minion state id)
                 (deathrattle owner-id)))
           (remove-minion state id)))))
+
+(defn change-minion-board-side
+  "Causes a minion on the board to switch board side and owner."
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}]) $
+                      (change-minion-board-side $ "wg")
+                      [(get-owner $ "wg")
+                       (count (get-minions $ "p1"))
+                       (count (get-minions $ "p2"))])
+                ["p2" 0 1])
+           ; Should only destroy minion if the board to be moved to is full
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}
+                                  {:minions (repeat 7 "Imp")}])
+                    (change-minion-board-side "wg")
+                    (get-minions "p2")
+                    (count))
+                7))}
+  [state id]
+  (let [minion (get-minion state id)
+        new-owner-id (if (= (get-owner state id) "p1")
+                       "p2"
+                       "p1")]
+    (if (full-board? state new-owner-id)
+      (destroy-minion state id)
+      (-> (remove-minion state id)
+          (add-minion-to-board {:player-id new-owner-id
+                                :minion    minion
+                                :position  0})))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."
@@ -443,7 +464,7 @@
                                          (create-minion "War Golem")
                                          (create-minion "War Golem")]}])))}
   ([state player-id card position]
-   (if (< (count (get-minions state player-id)) 7)
+   (if (not (full-board? state player-id))
      (let [minion (create-minion (if (string? card)
                                    card
                                    (:name card)))]
@@ -564,14 +585,13 @@
                        (playable? "p1" "c1"))))}
   [state player-id entity-id]
   (let [available-mana (get-mana state player-id)
-        cost (get-cost state entity-id)
-        minions-on-board (get-minions state player-id)]
+        cost (get-cost state entity-id)]
     (and (<= cost available-mana)
          (if (hero-power? state entity-id)
            (not (:used (get-hero-power state player-id)))
            true)
          (if (minion-card? state entity-id)
-           (< (count minions-on-board) 7)
+           (not (full-board? state player-id))
            true)
          (if (secret-card? state entity-id)
            (not (secret-active? state player-id (get-card-from-hand state entity-id)))
@@ -878,9 +898,9 @@
   [state target-id damage]
   (let [total-damage (+ damage (get-player-spell-damage state (state :player-id-in-turn)))
         target (get-character state target-id)]
-   (if (= (:entity-type target) :hero)
-     (damage-hero state target-id total-damage)
-     (damage-minion state target-id total-damage))))
+    (if (= (:entity-type target) :hero)
+      (damage-hero state target-id total-damage)
+      (damage-minion state target-id total-damage))))
 
 (defn reset-minion-attack-this-turn
   "Resets :attack-this-turn back to 0 for all minions of a given player"
@@ -938,9 +958,9 @@
     (as-> (get-minions state (:id player)) $
           (reduce (fn [state minion]
                     (if (and (get-in minion [:effects :frozen]) (= (:attacks-performed-this-turn minion) 0))
-                     (update-in-minion state (:id minion) [:effects :frozen] false)
-                     state))
-                   state $)
+                      (update-in-minion state (:id minion) [:effects :frozen] false)
+                      state))
+                  state $)
           ; on hero
           (if (and (not (nil? (get-in hero [:effects :frozen]))) (= (:attacks-performed-this-turn player) 0))
             (update-in-hero $ (:id hero) [:effects :frozen] false)
