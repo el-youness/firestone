@@ -133,10 +133,27 @@
     :set         :whispers-of-the-old-gods
     :rarity      :rare
     :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."
-    :battlecry   (fn [state eater-of-secrets-id]
-                   (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
-                                       "p2"
-                                       "p1")]
+    :battlecry   (defn eater-of-secrets-battlecry
+                   {:test (fn []
+                            ; Opponent has one secret.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
+                                                     {:secrets ["Snake Trap"]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m2") (get-health $ "m2")])
+                                 [0 3 5])
+                            ; Opponent has two secret.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
+                                                     {:secrets ["Snake Trap" "Snake Trap"]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
+                                 [0 4 6])
+                            ; Opponent has no secrets.
+                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
+                                       (play-minion-card $ "p1" "es" {:position 0})
+                                       [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
+                                 [0 2 4]))}
+                   [state eater-of-secrets-id]
+                   (let [opponent-id (opposing-player-id (get-owner state eater-of-secrets-id))]
                      (let [number-of-secrets (count (get-secrets state opponent-id))]
                        (-> (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
                            (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))
@@ -321,7 +338,8 @@
     :type        :minion
     :set         :hall-of-fame
     :rarity      :legendary
-    :description "Deathrattle: Take control of a random enemy minion."}
+    :description "Deathrattle: Take control of a random enemy minion."
+    :deathrattle "Sylvanas Windrunner deathrattle"}
 
    "Frothing Berserker"
    {:name        "Frothing Berserker"
