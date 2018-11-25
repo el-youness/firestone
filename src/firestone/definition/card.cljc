@@ -20,7 +20,8 @@
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
-                                         get-mana]]
+                                         get-mana
+                                         get-player]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -30,7 +31,9 @@
                                     valid-plays
                                     destroy-minion
                                     valid-attack?
-                                    add-to-max-mana]]
+                                    add-to-max-mana
+                                    deal-spell-damage
+                                    hero?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -58,6 +61,16 @@
     :class     :paladin
     :type      :minion
     :rarity    :common}
+
+   "Silver Hand Recruit"
+   {:name      "Silver Hand Recruit"
+    :attack    1
+    :health    1
+    :mana-cost 1
+    :set       :classic
+    :class     :paladin
+    :type      :minion
+    :rarity    :none}
 
    "Imp"
    {:name      "Imp"
@@ -107,14 +120,7 @@
                         [state target-id]
                         {:pre [(map? state) (string? target-id)]}
                         (>= (get-attack state target-id) 7))
-    :battlecry        (defn big-game-hunter
-                        {:test (fn []
-                                 (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}])
-                                          (big-game-hunter "m1" "wg")
-                                          (get-minions "p1")
-                                          (count))
-                                      0))}
-                        [state _ target-id]
+    :battlecry        (fn [state _ target-id]
                         (destroy-minion state target-id))}
 
    "Eater of Secrets"
@@ -126,26 +132,7 @@
     :set         :whispers-of-the-old-gods
     :rarity      :rare
     :description "Battlecry: Destroy all enemy Secrets. Gain +1/+1 for each."
-    :battlecry   (defn eater-of-secrets-battlecry
-                   {:test (fn []
-                            ; Opponent has one secret.
-                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
-                                                     {:secrets ["Snake Trap"]}]) $
-                                       (play-minion-card $ "p1" "es" {:position 0})
-                                       [(count (get-secrets $)) (get-attack $ "m2") (get-health $ "m2")])
-                                 [0 3 5])
-                            ; Opponent has two secret.
-                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}
-                                                     {:secrets ["Snake Trap" "Snake Trap"]}]) $
-                                       (play-minion-card $ "p1" "es" {:position 0})
-                                       [(count (get-secrets $)) (get-attack $ "m3") (get-health $ "m3")])
-                                 [0 4 6])
-                            ; Opponent has no secrets.
-                            (is= (as-> (create-game [{:hand [(create-card "Eater of Secrets" :id "es")]}]) $
-                                       (play-minion-card $ "p1" "es" {:position 0})
-                                       [(count (get-secrets $)) (get-attack $ "m1") (get-health $ "m1")])
-                                 [0 2 4]))}
-                   [state eater-of-secrets-id]
+    :battlecry   (fn [state eater-of-secrets-id]
                    (let [opponent-id (if (= (get-owner state eater-of-secrets-id) "p1")
                                        "p2"
                                        "p1")]
@@ -254,27 +241,12 @@
     :set         :basic
     :rarity      :none
     :description "Deal 3 damage to a character and Freeze it."
-    :target-type :all-minions
-    :spell        (defn frostbolt
-                    {:test (fn  []
-                             (is= (let [minion (-> (create-game [{:minions [(create-minion "War Golem" :id "i")]}])
-                                                   (frostbolt "i")
-                                                   (get-minion "i"))
-                                        effects (get minion :effects)]
-                                    [(get effects :frozen) (get minion :damage-taken)])
-                                  [true 3])
-                             (is= (let [hero (-> (create-game)
-                                                 (frostbolt "h1")
-                                                 (get-character "h1"))
-                                        effects (get hero :effects)]
-                                    [(get effects :frozen) (get hero :damage-taken)])
-                                  [true 3]))}
-                    [state target-id]
-                    (if (= (:entity-type (get-character state target-id)) :minion)
-                      (-> (damage-minion state target-id 3)
-                          (update-in-minion target-id [:effects :frozen] true))
-                      (-> (damage-hero state target-id 3)
-                          (update-in-hero target-id [:effects :frozen] true))))}
+    :target-type :all
+    :spell        (fn [state target-id]
+                    (as-> (deal-spell-damage state target-id 3) $
+                        (if (hero? state target-id)
+                          (update-in-hero $ target-id [:effects :frozen] true)
+                          (update-in-minion $ target-id [:effects :frozen] true))))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
@@ -327,13 +299,7 @@
     :rarity      :none
     :description "Take control of an enemy minion."
     :target-type :enemy-minions
-    :spell       (defn mind-control
-                   {:test (fn []
-                            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                                     (mind-control "imp")
-                                     (get-owner "imp"))
-                                 "p2"))}
-                   [state target-id]
+    :spell       (fn [state target-id]
                    (change-minion-board-side state target-id))}
 
    "Deranged Doctor"
@@ -375,17 +341,7 @@
     :set         :classic
     :description "Give a minion +1/+1."
     :target-type :all-minions
-    :spell       (defn banana
-                   {:test (fn []
-                            (is= (let [minion (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                                                  (banana "i")
-                                                  (get-minion "i"))
-                                       effects (get minion :effects)]
-                                   [(get effects :extra-health)
-                                    (get effects :extra-attack)]
-                                   )
-                                 [1 1]))}
-                   [state target-id]
+    :spell       (fn [state target-id]
                    (-> (update-in-minion state target-id [:effects :extra-health] inc)
                        (update-in-minion target-id [:effects :extra-attack] inc)))}
 
