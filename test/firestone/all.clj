@@ -7,6 +7,7 @@
             [firestone.core]
             [firestone.api]
             [firestone.definition.card]
+            [firestone.definition.card_test]
             [firestone.definition.hero]
             [firestone.definition.effect]
             [firestone.hero-tests]))
