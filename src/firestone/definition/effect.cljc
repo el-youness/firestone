@@ -11,7 +11,8 @@
                                     change-minion-board-side
                                     destroy-minion
                                     get-owner
-                                    heal-hero]]
+                                    heal-hero
+                                    add-to-max-mana]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          create-card
@@ -20,8 +21,11 @@
                                          update-in-minion
                                          get-minions
                                          get-hero-id
-                                         remove-secret
-                                         opposing-player-id]]))
+                                         create-card
+                                         add-card-to-hand
+                                         opposing-player-id
+                                         get-mana
+                                         remove-secret]]))
 
 ; These functions are tested in 'card_test.cljc'
 

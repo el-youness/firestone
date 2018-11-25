@@ -17,8 +17,11 @@
                                          remove-secrets
                                          get-hero
                                          get-minion-effects
-                                         get-player
-                                         opposing-player-id]]
+                                         opposing-player-id
+                                         add-card-to-hand
+                                         get-hand
+                                         get-mana
+                                         get-player]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -28,6 +31,8 @@
                                     valid-plays
                                     destroy-minion
                                     valid-attack?
+                                    give-card
+                                    add-to-max-mana
                                     deal-spell-damage
                                     hero?]]
             [firestone.api :refer [attack-with-minion
@@ -162,7 +167,17 @@
     :type        :minion
     :set         :classic
     :rarity      :rare
-    :description "Battlecry: Give your opponent a Mana Crystal."}
+    :description "Battlecry: Give your opponent a Mana Crystal."
+    :battlecry    (defn arcane-golem-battlecry
+                    {:test (fn []
+                             (is= (-> (create-game [{:minions [(create-minion "Arcane Golem" :id "ag")]}
+                                                    {:max-mana 5}])
+                                      (arcane-golem-battlecry "ag" )
+                                      (get-mana "p2"))
+                                  6))}
+                    [state golem-id]
+                    (let [opponent-player-id (opposing-player-id (get-owner state golem-id))]
+                      (add-to-max-mana state opponent-player-id 1))) }
 
    "Acolyte of Pain"
    {:name        "Acolyte of Pain"
@@ -216,7 +231,25 @@
     :type        :minion
     :set         :classic
     :rarity      :legendary
-    :description "Battlecry: Give your opponent 2 Bananas."}
+    :description "Battlecry: Give your opponent 2 Bananas."
+    :on-playing-card "King Mukla battelcry"
+    :battlecry    (defn king-mukla
+                    "Battlecry: Give your opponent 2 Bananas."
+                    {:test (fn []
+                             (is= (-> (create-game [{:minions [(create-minion "King Mukla" :id "km")]}])
+                                      (king-mukla "km")
+                                      (get-hand "p2")
+                                      (->> (map :name)))
+                                  ["Bananas" "Bananas"])
+                             (is= (-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}])
+                                      (play-minion-card "p1" "km" {:position 0})
+                                      (get-hand "p2")
+                                      (->> (map :name)))
+                                  ["Bananas" "Bananas"]))}
+                    [state minion-id]
+                    (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
+                      (-> (give-card state opponent-player-id (create-card "Bananas"))
+                          (give-card       opponent-player-id (create-card "Bananas")))))}
 
    "Frostbolt"
    {:name        "Frostbolt"
@@ -251,7 +284,28 @@
                         [state target-id]
                         {:pre [(map? state) (string? target-id)]}
                         (<= (get-attack state target-id) 2))
-    :battlecry        (fn [state _ target-id]
+    :battlecry        (defn cabal-shadow-priest
+                        {:test (fn []
+                                 (is= (as-> (create-game [{:minions [(create-minion "Defender" :id "d")]}]) $
+                                          (cabal-shadow-priest $ "m1" "d")
+                                          [(count (get-minions $ "p1")) (count (get-minions $ "p2"))])
+                                      [0 1])
+                                 (is= (as-> (create-game [{:hand [(create-card "Cabal Shadow Priest" :id "c")]
+                                                           :deck ["Imp"]}
+                                                          {:minions [(create-minion "Defender" :id "d")]
+                                                           :deck ["Imp"]}]) $
+                                            (play-minion-card $ "p1" "c" {:position 0 :target-id "d"})
+                                            (do (is= (count (get-minions $ "p1")) 2)
+                                                (is= (count (get-minions $ "p2")) 0)
+                                                (is-not (valid-attack? $ "p1" "d" "h2"))
+                                                $)
+                                            (end-turn $)
+                                            (end-turn $)
+                                            (attack-with-minion $ "d" "h2")
+                                            (get-health $ "h2"))
+
+                                      28))}
+                        [state _ target-id]
                         (change-minion-board-side state target-id))}
 
    "Mind Control"

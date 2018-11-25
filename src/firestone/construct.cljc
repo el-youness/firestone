@@ -114,9 +114,9 @@
                  :entity-type                 :minion
                  :name                        "Acolyte of Pain"
                  :id                          "i"
-                 :effects                     {:on-damage    "Acolyte of Pain effect"
-                                               :extra-attack 0
-                                               :extra-health 0}}))}
+                 :effects                      {:on-damage  "Acolyte of Pain effect"
+                                                :extra-attack 0
+                                                :extra-health 0}}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
@@ -372,9 +372,8 @@
     (update-in state
                [:players player-id :hand]
                (fn [cards]
-                 (conj cards
-                       (assoc card :owner-id player-id
-                                   :id id))))))
+                 (conj cards (assoc card :owner-id player-id
+                                         :id id))))))
 
 (defn add-minion-to-board
   "Adds a minion with a given position to a player's minions and updates the other minions' positions."
@@ -1060,6 +1059,16 @@
              (fn [cards]
                (remove (fn [c] (= (:id c) id)) cards))))
 
+(defn opposing-player-id
+  "Returns the id of the other player w/ regards to player-id"
+  {:test (fn []
+           (is= (opposing-player-id "p1")
+                "p2")
+           (is= (opposing-player-id "p2")
+                "p1"))}
+  [player-id]
+  (if (= "p1" player-id) "p2" "p1"))
+
 (defn remove-secret
   "Removes the secret with the given id from the given player."
   {:test (fn []
@@ -1081,11 +1090,3 @@
                 []))}
   [state player-id]
   (assoc-in state [:players player-id :secrets] []))
-  
-  (defn opposing-player-id
-  "Get the other player's id"
-  {:test (fn []
-           (is= (opposing-player-id "p2")
-                "p1" ))}
-  [player-id]
-  (if (= player-id "p1") "p2" "p1"))
