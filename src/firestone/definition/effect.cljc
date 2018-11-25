@@ -142,7 +142,7 @@
                                           (let [opp-pid (opposing-player-id player-id)
                                                 opp-minions (get-minions state opp-pid) ]
                                             (if (> (count opp-minions) 0)
-                                              (change-minion-board-side state (:id (rand-nth opp-minions)))
+                                              (change-minion-board-side state (:id (second(random-nth 0 opp-minions))))
                                               state)))
 
    ; Secrets
