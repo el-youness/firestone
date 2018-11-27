@@ -69,6 +69,7 @@
 (defn get-attack
   "Returns the attack of the minion with the given id."
   {:test (fn []
+           (is= (get-attack (create-minion "Imp")) 1)
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (get-attack "i"))
                 1)
@@ -76,10 +77,13 @@
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :effects {:extra-attack 2})]}])
                     (get-attack "wg"))
                 9))}
-  [state id]
-  (let [minion (get-minion state id)
-        definition (get-definition (:name minion))]
-    (+ (:attack definition) (get-in minion [:effects :extra-attack]))))
+  ([character]
+   (let [definition (get-definition character)]
+     (if (map? (:effects character))
+       (+ (:attack definition) (get-in character [:effects :extra-attack]))
+       (:attack definition))))
+  ([state id]
+    (get-attack (get-board-entity state id))))
 
 (defn get-cost
   "Returns the cost of the card or hero power."
@@ -87,6 +91,7 @@
            (is= (-> (create-card "Imp" :id "i")
                     (get-cost))
                 1)
+           (is= (get-cost "Imp") 1)
            (is= (-> (create-card "Dalaran Mage" :id "i")
                     (get-cost))
                 3)
@@ -97,7 +102,9 @@
                     (get-cost "hp1"))
                 2))}
   ([source]
-   (get (get-definition (:name source)) :mana-cost))
+   (get (get-definition (if (string? source)
+                          source
+                          (:name source))) :mana-cost))
   ([state entity-id]
    (get-cost (or (get-card-from-hand state entity-id)
                  (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
@@ -158,8 +165,10 @@
                     (get-owner "non-id"))
                 nil)
            )}
-  [state id]
-  (:owner-id (get-board-entity state id)))
+  ([character]
+    (:owner-id character))
+  ([state id]
+   (:owner-id (get-board-entity state id))))
 
 (defn sleepy?
   "Checks if the minion with given id is sleepy."

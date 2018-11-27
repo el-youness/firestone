@@ -286,14 +286,20 @@
                 [])
            (is= (-> (create-empty-state)
                     (get-minions))
+                [])
+           (is= (-> (create-empty-state)
+                    (get-player "p1")
+                    (get-minions))
                 []))}
   ([state player-id]
    (:minions (get-player state player-id)))
-  ([state]
-   (->> (:players state)
-        (vals)
-        (map :minions)
-        (apply concat))))
+  ([state-or-player]
+   (if (contains? state-or-player :players)
+     (->> (:players state-or-player)
+          (vals)
+          (map :minions)
+          (apply concat))
+     (:minions state-or-player))))
 
 (defn fatigue-damage
   "Increase a player's fatigue and return a tuple with the new state and the old fatigue."
