@@ -13,6 +13,7 @@
                                          remove-card-from-deck
                                          fatigue-damage
                                          get-hand
+                                         get-player-id-in-turn
                                          add-card-to-hand
                                          get-hero-id
                                          get-player
@@ -272,7 +273,7 @@
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-board-entity state target-id)]
-    (and (= (:player-id-in-turn state) player-id)
+    (and (= (get-player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
@@ -726,7 +727,7 @@
                     (valid-plays))
                 {"hp1" ["h1" "h2"]}))}
   [state]
-  (let [player-in-turn (:player-id-in-turn state)]
+  (let [player-in-turn (get-player-id-in-turn state)]
     (reduce (fn [plays entity-id]
               (if (playable? state player-in-turn entity-id)
                 (let [targets (available-targets state player-in-turn entity-id)]
@@ -781,7 +782,7 @@
                 1))}
   [card]
   (if (= (:subtype card) :secret)
-    (fn [state] (play-secret state (:player-id-in-turn state) (create-secret (:name card))))
+    (fn [state] (play-secret state (get-player-id-in-turn state) (create-secret (:name card))))
     (:spell (get-definition card))))
 
 (defn get-hero-power-function
@@ -907,7 +908,7 @@
                       (- ($ :health) 5)))
            )}
   [state target-id damage]
-  (let [total-damage (+ damage (get-player-spell-damage state (state :player-id-in-turn)))
+  (let [total-damage (+ damage (get-player-spell-damage state (get-player-id-in-turn state)))
         target (get-character state target-id)]
     (if (= (:entity-type target) :hero)
       (damage-hero state target-id total-damage)
@@ -964,7 +965,7 @@
                     (get-in [:effects :frozen]))
                 true))}
   [state]
-  (let [player (get-player state (get state :player-id-in-turn)) hero (get-hero state (:id player))]
+  (let [player (get-player state (get-player-id-in-turn state)) hero (get-hero state (:id player))]
     ; on minions
     (as-> (get-minions state (:id player)) $
           (reduce (fn [state minion]

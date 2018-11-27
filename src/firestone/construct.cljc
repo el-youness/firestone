@@ -672,6 +672,14 @@
   ([]
    (create-game [])))
 
+(defn get-player-id-in-turn
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-player-id-in-turn))
+                "p1"))}
+  [state]
+  (:player-id-in-turn state))
+
 (defn get-mana
   "Returns the mana available to use for the given player-id."
   {:test (fn []
