@@ -1,25 +1,10 @@
 (ns firestone.definition.card-test
-  (:require [ysera.test :refer [is is-not is= error? deftest]]
-            [firestone.definitions :refer [get-definition]]
-            [firestone.construct :refer [create-game
-                                         create-card
-                                         create-minion
-                                         get-minion
-                                         get-minions
-                                         get-player
-                                         get-secrets
-                                         get-effects
-                                         get-hand
-                                         create-hero]]
-            [firestone.core :refer [get-cost
-                                    valid-plays
-                                    get-attack
-                                    get-health
-                                    valid-attack?]]
-            [firestone.api :refer [end-turn
-                                   attack-with-minion
-                                   play-spell-card
-                                   play-minion-card]]))
+  (:require [ysera.test :refer :all]
+            [firestone.definitions :refer :all]
+            [firestone.construct :refer :all]
+            [firestone.core :refer :all]
+            [firestone.api :refer :all]))
+
 (deftest acolyte-of-pain
          (is= (-> (create-game [{:minions [(create-minion "Acolyte of Pain" :id "ap")] :deck ["Imp"]}
                                 {:minions [(create-minion "Imp" :id "imp")]}])
@@ -34,6 +19,17 @@
                   (get-hand "p1")
                   (count))
               1))
+
+(deftest arcane-golem
+         (as-> (create-game [{:hand [(create-card "Arcane Golem" :id "ag1") (create-card "Arcane Golem" :id "ag2")]}
+                             {:max-mana 9}]) $
+               (play-minion-card $ "p1" "ag1" {:position 0})
+               (do (is= (get-mana $ "p2")
+                        10)
+                   $)
+               (play-minion-card $ "p1" "ag2" {:position 0})
+               (is= (get-mana $ "p2")
+                    10)))
 
 (deftest bananas
          (as-> (create-game [{:minions [(create-minion "Imp" :id "imp")]
@@ -195,6 +191,29 @@
                   (attack-with-minion "fb" "imp")
                   (get-attack "fb"))
               4))
+
+(deftest king-mukla
+         (is= (-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}])
+                  (play-minion-card "p1" "km" {:position 0})
+                  (get-hand "p2")
+                  (->> (map :name)))
+              ["Bananas" "Bananas"])
+         ; Opponent with 9 cards in hand receives 1 bananas
+         (is= (as-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}
+                                  {:hand (repeat 9 "Imp")}]) $
+                    (play-minion-card $ "p1" "km" {:position 0})
+                    (get-hand $ "p2")
+                    (filter (fn [c] (= (:name c) "Bananas")) $)
+                    (count $))
+              1)
+         ; Opponent with 10 cards in hand receives 0 bananas
+         (is= (as-> (create-game [{:hand [(create-card "King Mukla" :id "km")]}
+                                  {:hand (repeat 10 "Imp")}]) $
+                    (play-minion-card $ "p1" "km" {:position 0})
+                    (get-hand $ "p2")
+                    (filter (fn [c] (= (:name c) "Bananas")) $)
+                    (count $))
+              0))
 
 (deftest loot-hoarder
          ; Trigger deathrattle for player in turn
