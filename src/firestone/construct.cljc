@@ -225,6 +225,16 @@
   [state player-id]
   (get-in state [:players player-id]))
 
+(defn get-players
+  "Rrturns the players."
+  {:test (fn []
+           (is= (as-> (create-empty-state) $
+                    (get-players $)
+                    (map (fn [p] (:id p)) $))
+                ["p1" "p2"]))}
+  [state]
+  [(get-player state "p1") (get-player state "p2")])
+
 (defn get-hand
   "Returns the hand for the given player-id."
   {:test (fn []
