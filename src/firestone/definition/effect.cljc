@@ -19,14 +19,14 @@
                                          create-card
                                          get-hand
                                          create-hero
-                                         update-in-minion
                                          get-minions
                                          get-hero-id
                                          create-card
                                          add-card-to-hand
                                          opposing-player-id
                                          get-mana
-                                         remove-secret]]))
+                                         remove-secret
+                                         add-buff]]))
 
 ; These functions are tested in 'card_test.cljc'
 
@@ -40,7 +40,7 @@
                                           state))
 
    "Frothing Berserker effect"        (fn [state frothing-berserker-id & _]
-                                        (update-in-minion state frothing-berserker-id [:effects :extra-attack] inc))
+                                        (add-buff state frothing-berserker-id {:extra-attack 1}))
 
    ; Deathrattles
    "Loot Hoarder deathrattle"         (fn [state player-id]

@@ -8,7 +8,6 @@
                                          create-card
                                          create-secret
                                          update-minion
-                                         update-in-minion
                                          update-in-hero
                                          get-character
                                          get-minion

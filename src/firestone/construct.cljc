@@ -106,9 +106,7 @@
                  :name                        "Ancient Watcher"
                  :id                          "i"
                  :silenced                     false
-                 :buffs                       [{:extra-attack 0
-                                                :extra-health 0}
-                                               {:cannot-attack true}]})
+                 :buffs                       []})
            (is= (create-minion "Acolyte of Pain" :id "i" :attacks-performed-this-turn 1)
                 {:attacks-performed-this-turn 1
                  :damage-taken                0
@@ -116,9 +114,7 @@
                  :name                        "Acolyte of Pain"
                  :id                          "i"
                  :silenced                     false
-                 :buffs                       [{:extra-attack 0
-                                                :extra-health 0}
-                                               {:on-damage  "Acolyte of Pain effect"}]}))}
+                 :buffs                       []}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
@@ -126,9 +122,7 @@
                 :name                        name
                 :attacks-performed-this-turn 0
                 :silenced                    false
-                :buffs                       (into [] (concat [{:extra-attack 0 :extra-health 0}]
-                                                              (mapv (fn [[key value]] {key value})
-                                                                    (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen :spell-damage]))))}]
+                :buffs                       []}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
@@ -803,23 +797,6 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
-(defn get-minion-buffs
-  "Gets the buffs vector from the given minion."
-  {:test (fn []
-           (is= (-> (create-minion "Imp")
-                    (get-minion-buffs))
-           [{:extra-attack 0
-             :extra-health 0}])
-           (is= (-> (create-minion "Acolyte of Pain")
-                    (get-minion-buffs))
-                [{:extra-attack 0
-                  :extra-health 0}
-                 {:on-damage "Acolyte of Pain effect"}]))}
-  ([minion]
-   (:buffs minion))
-  ([state id]
-   (get-minion-buffs (get-minion state id))))
-
 (defn get-secrets-effect
   "Gets the effects map from the given secret."
   {:test (fn []
@@ -898,25 +875,100 @@
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
 
-(defn update-in-minion
-  "Updates the value of the given key nested inside the minion with the given id. If function-or-value is a value it will be the
-   new value, else if it is a function it will be applied on the existing value to produce the new value."
+(defn get-minion-buffs
+  "Gets the buffs vector from the given minion."
   {:test (fn []
+           (is= (-> (create-minion "Imp" :buffs [{:extra-attack 1 :extra-health 1}])
+                    (get-minion-buffs))
+                [{:extra-attack 1
+                  :extra-health 1}])
+           (is= (-> (create-minion "Acolyte of Pain" :buffs [{:frozen true} {:deathrattle "Loot Hoarder deathrattle"}])
+                    (get-minion-buffs))
+                [{:frozen true}
+                 {:deathrattle "Loot Hoarder deathrattle"}]))}
+  ([minion]
+   (:buffs minion))
+  ([state id]
+   (get-minion-buffs (get-minion state id))))
+
+(defn get-minion-buff
+  "Returns a set of all buffs that contain a certain effect"
+  {:test (fn []
+           (is= (as-> (create-minion "Imp" :buffs [{:spell-damage 1}{:frozen true}{:spell-damage 2}]) $
+                      (get-minion-buff $ :spell-damage)
+                      (map :spell-damage $)
+                      (set $))
+                #{1 2})
+           (is= (as-> (create-minion "Imp" :buffs [{:frozen true}] ) $
+                      (get-minion-buff $ :frozen)
+                      (first $))
+                {:frozen true})
+           (is= (as-> (create-minion "Imp") $
+                      (get-minion-buff $ :spell-damage)
+                      (empty? $))
+                true))}
+  ([minion effect]
+   (filter (fn [buff] (contains? buff effect)) (get-minion-buffs minion)))
+  ([state id effect]
+   (get-minion-buff (get-minion state id) effect)))
+
+(defn get-minion-buff-values
+  "Return values of buff"
+  {:test (fn []
+           (is= (as-> (create-minion "Imp" :buffs [{:spell-damage 1}{:frozen true}{:spell-damage 2}]) $
+                      (get-minion-buff-values $ :spell-damage)
+                      (reduce + $))
+                3)
+           (is= (as-> (create-minion "Imp" :buffs [{:frozen true}] ) $
+                      (get-minion-buff-values $ :frozen)
+                      (first $))
+                true)
+           (is= (as-> (create-minion "Imp") $
+                      (get-minion-buff-values $ :spell-damage)
+                      (empty? $))
+                true))}
+  ([minion effect]
+   (as-> (get-minion-buff minion effect) $
+          (map effect $)))
+  ([state id effect]
+   (get-minion-buff-values (get-minion state id) effect)))
+
+(defn add-buff
+  "Adds buff with one/multiple effects to a player buffs vector"
+  {:test (fn []
+           ; Adds to empty list
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (update-in-minion "i" [:effects :extra-health] inc)
-                    (get-minion "i")
-                    (get-in [:effects :extra-health]))
-                1)
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (update-in-minion "i" [:effects :extra-health] 5)
-                    (get-minion "i")
-                    (get-in [:effects :extra-health]))
-                5))}
-  [state id keys function-or-value]
+                    (add-buff "i" {:frozen true})
+                    (get-minion-buffs "i"))
+                [{:frozen true}])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}])
+                    (add-buff "i" {:extra-attack 1
+                                   :extra-health 1})
+                    (get-minion-buffs "i")
+                    (count))
+                2))}
+  [state id buff]
   (let [minion (get-minion state id)]
-    (replace-minion state (if (function? function-or-value)
-                            (update-in minion keys function-or-value)
-                            (assoc-in minion keys function-or-value)))))
+    (replace-minion state (update minion :buffs conj buff))))
+
+(defn update-buff
+  ;TODO check with every one if this can be done better : this function is only useful to update effects such as frozen.
+  "Updates the value of the given effect for the minion"
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}])
+                    (update-buff "i" :frozen false)
+                    (get-minion-buff-values "i" :frozen)
+                    (first))
+                false))}
+  [state id effect new-value]
+  (let [minion (get-minion state id)]
+    (replace-minion state (update minion :buffs (fn [buffs]
+                                                  (map (fn [buff]
+                                                         (if (contains? buff effect)
+                                                           (assoc buff effect new-value)
+                                                           buff))
+                                                       buffs)))))
+  )
 
 (defn update-hero
   "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the

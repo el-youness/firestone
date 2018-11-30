@@ -7,7 +7,6 @@
                                          create-card
                                          create-secret
                                          update-minion
-                                         update-in-minion
                                          update-in-hero
                                          get-character
                                          get-minion
@@ -20,7 +19,8 @@
                                          add-card-to-hand
                                          get-hand
                                          get-mana
-                                         get-player]]
+                                         get-player
+                                         add-buff]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -135,8 +135,8 @@
     :battlecry   (fn [state eater-of-secrets-id]
                    (let [opponent-id (opposing-player-id (get-owner state eater-of-secrets-id))]
                      (let [number-of-secrets (count (get-secrets state opponent-id))]
-                       (-> (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
-                           (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))
+                       (-> (add-buff state eater-of-secrets-id {:extra-attack number-of-secrets
+                                                                :extra-health number-of-secrets})
                            (remove-secrets opponent-id)))))}
 
    "Arcane Golem"
@@ -223,7 +223,7 @@
                     (as-> (deal-spell-damage state target-id 3) $
                         (if (hero? state target-id)
                           (update-in-hero $ target-id [:effects :frozen] true)
-                          (update-in-minion $ target-id [:effects :frozen] true))))}
+                          (add-buff $ target-id {:frozen true}))))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
@@ -299,8 +299,8 @@
     :description "Give a minion +1/+1."
     :target-type :all-minions
     :spell       (fn [state target-id]
-                   (-> (update-in-minion state target-id [:effects :extra-health] inc)
-                       (update-in-minion target-id [:effects :extra-attack] inc)))}
+                   (add-buff state target-id {:extra-health 1
+                                              :extra-attack 1}))}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"
