@@ -35,9 +35,9 @@
          (as-> (create-game [{:minions [(create-minion "Imp" :id "imp")]
                               :hand    [(create-card "Bananas" :id "b")]}]) $
                (play-spell-card $ "p1" "b" {:target-id "imp"})
-               (do (is= (:extra-attack (get-effects $ "imp"))
+               (do (is= (:extra-attack (get-minion-buffs $ "imp"))
                         1)
-                   (is= (:extra-health (get-effects $ "imp"))
+                   (is= (:extra-health (get-minion-buffs $ "imp"))
                         1))))
 
 (deftest big-game-huner
@@ -116,7 +116,7 @@
                              {:minions [(create-minion "War Golem" :id "wg")] :deck [(create-card "Imp" :id "i2")]}]) $
                (play-spell-card $ "p1" "f" {:target-id "wg"})
                (let [minion (get-minion $ "wg") attacker (get-player $ "p1")]
-                 (is= (:frozen (get-effects minion))
+                 (is= (:frozen (get-minion-buffs minion))
                       true)
                  ; We check it's 4 because "Dalaran Mage" has +1 spell damage
                  (is= (get minion :damage-taken)
@@ -137,7 +137,7 @@
                (end-turn $)
                ; Minion should be unfrozen after the second end-turn
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-effects minion))
+                 (is= (:frozen (get-minion-buffs minion))
                       false)
                  (is= (-> ((get-player $ "p1") :hand)
                           (count))
@@ -150,13 +150,13 @@
                ;
                (play-spell-card $ "p1" "f1" {:target-id "wg"})
                (let [minion (get-minion $ "wg") attacker (get-player $ "p1")]
-                 (is= (:frozen (get-effects minion))
+                 (is= (:frozen (get-minion-buffs minion))
                       true)
                  (is= (get minion :damage-taken)
                       5) $)
                (end-turn $)
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-effects minion))
+                 (is= (:frozen (get-minion-buffs minion))
                       false)
                  (is= (-> ((get-player $ "p2") :hand)
                           (count))
@@ -168,13 +168,13 @@
                              {:deck [(create-card "Imp" :id "i2")]}]) $
                (play-spell-card $ "p1" "f1" {:target-id "wg"})
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-effects minion))
+                 (is= (:frozen (get-minion-buffs minion))
                       true)
                  (is= (get minion :attacks-performed-this-turn)
                       1) $)
                (end-turn $)
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-effects minion))
+                 (is= (:frozen (get-minion-buffs minion))
                       true)
                  (is= (get minion :attacks-performed-this-turn)
                       1) $)

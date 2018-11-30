@@ -32,9 +32,8 @@
                                          get-mana
                                          add-minion-to-board
                                          add-secret-to-player
-                                         get-minion-effects
+                                         get-minion-buffs
                                          get-card-from-hand
-                                         get-effects
                                          get-secrets
                                          create-secret]]))
 
@@ -276,8 +275,8 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not ((get-minion-effects attacker) :cannot-attack))
-         (not ((get-minion-effects attacker) :frozen)))))
+         (not ((get-minion-buffs attacker) :cannot-attack))
+         (not ((get-minion-buffs attacker) :frozen)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -293,7 +292,7 @@
   [state event & args]
   (->> (concat (get-minions state) (get-secrets state))
        (reduce (fn [state entity]
-                 (let [effects (get-effects entity)]
+                 (let [effects (get-minion-buffs entity)]
                    (if (contains? effects event)
                      ((get-definition (effects event)) state (:id entity) args)
                      state)))
@@ -324,7 +323,7 @@
                     (count))
                 1))}
   [state id]
-  (-> (let [effects (get-effects (get-minion state id))]
+  (-> (let [effects (get-minion-buffs (get-minion state id))]
         (if (contains? effects :deathrattle)
           (let [deathrattle (get-definition (effects :deathrattle))
                 owner-id (get-owner state id)]

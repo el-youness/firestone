@@ -13,10 +13,9 @@
                                          get-minion
                                          get-minions
                                          get-secrets
-                                         get-effects
                                          remove-secrets
                                          get-hero
-                                         get-minion-effects
+                                         get-minion-buffs
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand

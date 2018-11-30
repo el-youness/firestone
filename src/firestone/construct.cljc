@@ -105,27 +105,30 @@
                  :entity-type                 :minion
                  :name                        "Ancient Watcher"
                  :id                          "i"
-                 :effects                     {:cannot-attack true
-                                               :extra-attack 0
-                                               :extra-health 0}})
+                 :silenced                     false
+                 :buffs                       [{:extra-attack 0
+                                                :extra-health 0}
+                                               {:cannot-attack true}]})
            (is= (create-minion "Acolyte of Pain" :id "i" :attacks-performed-this-turn 1)
                 {:attacks-performed-this-turn 1
                  :damage-taken                0
                  :entity-type                 :minion
                  :name                        "Acolyte of Pain"
                  :id                          "i"
-                 :effects                      {:on-damage  "Acolyte of Pain effect"
-                                                :extra-attack 0
-                                                :extra-health 0}}))}
+                 :silenced                     false
+                 :buffs                       [{:extra-attack 0
+                                                :extra-health 0}
+                                               {:on-damage  "Acolyte of Pain effect"}]}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen :spell-damage])
-                                                    :extra-attack 0
-                                                    :extra-health 0)}]
+                :silenced                    false
+                :buffs                       (into [] (concat [{:extra-attack 0 :extra-health 0}]
+                                                              (mapv (fn [[key value]] {key value})
+                                                                    (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen :spell-damage]))))}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
@@ -778,27 +781,6 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
-(defn get-minion-effects
-  "Gets the effects map from the given minion."
-  {:test (fn []
-           (is= (-> (create-minion "Imp")
-                    (get-minion-effects))
-                {:extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-minion "Acolyte of Pain")
-                    (get-minion-effects))
-                {:on-damage "Acolyte of Pain effect"
-                 :extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                    (get-minion-effects "imp"))
-                {:extra-attack 0
-                 :extra-health 0}))}
-  ([minion]
-   (:effects minion))
-  ([state id]
-    (get-minion-effects (get-minion state id))))
-
 (defn get-board-entity
   "Returns the hero, minion or secret with the given id from the state."
   {:test (fn []
@@ -821,25 +803,34 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
-(defn get-effects
-  "Gets the effects map from the given minion or secret."
+(defn get-minion-buffs
+  "Gets the buffs vector from the given minion."
   {:test (fn []
            (is= (-> (create-minion "Imp")
-                    (get-effects))
-                {:extra-attack 0
-                 :extra-health 0})
+                    (get-minion-buffs))
+           [{:extra-attack 0
+             :extra-health 0}])
            (is= (-> (create-minion "Acolyte of Pain")
-                    (get-effects))
-                {:on-damage    "Acolyte of Pain effect"
-                 :extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
-                    (get-effects "s"))
-                {:on-attack "Snake Trap effect"}))}
-  ([entity]
-   (:effects entity))
+                    (get-minion-buffs))
+                [{:extra-attack 0
+                  :extra-health 0}
+                 {:on-damage "Acolyte of Pain effect"}]))}
+  ([minion]
+   (:buffs minion))
   ([state id]
-   (get-effects (get-board-entity state id))))
+   (get-minion-buffs (get-minion state id))))
+
+(defn get-secrets-effect
+  "Gets the effects map from the given secret."
+  {:test (fn []
+     (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
+              (get-secrets-effect "s"))
+          {:on-attack "Snake Trap effect"}))}
+  ([secret]
+   (:effects secret))
+  ([state id]
+   (get-secrets-effect (get-secret state id)))
+  )
 
 (defn get-card-from-hand
   "Returns the card with the given id from the hand."

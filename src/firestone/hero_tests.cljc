@@ -14,10 +14,9 @@
                                          get-minion
                                          get-minions
                                          get-secrets
-                                         get-effects
                                          remove-secrets
                                          get-hero
-                                         get-minion-effects]]
+                                         get-minion-buffs]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
