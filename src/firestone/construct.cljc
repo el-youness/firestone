@@ -874,6 +874,16 @@
     (replace-minion state (if (function? function-or-value)
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
+(defn get-secret-effects
+  "Gets the effects map from the given the secret."
+  {:test (fn []
+           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (get-secrets-effect "s"))
+                {:on-attack "Snake Trap effect"}))}
+  ([entity]
+   (:effects entity))
+  ([state id]
+   (get-secrets-effect (get-board-entity state id))))
 
 (defn get-minion-buffs
   "Gets the buffs vector from the given minion."

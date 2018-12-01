@@ -37,7 +37,8 @@
                                          create-secret
                                          get-minion-buff-values
                                          remove-buff
-                                         get-minion-buff]]))
+                                         get-minion-buff
+                                         get-secret-effects]]))
 
 (defn hero?
   "Checks if the character with given id is a hero."
@@ -265,9 +266,7 @@
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "aw" "wg")))
            ; Should not be able to attack if "frozen" is true
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :effects {:frozen       true
-                                                                                       :extra-attack 0
-                                                                                       :extra-health 0})]}
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
@@ -277,8 +276,11 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not ((get-minion-buffs attacker) :cannot-attack))
-         (not ((get-minion-buffs attacker) :frozen)))))
+         ; TODO for a better functionality, create a function that returns a list for a specific effect from definition and buffs
+         (= (count (get-minion-buff attacker :cannot-attack)) 0)
+         (= (count (get-minion-buff attacker :frozen)) 0)
+         (not ((get-definition (attacker :name)) :cannot-attack))
+         (not ((get-definition (attacker :name)) :frozen)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -292,13 +294,27 @@
                     (count))
                 1))}
   [state event & args]
-  (->> (concat (get-minions state) (get-secrets state))
-       (reduce (fn [state entity]
-                 (let [effects (get-minion-buffs entity)]
-                   (if (contains? effects event)
-                     ((get-definition (effects event)) state (:id entity) args)
-                     state)))
-               state)))
+  (as-> (reduce (fn [state secret]
+               (let [effects (get-secret-effects secret)]
+                 (if (contains? effects event)
+                   ((get-definition (effects event)) state (:id secret) args)
+                   state)))
+               state
+               (get-secrets state)) $
+        (reduce (fn [state minion]
+                  (let [defintion-triger ((get-definition minion) event)
+                        buffs-trigger (get-minion-buffs minion event)
+                        trigger-list (if (not (nil? defintion-triger))
+                                       (conj buffs-trigger  {event defintion-triger})
+                                       buffs-trigger)]
+                    (println "TRIGGERLIST " trigger-list)
+                    ; Iterate over buffs if any else return unchanged state
+                    (when (> (count trigger-list) 0)
+                      (reduce (fn [state trigger] ((get-definition (trigger event)) state (:id minion) args))
+                              state
+                              trigger-list))))
+                $
+                (get-minions $))))
 
 (defn full-board?
   "Checks if a player's board is full."
@@ -319,7 +335,7 @@
                     (destroy-minion "wg")
                     (get-minions))
                 [])
-           ; Minion with A defition deathrattle and a buff deathrattle
+           ; Minion with A defition deathrattle
            (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh" )]
                                    :deck ["Imp"]}])
                     (destroy-minion "lh")
