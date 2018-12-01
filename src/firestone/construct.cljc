@@ -951,21 +951,21 @@
   (let [minion (get-minion state id)]
     (replace-minion state (update minion :buffs conj buff))))
 
-(defn update-buff
+(defn remove-buff
   ;TODO check with every one if this can be done better : this function is only useful to update effects such as frozen.
   "Updates the value of the given effect for the minion"
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}])
-                    (update-buff "i" :frozen false)
-                    (get-minion-buff-values "i" :frozen)
-                    (first))
-                false))}
-  [state id effect new-value]
+                    (remove-buff "i" :frozen)
+                    (get-minion-buff "i" :frozen)
+                    (count))
+                0))}
+  [state id effect]
   (let [minion (get-minion state id)]
     (replace-minion state (update minion :buffs (fn [buffs]
                                                   (map (fn [buff]
                                                          (if (contains? buff effect)
-                                                           (assoc buff effect new-value)
+                                                           (dissoc buff effect)
                                                            buff))
                                                        buffs)))))
   )

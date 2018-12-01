@@ -36,7 +36,19 @@
                                          get-secrets
                                          create-secret
                                          get-minion-buff-values
-                                         update-buff]]))
+                                         remove-buff]]))
+
+(defn hero?
+  "Checks if the character with given id is a hero."
+  {:test (fn []
+           (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                   (hero? "h1")))
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                       (hero? "imp"))))}
+  ([character]
+   (= (get character :entity-type) :hero))
+  ([state id]
+   (hero? (get-board-entity state id))))
 
 (defn get-health
   "Returns the health of the character."
@@ -58,9 +70,9 @@
   ([character]
    {:pre [(map? character) (contains? character :damage-taken)]}
    (let [definition (get-definition character)]
-     (- (if (map? (:effects character))
+     (- (if (hero? character)
           (+ (:health definition) (get-in character [:effects :extra-health]))
-          (:health definition))
+          (+ (:health definition) (reduce + (get-minion-buff-values character :extra-health))))
         (:damage-taken character))))
   ([state id]
    (get-health (get-board-entity state id))))
@@ -72,13 +84,13 @@
                     (get-attack "i"))
                 1)
            ; Minion with extra-attack effect
-           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :effects {:extra-attack 2})]}])
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :buffs [{:extra-attack 2}])]}])
                     (get-attack "wg"))
                 9))}
   [state id]
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
-    (+ (:attack definition) (get-in minion [:effects :extra-attack]))))
+    (+ (:attack definition) (reduce + (get-minion-buff-values minion :extra-attack)))))
 
 (defn get-cost
   "Returns the cost of the card or hero power."
@@ -170,18 +182,6 @@
                        (sleepy? "i"))))}
   [state id]
   (seq-contains? (:minion-ids-summoned-this-turn state) id))
-
-(defn hero?
-  "Checks if the character with given id is a hero."
-  {:test (fn []
-           (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
-                   (hero? "h1")))
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                       (hero? "imp"))))}
-  [state id]
-  (= (-> (get-board-entity state id)
-         (get :entity-type))
-     :hero))
 
 (defn hero-power?
   "Checks if the given entity-id is a hero power."
@@ -318,19 +318,25 @@
                     (destroy-minion "wg")
                     (get-minions))
                 [])
-           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh")] :deck ["Imp"]}])
+           ; Minion with A defition deathrattle and a buff deathrattle
+           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh" :buffs [{:deathrattle "Loot Hoarder deathrattle"}])]
+                                   :deck ["Imp" "Imp" "Imp"]}])
                     (destroy-minion "lh")
                     (get-hand "p1")
                     (count))
-                1))}
+                2))}
   [state id]
-  (-> (let [effects (get-minion-buffs (get-minion state id))]
-        (if (contains? effects :deathrattle)
+  (-> (let [definition-deathrattle ((get-definition (get-minion state id)) :deathrattle)
+            buffs-deathrattles (get-minion-buffs (get-minion state id))]
+        (as-> (concat buffs-deathrattles {:deathrattle definition-deathrattle}) $
+            (println "deathratles " $))
+        #_(if (contains? effects :deathrattle)
           (let [deathrattle (get-definition (effects :deathrattle))
                 owner-id (get-owner state id)]
             (-> (remove-minion state id)
                 (deathrattle owner-id)))
-          (remove-minion state id)))))
+          (remove-minion state id))
+        )))
 
 (defn change-minion-board-side
   "Causes a minion on the board to switch board side and owner."
@@ -772,6 +778,7 @@
   {:test (fn []
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
                       ((get-spell-function (create-card "Bananas")) $ "i1")
+                      (println (get-minion $ "i1"))
                       [(get-attack $ "i1") (get-health $ "i1")])
                 [2 2])
            (is= (as-> (create-game []) $
@@ -941,8 +948,8 @@
                     (unfreeze-characters)
                     (get-minion "m1")
                     (get-minion-buff-values :frozen)
-                    (first))
-                false)
+                    (count))
+                0)
            ; Minion frozen and already attacked => should stay frozen
            (is= (-> (create-game [{:minions [(create-minion "Imp"
                                                             :id "m1"
@@ -971,7 +978,7 @@
     (as-> (get-minions state (:id player)) $
           (reduce (fn [state minion]
                     (if (and (-> (get-minion-buff-values minion :frozen) (first)) (= (:attacks-performed-this-turn minion) 0))
-                      (update-buff state (:id minion) :frozen false)
+                      (remove-buff state (:id minion) :frozen)
                       state))
                   state $)
           ; on hero
