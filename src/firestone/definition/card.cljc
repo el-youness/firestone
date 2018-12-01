@@ -20,7 +20,8 @@
                                          get-hand
                                          get-mana
                                          get-player
-                                         add-buff]]
+                                         add-buff
+                                         hero?]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -32,8 +33,7 @@
                                     valid-attack?
                                     give-card
                                     add-to-max-mana
-                                    deal-spell-damage
-                                    hero?]]
+                                    deal-spell-damage]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))

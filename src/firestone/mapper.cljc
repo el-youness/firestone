@@ -1,4 +1,4 @@
-(ns firestone.mapper
+  (ns firestone.mapper
   (:require [ysera.test :refer [is is=]]
             [clojure.spec.alpha :as spec]
             [firestone.construct :refer [create-game

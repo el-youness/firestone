@@ -144,7 +144,6 @@
       secret
       (apply assoc secret kvs))))
 
-
 (defn create-empty-state
   "Creates an empty state with the given heroes."
   {:test (fn []
@@ -797,6 +796,40 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
+(defn hero?
+  "Checks if the character with given id is a hero."
+  {:test (fn []
+           (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                   (hero? "h1")))
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                       (hero? "imp"))))}
+  ([entiy]
+   (= (get entiy :entity-type) :hero))
+  ([state id]
+   (hero? (get-board-entity state id))))
+
+(defn minion?
+  "Checks if the character with given id is a hero."
+  {:test (fn []
+           (is-not (-> (create-game [{:minion (create-hero "Rexxar" :id "h1")}])
+                       (minion? "h1")))
+           (is (minion? (create-minion "Imp"))))}
+  ([entiy]
+   (= (get entiy :entity-type) :minion))
+  ([state id]
+   (minion? (get-board-entity state id))))
+
+(defn secret?
+  "Checks if the character with given id is a hero."
+  {:test (fn []
+           (is-not (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                       (secret? "h1")))
+           (is (secret? (create-secret "Snake Trap"))))}
+  ([entiy]
+   (= (get entiy :entity-type) :secret))
+  ([state id]
+   (secret? (get-board-entity state id))))
+
 (defn get-secrets-effect
   "Gets the effects map from the given secret."
   {:test (fn []
@@ -874,6 +907,7 @@
     (replace-minion state (if (function? function-or-value)
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
+
 (defn get-secret-effects
   "Gets the effects map from the given the secret."
   {:test (fn []
@@ -943,6 +977,33 @@
   ([state id effect]
    (get-minion-buff-values (get-minion state id) effect)))
 
+(defn get-entity-effect
+  "Returns a list of all the effects of an entity given an effect-key"
+  {:test (fn []
+           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (get-entity-effect "s" :on-attack))
+                '("Snake Trap effect"))
+           (is= (as-> (create-minion "Imp" :buffs [{:spell-damage 1}{:frozen true}{:spell-damage 2}]) $
+                      (get-entity-effect $ :spell-damage)
+                      (reduce + $))
+                3)
+           (is= (as-> (create-minion "Frothing Berserker" :buffs [{:on-damage "Acolyte of Pain effect"}]) $
+                      (get-entity-effect $ :on-damage))
+                '("Frothing Berserker effect" "Acolyte of Pain effect")))}
+  ([entity effect]
+   (cond (minion? entity) (let [definition-effect ((get-definition entity) effect)
+                                buffs-effect (get-minion-buff-values entity effect)]
+                            (if (nil? definition-effect)
+                              buffs-effect
+                              (conj buffs-effect  definition-effect)))
+         (or (secret? entity)
+             (hero? entity)) (let [effect (get-in entity [:effects effect])]
+                                                (if (nil? effect)
+                                                  '()
+                                                  (conj () effect)))))
+  ([state id effect]
+   (get-entity-effect (get-board-entity state id) effect)))
+
 (defn add-buff
   "Adds buff with one/multiple effects to a player buffs vector"
   {:test (fn []
@@ -979,6 +1040,7 @@
                                                            buff))
                                                        buffs)))))
   )
+
 
 (defn update-hero
   "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the

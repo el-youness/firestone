@@ -38,20 +38,9 @@
                                          get-minion-buff-values
                                          remove-buff
                                          get-minion-buff
-                                         get-secret-effects]]))
-
-(defn hero?
-  "Checks if the character with given id is a hero."
-  {:test (fn []
-           (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
-                   (hero? "h1")))
-           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                       (hero? "imp"))))}
-  ([character]
-   (= (get character :entity-type) :hero))
-  ([state id]
-   (hero? (get-board-entity state id))))
-
+                                         get-secret-effects
+                                         get-entity-effect
+                                         hero?]]))
 (defn get-health
   "Returns the health of the character."
   {:test (fn []
@@ -174,6 +163,7 @@
   [state id]
   (:owner-id (get-board-entity state id)))
 
+
 (defn sleepy?
   "Checks if the minion with given id is sleepy."
   {:test (fn []
@@ -277,10 +267,8 @@
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
          ; TODO for a better functionality, create a function that returns a list for a specific effect from definition and buffs
-         (= (count (get-minion-buff attacker :cannot-attack)) 0)
-         (= (count (get-minion-buff attacker :frozen)) 0)
-         (not ((get-definition (attacker :name)) :cannot-attack))
-         (not ((get-definition (attacker :name)) :frozen)))))
+         (= (count (get-entity-effect attacker :cannot-attack)) 0)
+         (= (count (get-entity-effect attacker :frozen)) 0))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -294,27 +282,16 @@
                     (count))
                 1))}
   [state event & args]
-  (as-> (reduce (fn [state secret]
-               (let [effects (get-secret-effects secret)]
-                 (if (contains? effects event)
-                   ((get-definition (effects event)) state (:id secret) args)
-                   state)))
-               state
-               (get-secrets state)) $
-        (reduce (fn [state minion]
-                  (let [defintion-triger ((get-definition minion) event)
-                        buffs-trigger (get-minion-buffs minion event)
-                        trigger-list (if (not (nil? defintion-triger))
-                                       (conj buffs-trigger  {event defintion-triger})
-                                       buffs-trigger)]
-                    (println "TRIGGERLIST " trigger-list)
-                    ; Iterate over buffs if any else return unchanged state
-                    (when (> (count trigger-list) 0)
-                      (reduce (fn [state trigger] ((get-definition (trigger event)) state (:id minion) args))
-                              state
-                              trigger-list))))
-                $
-                (get-minions $))))
+  (->> (concat (get-minions state) (get-secrets state))
+       (reduce (fn [state entity]
+                 (let [effects (get-entity-effect entity event)]
+                   (if (empty? effects )
+                     state
+                     (reduce (fn [state effect]
+                               ((get-definition effect) state (:id entity) args))
+                             state
+                             effects))))
+               state)))
 
 (defn full-board?
   "Checks if a player's board is full."
