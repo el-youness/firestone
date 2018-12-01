@@ -735,11 +735,47 @@
                       plays
                       (assoc plays entity-id []))
                     (assoc plays entity-id targets)))
-                plays)
-              )
+                plays))
             {}
             (map :id (conj (get-hand state player-in-turn)
                            (get-hero-power state player-in-turn))))))
+
+(defn valid-attacks
+  "Get all valid attackers and their valid targets."
+  {:test (fn []
+           ; Enemy has one minion
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:minions [(create-minion "Defender" :id "d1")]}])
+                    (valid-attacks))
+                {"i1" ["d1" "h2"]
+                 "i2" ["d1" "h2"]})
+           ; Enemy has one minion, one of the player's minions has already attacked
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2" :attacks-performed-this-turn 1)]}
+                                  {:minions [(create-minion "Defender" :id "d1")]}])
+                    (valid-attacks))
+                {"i1" ["d1" "h2"]})
+           ; Enemy has no minion
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
+                    (valid-attacks))
+                {"i1" ["h2"]})
+           ; No minions on the board
+           (is= (-> (create-game)
+                    (valid-attacks))
+                {}))}
+  [state]
+  (let [player-in-turn (:player-id-in-turn state)]
+    (reduce (fn [attacks attacker-id]
+              (let [targets (filter (fn [target-id]
+                                      (valid-attack? state player-in-turn attacker-id target-id))
+                                    (map :id (concat (get-minions state)
+                                                   (get-heroes state))))]
+                (if (empty? targets)
+                  attacks
+                  (assoc attacks attacker-id targets))))
+            {}
+            (map :id (get-minions state player-in-turn)))))
 
 (defn play-secret
   "Puts a secret into play if there is space."
