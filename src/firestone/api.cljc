@@ -8,7 +8,7 @@
                                          get-player-id-in-turn
                                          get-minions
                                          create-hero
-                                         get-hero-power
+                                         get-hero-power-of-player
                                          get-board-entity
                                          update-minion
                                          create-card
@@ -204,7 +204,7 @@
                     (count))
                 0))}
   [state player-id {target-id :target-id}]
-  (let [hero-power (get-hero-power state player-id)]
+  (let [hero-power (get-hero-power-of-player state player-id)]
     (-> (if (nil? target-id)
           ((get-hero-power-function hero-power) state)
           ((get-hero-power-function hero-power) state target-id))

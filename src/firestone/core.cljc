@@ -28,6 +28,7 @@
                                          update-in-hero
                                          get-hero
                                          get-hero-power
+                                         get-hero-power-of-player
                                          get-character
                                          get-board-entity
                                          get-mana
@@ -83,7 +84,7 @@
        (+ (:attack definition) (get-in character [:effects :extra-attack]))
        (:attack definition))))
   ([state id]
-    (get-attack (get-board-entity state id))))
+   (get-attack (get-board-entity state id))))
 
 (defn get-cost
   "Returns the cost of the card or hero power."
@@ -149,7 +150,7 @@
                         (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn get-owner
-  "Returns the player-id of the owner of the character with the given id."
+  "Returns the player-id of the owner of the card, hero-power, character or secret with the given id."
   {:test (fn []
            ; Get owner of hero
            (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
@@ -160,15 +161,31 @@
                                   {:minions [(create-minion "Imp" :id "imp")]}])
                     (get-owner "imp"))
                 "p2")
+           ; Get owner of secret
+           (is= (-> (create-game [{}
+                                  {:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (get-owner "s"))
+                "p2")
+           ; Get owner of card
+           (is= (-> (create-game [{}
+                                  {:hand [(create-card "Snake Trap" :id "s")]}])
+                    (get-owner "s"))
+                "p2")
+           ; Get owner of hero-power
+           (is= (-> (create-game)
+                    (get-owner "hp2"))
+                "p2")
            ; Get owner of non-existing character
            (is= (-> (create-game)
                     (get-owner "non-id"))
                 nil)
            )}
-  ([character]
-    (:owner-id character))
+  ([entity]
+   (:owner-id entity))
   ([state id]
-   (:owner-id (get-board-entity state id))))
+   (get-owner (or (get-hero-power state id)
+                  (get-card-from-hand state id)
+                  (get-board-entity state id)))))
 
 (defn sleepy?
   "Checks if the minion with given id is sleepy."
@@ -609,7 +626,7 @@
         cost (get-cost state entity-id)]
     (and (<= cost available-mana)
          (if (hero-power? state entity-id)
-           (not (:used (get-hero-power state player-id)))
+           (not (:used (get-hero-power-of-player state player-id)))
            true)
          (if (minion-card? state entity-id)
            (not (full-board? state player-id))
@@ -749,7 +766,7 @@
               )
             {}
             (map :id (conj (get-hand state player-in-turn)
-                           (get-hero-power state player-in-turn))))))
+                           (get-hero-power-of-player state player-in-turn))))))
 
 (defn play-secret
   "Puts a secret into play if there is space."

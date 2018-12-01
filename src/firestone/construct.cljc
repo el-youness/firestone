@@ -167,7 +167,7 @@
                                                        :hero                        (create-hero "Jaina Proudmoore"
                                                                                                  :id "h1"
                                                                                                  :owner-id "p1"
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -179,7 +179,7 @@
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore" :id "h2"
                                                                                                  :owner-id "p2"
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
@@ -201,9 +201,10 @@
                                                           :secrets                     []
                                                           :hero                        (assoc hero :id (str "h" (inc index))
                                                                                                    :owner-id (str "p" (inc index))
-                                                                                                   :hero-power (assoc (:hero-power hero)
-                                                                                                                 :id
-                                                                                                                 (str "hp" (inc index))))
+                                                                                                   :hero-power (-> (assoc (:hero-power hero)
+                                                                                                                     :id
+                                                                                                                     (str "hp" (inc index)))
+                                                                                                                   (assoc :owner-id (str "p" (inc index)))))
                                                           :max-mana                    10
                                                           :used-mana                   0
                                                           :fatigue                     1}))
@@ -241,8 +242,10 @@
            (is= (-> (create-empty-state)
                     (get-hand "p1"))
                 []))}
+  ([player]
+    (:hand player))
   ([state player-id]
-   (:hand (get-player state player-id))))
+   (get-hand (get-player state player-id))))
 
 (defn get-deck
   "Returns the deck for the given player-id."
@@ -250,8 +253,10 @@
            (is= (-> (create-empty-state)
                     (get-deck "p1"))
                 []))}
+  ([player]
+    (:deck player))
   ([state player-id]
-   (:deck (get-player state player-id))))
+   (get-deck (get-player state player-id))))
 
 (defn get-secrets
   "Returns the secrets for the given player-id."
@@ -497,7 +502,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :damage-taken 0
                                                                                                  :owner-id "p1"
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -512,7 +517,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :damage-taken 0
                                                                                                  :owner-id "p2"
-                                                                                                 :hero-power (create-hero-power "Lesser Heal" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Lesser Heal" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
@@ -535,7 +540,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p1"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -550,7 +555,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p2"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Lesser Heal" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Lesser Heal" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
@@ -570,7 +575,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p1"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -585,7 +590,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p2"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    5
                                                        :used-mana                   2
                                                        :fatigue                     4}}
@@ -696,6 +701,15 @@
   [state]
   (:player-id-in-turn state))
 
+(defn get-max-mana
+  "Returns the max mana for the player with the given id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-max-mana "p2"))
+                10))}
+  [state player-id]
+  (:max-mana (get-player state player-id)))
+
 (defn get-mana
   "Returns the mana available to use for the given player-id."
   {:test (fn []
@@ -711,7 +725,7 @@
            )}
   [state player-id]
   (let [player-data (get-player state player-id)]
-    (- (:max-mana player-data) (:used-mana player-data))))
+    (- (get-max-mana state player-id) (:used-mana player-data))))
 
 (defn get-minion
   "Returns the minion with the given id."
@@ -749,16 +763,18 @@
        (map :hero)))
 
 (defn get-hero
-  "Returns the hero for the given player-id."
+  "Returns the hero for the given player."
   {:test (fn []
            (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}
                                     {:hero (create-hero "Anduin Wrynn")}]) $
                     [((get-hero $ "p1") :name) ((get-hero $ "p2") :name)])
                 ["Jaina Proudmoore" "Anduin Wrynn"]))}
-  [state owner-id]
-  (->> (get-heroes state)
-       (filter (fn [h] (= (:owner-id h) owner-id)))
-       (first)))
+  ([player]
+    (:hero player))
+  ([state owner-id]
+   (->> (get-heroes state)
+        (filter (fn [h] (= (:owner-id h) owner-id)))
+        (first))))
 
 (defn get-hero-powers
   "Returns the hero-powers of both players."
@@ -773,11 +789,23 @@
        (map :hero-power)))
 
 (defn get-hero-power
+  "Returns the hero power with the given id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-hero-power "hp1")
+                    (:name))
+                "Fireblast"))}
+  [state id]
+  (->> (get-hero-powers state)
+       (filter (fn [hp] (= (:id hp) id)))
+       (first)))
+
+(defn get-hero-power-of-player
   "Returns the hero-power for the given player-id."
   {:test (fn []
            (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}
                                     {:hero (create-hero "Anduin Wrynn")}]) $
-                      [((get-hero-power $ "p1") :name) ((get-hero-power $ "p2") :name)])
+                      [((get-hero-power-of-player $ "p1") :name) ((get-hero-power-of-player $ "p2") :name)])
                 ["Fireblast" "Lesser Heal"]))}
   [state owner-id]
   (->> (get-heroes state)
@@ -977,11 +1005,11 @@
   {:test (fn []
            (is (-> (create-game)
                    (update-hero-power "p1" :used true)
-                   (get-hero-power "p1")
+                   (get-hero-power-of-player "p1")
                    :used)))}
   [state player-id key function-or-value]
   (let [hero (get-hero state player-id)
-        hero-power (get-hero-power state player-id)]
+        hero-power (get-hero-power-of-player state player-id)]
     (replace-hero state (assoc hero :hero-power (if (function? function-or-value)
                                                   (update hero-power key function-or-value)
                                                   (assoc hero-power key function-or-value))))))
