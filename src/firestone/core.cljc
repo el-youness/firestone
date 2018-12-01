@@ -36,7 +36,8 @@
                                          get-secrets
                                          create-secret
                                          get-minion-buff-values
-                                         remove-buff]]))
+                                         remove-buff
+                                         get-minion-buff]]))
 
 (defn hero?
   "Checks if the character with given id is a hero."
@@ -319,24 +320,28 @@
                     (get-minions))
                 [])
            ; Minion with A defition deathrattle and a buff deathrattle
-           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh" :buffs [{:deathrattle "Loot Hoarder deathrattle"}])]
-                                   :deck ["Imp" "Imp" "Imp"]}])
+           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh" )]
+                                   :deck ["Imp"]}])
                     (destroy-minion "lh")
                     (get-hand "p1")
                     (count))
-                2))}
+                1))}
   [state id]
-  (-> (let [definition-deathrattle ((get-definition (get-minion state id)) :deathrattle)
-            buffs-deathrattles (get-minion-buffs (get-minion state id))]
-        (as-> (concat buffs-deathrattles {:deathrattle definition-deathrattle}) $
-            (println "deathratles " $))
-        #_(if (contains? effects :deathrattle)
-          (let [deathrattle (get-definition (effects :deathrattle))
-                owner-id (get-owner state id)]
-            (-> (remove-minion state id)
-                (deathrattle owner-id)))
-          (remove-minion state id))
-        )))
+  (let [definition-deathrattle ((get-definition (get-minion state id)) :deathrattle)
+        buffs-deathrattles (get-minion-buff (get-minion state id) :deathrattle)
+        deathrattles (if (not (nil? definition-deathrattle))
+                       (conj buffs-deathrattles  {:deathrattle definition-deathrattle})
+                       buffs-deathrattles)
+        owner-id (get-owner state id)]
+          (if (> (count deathrattles) 0)
+            (as-> (remove-minion state id) $
+                  (reduce (fn [state {deathrattle-name :deathrattle}]
+                            ((get-definition deathrattle-name) state owner-id))
+                          $
+                          deathrattles))
+            (remove-minion state id)
+            )
+    ))
 
 (defn change-minion-board-side
   "Causes a minion on the board to switch board side and owner."
