@@ -1,6 +1,7 @@
 (ns firestone.api
   (:require [ysera.test :refer [is is-not is= error?]]
             [ysera.collections :refer [seq-contains?]]
+            [ysera.error :refer [error]]
             [firestone.definitions :refer [get-definition]]
             [firestone.construct :refer [create-game
                                          create-minion
@@ -22,6 +23,7 @@
                                     damage-hero
                                     hero?
                                     valid-plays
+                                    valid-attacks
                                     get-owner
                                     get-spell-function
                                     get-hero-power-function
@@ -100,21 +102,19 @@
                 (create-game [{}
                               {:minions [(create-minion "War Golem" :id "wg" :damage-taken ((get-definition "Imp") :attack) :attacks-performed-this-turn 1)]}]
                              :player-id-in-turn "p2"))
-           ; A minion cannot attack twice on the same turn
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
-                                  {:hero (create-hero "Rexxar")}])
-                    (attack-with-minion "i" "h2")
-                    (attack-with-minion "i" "h2"))
-                (create-game [{:minions [(create-minion "Imp" :id "i" :attacks-performed-this-turn 1)]}
-                              {:hero (create-hero "Rexxar" :damage-taken ((get-definition "Imp") :attack))}]))
-           ; Invalid attack does nothing
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")
-                                             (create-minion "War Golem" :id "wg")]}])
-                    (attack-with-minion "i" "wg"))
-                (create-game [{:minions [(create-minion "Imp" :id "i")
-                                         (create-minion "War Golem" :id "wg")]}])))}
+           ; A minion cannot attack twice on the same turn so throws an error
+           (is (as-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
+                                    {:hero (create-hero "Rexxar")}]) $
+                      (attack-with-minion $ "i" "h2")
+                      (error? (attack-with-minion $ "i" "h2"))))
+           ; Invalid attack throws an error
+           (is (as-> (create-game [{:minions [(create-minion "Imp" :id "i")
+                                             (create-minion "War Golem" :id "wg")]}]) $
+                     (error? (attack-with-minion $ "i" "wg")))))}
   [state attacker-id target-id]
-  (if (valid-attack? state (get-owner state attacker-id) attacker-id target-id)
+  (if (let [valid-attacks (valid-attacks state)]
+        (and (contains? valid-attacks attacker-id)
+             (seq-contains? (get valid-attacks attacker-id) target-id)<))
     (let [state (-> (update-minion state attacker-id :attacks-performed-this-turn 1)
                     (handle-triggers :on-attack target-id))
           attacker-attack (get-attack state attacker-id)]
@@ -123,7 +123,7 @@
         (let [target-attack (get-attack state target-id)]
           (-> (damage-minion state target-id attacker-attack)
               (damage-minion attacker-id target-attack)))))
-    state))
+    (error "Not valid attack-with-minion")))
 
 (defn play-spell-card
   "Play a spell card from the hand if possible."
