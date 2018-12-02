@@ -22,6 +22,7 @@
                                     damage-minion
                                     damage-hero
                                     hero?
+                                    valid-play?
                                     valid-plays
                                     valid-attacks
                                     get-owner
@@ -159,7 +160,7 @@
                              :minion-ids-summoned-this-turn ["m1"]))
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
-                                  {:minions [(create-card "War Golem" :id "wg")]}])
+                                  {:minions [(create-minion "War Golem" :id "wg")]}])
                     (play-minion-card "p1" "bgh" {:position 0 :target-id "wg"})
                     (get-minions "p2")
                     (count))
@@ -169,22 +170,32 @@
                     (play-minion-card "p1" "bgh" {:position 0})
                     (get-minions "p1")
                     (count))
-                1))}
+                1)
+           ; Throw error (bad target)
+           (is (error? (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
+                                         {:minions [(create-minion "Imp" :id "i")]}])
+                           (play-minion-card "p1" "bgh" {:position 0 :target-id "i"}))))
+           ; Throw error (not enough mana)
+           (is (error? (-> (create-game [{:hand [(create-card "Imp" :id "i")]
+                                          :used-mana 10}])
+                           (play-minion-card "p1" "i" {:position 0})))))}
   [state player-id card-id {position :position target-id :target-id}]
-  (let [card (get-card-from-hand state card-id)
-        battlecry-function (get-battlecry-function card)
-        state (-> (consume-mana state player-id (get-cost card))
-                  (summon-minion player-id card position)
-                  (remove-card-from-hand player-id card-id))
-        minion-id (-> (:minion-ids-summoned-this-turn state)
-                      (last))]
-    (if battlecry-function
-      (if target-id
-        (battlecry-function state minion-id target-id)
-        (if (battlecry-minion-with-target? card)
-          state
-          (battlecry-function state minion-id)))
-      state)))
+  (if (valid-play? state card-id target-id)
+    (let [card (get-card-from-hand state card-id)
+          battlecry-function (get-battlecry-function card)
+          state (-> (consume-mana state player-id (get-cost card))
+                    (summon-minion player-id card position)
+                    (remove-card-from-hand player-id card-id))
+          minion-id (-> (:minion-ids-summoned-this-turn state)
+                        (last))]
+      (if battlecry-function
+        (if target-id
+          (battlecry-function state minion-id target-id)
+          (if (battlecry-minion-with-target? card)
+            state
+            (battlecry-function state minion-id)))
+        state))
+    (error "Sorry, you cannot play this card.\n")))
 
 (defn use-hero-power
   "Use the hero power of the hero belonging to the given player id."
