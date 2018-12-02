@@ -4,6 +4,10 @@
             [ysera.error :refer [error]]
             [firestone.definitions :refer [get-definition]]
             [firestone.construct :refer [create-game
+                                         get-player
+                                         get-player-id-in-turn
+                                         opposing-player-id
+                                         switch-player-in-turn
                                          create-minion
                                          get-minion
                                          get-minions
@@ -11,11 +15,11 @@
                                          get-hero-power
                                          get-board-entity
                                          get-minion-ids-summoned-this-turn
+                                         reset-minion-ids-summoned-this-turn
                                          update-minion
                                          create-card
                                          get-card-from-hand
                                          remove-card-from-hand
-                                         get-player
                                          update-hero-power]]
             [firestone.core :refer [valid-attack?
                                     get-health
@@ -64,20 +68,19 @@
                 (create-game [{:fatigue 2 :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}]
                              :player-id-in-turn "p1")))}
   [state]
-  (let [old-pid (get state :player-id-in-turn)]
-    (let [new-pid (if (= "p1" old-pid) "p2" "p1")]
+  (let [old-pid (get-player-id-in-turn state)]
+    (let [new-pid (opposing-player-id old-pid)]
       (-> state
           ;TODO: trigger the "end of turn" card effects
           (unfreeze-characters)
-          (assoc :player-id-in-turn new-pid
-                 :minion-ids-summoned-this-turn [])
+          (reset-minion-ids-summoned-this-turn)
+          (switch-player-in-turn)
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
           ;TODO: trigger the "beginning of turn" card effects
-          (reset-minion-attack-this-turn new-pid)
-          ))))
+          (reset-minion-attack-this-turn new-pid)))))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."
@@ -114,9 +117,7 @@
                                              (create-minion "War Golem" :id "wg")]}]) $
                      (error? (attack-with-minion $ "i" "wg")))))}
   [state attacker-id target-id]
-  (if (let [valid-attacks (valid-attacks state)]
-        (and (contains? valid-attacks attacker-id)
-             (seq-contains? (get valid-attacks attacker-id) target-id)<))
+  (if (valid-attack? state (get-player-id-in-turn state) attacker-id target-id)
     (let [state (-> (update-minion state attacker-id :attacks-performed-this-turn 1)
                     (handle-triggers :on-attack target-id))
           attacker-attack (get-attack state attacker-id)]
@@ -141,14 +142,32 @@
                                   {:minions [(create-minion "Imp" :id "i")]}])
                     (play-spell-card "p1" "mc1" {:target-id "i"})
                     (get-owner "i"))
-                "p1"))}
+                "p1")
+           ; Throw an error on misclick or hax-attempt
+           (let [state (create-game [{:hand [(create-card "Mind Control" :id "mindgames")
+                                             (create-card "Bananas" :id "bananas")
+                                             (create-card "Snake Trap" :id "snakes")
+                                             (create-card "Snake Trap" :id "snakes2")]
+                                      :minions [(create-minion "Imp" :id "i1")]}
+                                     {:minions [(create-minion "Imp" :id "i2")]}])]
+             (is (error? (play-spell-card state "p1" "mindgames" {})))
+             (is (error? (play-spell-card state "p1" "mindgames" {:target-id "h2"})))
+             (is (error? (play-spell-card state "p1" "mindgames" {:target-id "i1"})))
+             (is (error? (play-spell-card state "p1" "bananas" {:target-id "h1"})))
+             (is (error? (play-spell-card state "p1" "bananas" {})))
+             (is (error? (play-spell-card state "p1" "snakes" {:target-id "h2"})))
+             (is (error? (-> state
+                             (play-spell-card "p1" "snakes" {})
+                             (play-spell-card "p1" "snakes2" {}))))))}
   [state player-id card-id {target-id :target-id}]
-  (let [card (get-card-from-hand state card-id)]
-    (-> (if (nil? target-id)
-          ((get-spell-function card) state)
-          ((get-spell-function card) state target-id))
-        (consume-mana player-id (get-cost card))
-        (remove-card-from-hand player-id card-id))))
+  (if (valid-play? state card-id target-id)
+    (let [card (get-card-from-hand state card-id)]
+      (-> (if (nil? target-id)
+            ((get-spell-function card) state)
+            ((get-spell-function card) state target-id))
+          (consume-mana player-id (get-cost card))
+          (remove-card-from-hand player-id card-id)))
+    (error "You cannot play the spell like this you fool.\n")))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
@@ -213,11 +232,23 @@
                     (use-hero-power "p1" {:target-id "i2"})
                     (get-minions "p2")
                     (count))
-                0))}
+                0)
+           ; Throw an error on misclick or hax-attempt
+           (is (error? (-> (create-game [{:used-mana 9}
+                                         {:minions [(create-minion "Imp" :id "i2")]}])
+                           (use-hero-power "p1" {:target-id "i2"}))))
+           (is (error? (-> (create-game [{}
+                                         {:minions [(create-minion "Imp" :id "i2")]}])
+                           (use-hero-power "p1" {}))))
+           (is (error? (-> (create-game [{:hero (create-hero "Uther Lightbringer")}
+                                         {:minions [(create-minion "Imp" :id "i2")]}])
+                           (use-hero-power "p1" {:target-id "i2"})))))}
   [state player-id {target-id :target-id}]
   (let [hero-power (get-hero-power state player-id)]
-    (-> (if (nil? target-id)
-          ((get-hero-power-function hero-power) state)
-          ((get-hero-power-function hero-power) state target-id))
-        (consume-mana player-id (get-cost hero-power))
-        (update-hero-power player-id :used true))))
+    (if (valid-play? state (:id hero-power) target-id)
+      (-> (if (nil? target-id)
+            ((get-hero-power-function hero-power) state)
+            ((get-hero-power-function hero-power) state target-id))
+          (consume-mana player-id (get-cost hero-power))
+          (update-hero-power player-id :used true))
+      (error "You cannot play your hero power like that.\n"))))

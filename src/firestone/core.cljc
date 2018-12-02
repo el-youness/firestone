@@ -739,7 +739,7 @@
       (get (valid-attacks state) entity-id))))
 
 (defn valid-play?
-  "Determines if a card is playable with a valid target if needed), or if a minion can attack an other one."
+  "Determines if a card is playable (with a valid target if needed), or if a minion can attack an other one."
   {:test (fn []
            (let [state (create-game [{:minions [(create-minion "Imp" :id "i1")
                                                 (create-minion "War Golem" :id "wg1")]
@@ -778,14 +778,14 @@
   [state entity-id & target-id]
   (let [player-in-turn (:player-id-in-turn state)
         targets (available-targets state player-in-turn entity-id)]
-    (if (or (not (nil? (get-minion state entity-id)))       ; If it is a minion id, the second statement of or is not checked
+    (if (or (get-minion state entity-id)       ; If it is a minion id, the second statement of or is not checked
             (playable? state player-in-turn entity-id))
       (if (or (nil? target-id)
               (= target-id [nil]))                          ; happens when you use (valid-play? state entity-id nil)
         (empty? targets)
         (if (empty? targets)
           false
-          (not (nil? (some (fn [x] (= (first target-id) x)) targets))))) ; Is the target is in available targets ?
+          (some (fn [x] (= (first target-id) x)) targets))) ; Is the target in targets ?
       false)))
 
 (defn valid-plays
