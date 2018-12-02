@@ -695,7 +695,9 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (get-minion "i")
                     (:name))
-                "Imp"))}
+                "Imp")
+           (is (nil? (-> (create-game)
+                         (get-minion "i")))))}
   [state id]
   (->> (get-minions state)
        (filter (fn [m] (= (:id m) id)))
