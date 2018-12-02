@@ -17,6 +17,7 @@
                                          remove-secret
                                          remove-secrets
                                          get-hero
+                                         get-damage
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
@@ -459,7 +460,16 @@
     :class       :warrior
     :set         :classic
     :rarity      :common
-    :description "Give a damaged minion +3/+3."}
+    :description "Give a damaged minion +3/+3."
+    :target-condition (defn damaged-minion?
+                        [state target-id]
+                        {:pre [(map? state) (string? target-id)]}
+                        (let [minion (get-minion state target-id)]
+                          (and minion
+                               (> (get-damage minion) 0))))
+    :spell       (fn [state target-id]
+                   (add-buff state target-id {:extra-health 3
+                                              :extra-attack 3}))}
 
    "Trade Prince Gallywix"
    {:name        "Trade Prince Gallywix"

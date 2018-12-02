@@ -314,3 +314,15 @@
            (get-minions "p1")
            (count))
        0))
+
+(deftest rampage
+         (is= (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
+                                {:minions [(create-minion "War Golem" :id "wg" :damage-taken 2)]}])
+                  (play-spell-card "p1" "r" {:target-id "wg"})
+                  (get-health "wg"))
+              8)
+         ; uncomment when merging with error thrower
+         ;(is (error? (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
+         ;                              {:minions [(create-minion "War Golem" :id "wg")]}])
+         ;                (play-spell-card "p1" "r" {:target-id "wg"}))))
+         )

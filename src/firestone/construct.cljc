@@ -813,7 +813,7 @@
    (hero? (get-board-entity state id))))
 
 (defn minion?
-  "Checks if the character with given id is a hero."
+  "Checks if the character with given id is a minion."
   {:test (fn []
            (is-not (-> (create-game [{:minion (create-hero "Rexxar" :id "h1")}])
                        (minion? "h1")))
@@ -833,6 +833,16 @@
    (= (get entity :entity-type) :secret))
   ([state id]
    (secret? (get-board-entity state id))))
+
+(defn get-damage
+  "returns the amount of damage taken by the character"
+  {:test (fn []
+           (is= (get-damage (create-hero "Rexxar" :id "h1" :damage-taken 2))
+                2)
+           (is= (get-damage (create-minion "Imp" :damage-taken 1))
+                1))}
+  [character]
+  (:damage-taken character))
 
 (defn get-card-from-hand
   "Returns the card with the given id from the hand."
