@@ -315,6 +315,14 @@
            (count))
        0))
 
+(deftest doomsayer
+         (is= (-> (create-game [{:minions [(create-minion "Doomsayer" :id "s")]}
+                                {:minions [(create-minion "War Golem" :id "wg")]}])
+                  (end-turn)
+                  (get-minions)
+                  (count))
+              0))
+
 (deftest rampage
          (is= (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
                                 {:minions [(create-minion "War Golem" :id "wg" :damage-taken 2)]}])

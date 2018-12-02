@@ -451,7 +451,9 @@
     :mana-cost   2
     :set         :classic
     :rarity      :epic
-    :description "At the start of your turn destroy ALL minions."}
+    :description "At the start of your turn destroy ALL minions."
+    :triggered-effect {:on-start-of-turn (fn [state doomsayer-id & _]
+                                           (reduce destroy-minion state (map :id (get-minions state))))}}
 
    "Rampage"
    {:name        "Rampage"

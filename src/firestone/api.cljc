@@ -71,7 +71,7 @@
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
-          ;TODO: trigger the "beginning of turn" card effects
+          (handle-triggers :on-start-of-turn new-pid)
           (reset-minion-attack-this-turn new-pid)
           ))))
 
