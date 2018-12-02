@@ -36,7 +36,8 @@
                                          get-card-from-hand
                                          get-effects
                                          get-secrets
-                                         create-secret]]))
+                                         create-secret
+                                         opposing-player-id]]))
 
 (defn get-health
   "Returns the health of the character."
@@ -636,7 +637,7 @@
                                       (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn available-targets
-  "Takes the id of a card, hero or hero power and returns its valid targets"
+  "Takes the id of a card, minion, hero or hero power and returns its valid targets"
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "Imp" :id "i2")]}
@@ -667,31 +668,39 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "p1" "hp1"))
-                ["i1" "i2" "h1" "h2"]))}
+                ["i1" "i2" "h1" "h2"])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                  {:minions [(create-minion "Imp" :id "i2")]}])
+                    (available-targets "p1" "i1"))
+                ["h2" "i2"]))}
   [state player-id entity-id]
-  (let [target-type (get-target-type state entity-id)
-        targets (cond
-                  (= target-type :all)
-                  (concat (get-minions state)
-                          (get-heroes state))
+  (let [opp-player-id (opposing-player-id player-id)]
+    (if (nil? (get-minion state entity-id))
+      (let [target-type (get-target-type state entity-id)
+            targets (cond
+                      (= target-type :all)
+                      (concat (get-minions state)
+                              (get-heroes state))
 
-                  (= target-type :all-minions)
-                  (get-minions state)
+                      (= target-type :all-minions)
+                      (get-minions state)
 
-                  (= target-type :enemy-minions)
-                  (get-minions state (if (= player-id "p1") "p2" "p1"))
+                      (= target-type :enemy-minions)
+                      (get-minions state opp-player-id)
 
-                  (= target-type :friendly-minions)
-                  (get-minions state (if (= player-id "p1") "p1" "p2"))
+                      (= target-type :friendly-minions)
+                      (get-minions state player-id)
 
-                  ; TODO: Might need checks for other target-type.
-                  :else
-                  [])
-        targets-ids (map :id targets)]
-    (let [target-cond-func (get-target-condition-function state entity-id)]
-      (if (nil? target-cond-func)
-        targets-ids
-        (filter (fn [target-id] (target-cond-func state target-id)) targets-ids)))))
+                      ; TODO: Might need checks for other target-type.
+                      :else
+                      [])
+            targets-ids (map :id targets)]
+        (let [target-cond-func (get-target-condition-function state entity-id)]
+          (if (nil? target-cond-func)
+            targets-ids
+            (filter (fn [target-id] (target-cond-func state target-id)) targets-ids))))
+      (conj (map :id (get-minions state opp-player-id))
+            (get-hero-id state opp-player-id)))))           ; TODO take care of taunts
 
 (defn valid-plays
   "Get all playable cards and hero powers and their valid targets."
