@@ -856,6 +856,16 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
+(defn get-minion-ids-summoned-this-turn
+  "Returns the minion ids summoned this turn from the state."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}]
+                                 :minion-ids-summoned-this-turn ["i"])
+                    (get-minion-ids-summoned-this-turn ))
+                ["i"]))}
+  [state]
+  (:minion-ids-summoned-this-turn state))
+
 (defn replace-minion
   "Replaces a minion with the same id as the given new-minion."
   {:test (fn []

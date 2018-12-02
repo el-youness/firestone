@@ -785,7 +785,7 @@
         (empty? targets)
         (if (empty? targets)
           false
-          (not (nil? (some (fn [x] (= (first target-id) x)) targets)))))
+          (not (nil? (some (fn [x] (= (first target-id) x)) targets))))) ; Is the target is in available targets ?
       false)))
 
 (defn valid-plays

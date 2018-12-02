@@ -10,6 +10,7 @@
                                          create-hero
                                          get-hero-power
                                          get-board-entity
+                                         get-minion-ids-summoned-this-turn
                                          update-minion
                                          create-card
                                          get-card-from-hand
@@ -186,7 +187,7 @@
           state (-> (consume-mana state player-id (get-cost card))
                     (summon-minion player-id card position)
                     (remove-card-from-hand player-id card-id))
-          minion-id (-> (:minion-ids-summoned-this-turn state)
+          minion-id (-> (get-minion-ids-summoned-this-turn state)
                         (last))]
       (if battlecry-function
         (if target-id
