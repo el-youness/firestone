@@ -225,6 +225,35 @@
   [state player-id]
   (get-in state [:players player-id]))
 
+(defn get-player-id-in-turn
+  "Returns the player-id of the player in turn."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-player-id-in-turn))
+                "p1"))}
+  [state]
+  (get state :player-id-in-turn))
+
+(defn opposing-player-id
+  "Returns the id of the other player w/ regards to player-id"
+  {:test (fn []
+           (is= (opposing-player-id "p1")
+                "p2")
+           (is= (opposing-player-id "p2")
+                "p1"))}
+  [player-id]
+  (if (= "p1" player-id) "p2" "p1"))
+
+(defn switch-player-in-turn
+  "Switches the current player in turn."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (switch-player-in-turn)
+                    (get-player-id-in-turn))
+                "p2"))}
+  [state]
+  (assoc state :player-id-in-turn (opposing-player-id (get-player-id-in-turn state)) ))
+
 (defn get-hand
   "Returns the hand for the given player-id."
   {:test (fn []
@@ -695,7 +724,9 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (get-minion "i")
                     (:name))
-                "Imp"))}
+                "Imp")
+           (is (nil? (-> (create-game)
+                         (get-minion "i")))))}
   [state id]
   (->> (get-minions state)
        (filter (fn [m] (= (:id m) id)))
@@ -856,6 +887,27 @@
                (get-hand state "p2"))
        (filter (fn [c] (= (:id c) id)))
        (first)))
+
+(defn get-minion-ids-summoned-this-turn
+  "Returns the minion ids summoned this turn from the state."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}]
+                                 :minion-ids-summoned-this-turn ["i"])
+                    (get-minion-ids-summoned-this-turn ))
+                ["i"]))}
+  [state]
+  (:minion-ids-summoned-this-turn state))
+
+(defn reset-minion-ids-summoned-this-turn
+  "Returns the player with the given id."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}] :minion-ids-summoned-this-turn ["i"])
+                    (reset-minion-ids-summoned-this-turn)
+                    (get-minion-ids-summoned-this-turn)
+                    (count))
+                0))}
+  [state]
+  (assoc state :minion-ids-summoned-this-turn []))
 
 (defn replace-minion
   "Replaces a minion with the same id as the given new-minion."
@@ -1188,16 +1240,6 @@
   (update-in state [:players player-id :hand]
              (fn [cards]
                (remove (fn [c] (= (:id c) id)) cards))))
-
-(defn opposing-player-id
-  "Returns the id of the other player w/ regards to player-id"
-  {:test (fn []
-           (is= (opposing-player-id "p1")
-                "p2")
-           (is= (opposing-player-id "p2")
-                "p1"))}
-  [player-id]
-  (if (= "p1" player-id) "p2" "p1"))
 
 (defn remove-secret
   "Removes the secret with the given id from the given player."
