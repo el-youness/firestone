@@ -1,4 +1,3 @@
 (ns firestone.definitions-loader
   (:require [firestone.definition.hero]
-            [firestone.definition.card]
-            [firestone.definition.effect]))
+            [firestone.definition.card]))

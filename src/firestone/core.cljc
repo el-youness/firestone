@@ -31,16 +31,50 @@
                                          get-mana
                                          add-minion-to-board
                                          add-secret-to-player
-                                         get-minion-buffs
+                                         get-character-buffs
                                          get-card-from-hand
                                          get-secrets
                                          create-secret
-                                         get-minion-buff-values
-                                         remove-buff
-                                         get-minion-buff
-                                         get-secret-effects
-                                         get-entity-effect
+                                         remove-buffs
+                                         get-triggered-effects
                                          hero?]]))
+
+(defn get-extra-health
+  "Returns the extra attack from buffs of the character."
+  {:test (fn []
+           (is= (-> (create-minion "Imp" :buffs [{:extra-health 1}
+                                                 {:extra-health 2
+                                                  :extra-attack 1}])
+                    (get-extra-health))
+                3))}
+  ([character]
+   (->> (get-character-buffs character)
+        (reduce (fn [a b]
+                  (if (contains? b :extra-health)
+                    (+ a (:extra-health b))
+                    a))
+                0)))
+  ([state id]
+   (get-extra-health (get-board-entity state id))))
+
+(defn get-extra-attack
+  "Returns the extra attack from buffs of the character."
+  {:test (fn []
+           (is= (-> (create-minion "Imp" :buffs [{:extra-attack 2}
+                                                 {:extra-health 2
+                                                  :extra-attack 1}])
+                    (get-extra-attack))
+                3))}
+  ([character]
+   (->> (get-character-buffs character)
+        (reduce (fn [a b]
+                  (if (contains? b :extra-attack)
+                    (+ a (:extra-attack b))
+                    a))
+                0)))
+  ([state id]
+   (get-extra-health (get-board-entity state id))))
+
 (defn get-health
   "Returns the health of the character."
   {:test (fn []
@@ -57,13 +91,11 @@
                     (get-health "h1"))
                 30)
            ; The health of minions with extra-health
-           (is= (get-health (create-minion "War Golem" :effects {:extra-health 3})) 10))}
+           (is= (get-health (create-minion "War Golem" :buffs [{:extra-health 3}])) 10))}
   ([character]
    {:pre [(map? character) (contains? character :damage-taken)]}
    (let [definition (get-definition character)]
-     (- (if (hero? character)
-          (+ (:health definition) (get-in character [:effects :extra-health]))
-          (+ (:health definition) (reduce + (get-minion-buff-values character :extra-health))))
+     (- (+ (:health definition) (get-extra-health character))
         (:damage-taken character))))
   ([state id]
    (get-health (get-board-entity state id))))
@@ -81,7 +113,7 @@
   [state id]
   (let [minion (get-minion state id)
         definition (get-definition (:name minion))]
-    (+ (:attack definition) (reduce + (get-minion-buff-values minion :extra-attack)))))
+    (+ (:attack definition) (get-extra-attack minion))))
 
 (defn get-cost
   "Returns the cost of the card or hero power."
@@ -175,6 +207,23 @@
   [state id]
   (seq-contains? (:minion-ids-summoned-this-turn state) id))
 
+(defn frozen?
+  "Checks if the character is frozen."
+  {:test (fn []
+           (is (-> (create-minion "Imp" :buffs [{:frozen true}])
+                   (frozen?)))
+           (is (-> (create-hero "Rexxar" :buffs [{:frozen true}])
+                   (frozen?)))
+           (is-not (-> (create-minion "Imp" :id "i")
+                       (frozen?))))}
+  ([character]
+   (> (->> (get-character-buffs character)
+           (filter (fn [b] (:frozen b)))
+           (count))
+      0))
+  ([state id]
+   (frozen? (get-board-entity state id))))
+
 (defn hero-power?
   "Checks if the given entity-id is a hero power."
   {:test (fn []
@@ -266,9 +315,8 @@
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         ; TODO for a better functionality, create a function that returns a list for a specific effect from definition and buffs
-         (= (count (get-entity-effect attacker :cannot-attack)) 0)
-         (= (count (get-entity-effect attacker :frozen)) 0))))
+         (not (:cannot-attack (get-definition attacker)))
+         (not (frozen? attacker)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -276,22 +324,27 @@
            (is= (-> (create-game)
                     (handle-triggers :on-damage))
                 (create-game))
+           ; Minion with triggered effect
            (is= (-> (create-game [{:deck ["Imp"] :minions [(create-minion "Acolyte of Pain" :id "m1")]}])
                     (handle-triggers :on-damage "m1")
                     (get-hand "p1")
                     (count))
-                1))}
+                1)
+           ; Secret
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]
+                                   :secrets ["Snake Trap"]}])
+                    (handle-triggers :on-attack "i")
+                    (get-minions "p1")
+                    (count))
+                4))}
   [state event & args]
-  (->> (concat (get-minions state) (get-secrets state))
-       (reduce (fn [state entity]
-                 (let [effects (get-entity-effect entity event)]
-                   (if (empty? effects )
-                     state
-                     (reduce (fn [state effect]
-                               ((get-definition effect) state (:id entity) args))
-                             state
-                             effects))))
-               state)))
+  (let [triggered-effects (get-triggered-effects state event)]
+    (if (empty? triggered-effects)
+      state
+      (reduce (fn [state effect]
+                ((second effect) state (first effect) args))
+              state
+              triggered-effects))))
 
 (defn full-board?
   "Checks if a player's board is full."
@@ -312,29 +365,19 @@
                     (destroy-minion "wg")
                     (get-minions))
                 [])
-           ; Minion with A defition deathrattle
-           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh" )]
-                                   :deck ["Imp"]}])
+           (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh")] :deck ["Imp"]}])
                     (destroy-minion "lh")
                     (get-hand "p1")
                     (count))
                 1))}
   [state id]
-  (let [definition-deathrattle ((get-definition (get-minion state id)) :deathrattle)
-        buffs-deathrattles (get-minion-buff (get-minion state id) :deathrattle)
-        deathrattles (if (not (nil? definition-deathrattle))
-                       (conj buffs-deathrattles  {:deathrattle definition-deathrattle})
-                       buffs-deathrattles)
+  (let [definition (get-definition (get-minion state id))
+        deathrattle (:deathrattle definition)
         owner-id (get-owner state id)]
-          (if (> (count deathrattles) 0)
-            (as-> (remove-minion state id) $
-                  (reduce (fn [state {deathrattle-name :deathrattle}]
-                            ((get-definition deathrattle-name) state owner-id))
-                          $
-                          deathrattles))
-            (remove-minion state id)
-            )
-    ))
+    (if deathrattle
+      (-> (remove-minion state id)
+          (deathrattle owner-id))
+      (remove-minion state id))))
 
 (defn change-minion-board-side
   "Causes a minion on the board to switch board side and owner."
@@ -776,7 +819,6 @@
   {:test (fn []
            (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
                       ((get-spell-function (create-card "Bananas")) $ "i1")
-                      (println (get-minion $ "i1"))
                       [(get-attack $ "i1") (get-health $ "i1")])
                 [2 2])
            (is= (as-> (create-game []) $
@@ -878,6 +920,34 @@
   (let [max-mana (get-in state [:players player-id :max-mana])]
     (assoc-in state [:players player-id :max-mana] (+ max-mana (min (- 10 max-mana) amount)))))
 
+(defn get-spell-damage
+  "Returns the spell damage of a minion."
+  {:test (fn []
+           ; Minion with spell damage in definition
+           (is= (-> (create-minion "Dalaran Mage")
+                    (get-spell-damage))
+                1)
+           ; Minions with spell damage in definition and buff
+           (is= (-> (create-minion "Dalaran Mage" :buffs [{:spell-damage 2}])
+                    (get-spell-damage))
+                3)
+           ; Minion without spell damage
+           (is= (-> (create-minion "Imp")
+                    (get-spell-damage))
+                0))}
+  ([minion]
+   (let [definition-spell-damage (or (:spell-damage (get-definition minion))
+                                     0)
+         buff-spell-damage (->> (get-character-buffs minion)
+                                (reduce (fn [a b]
+                                          (if (contains? b :spell-damage)
+                                            (+ a (:spell-damage b))
+                                            a))
+                                        0))]
+     (+ definition-spell-damage buff-spell-damage)))
+  ([state id]
+   (get-spell-damage (get-minion state id))))
+
 (defn get-player-spell-damage
   "Returns the total spell-damage a player has"
   {:test (fn []
@@ -888,13 +958,7 @@
            )}
   [state player-id]
   (reduce + (->> (get-minions state player-id)
-                 (map (fn [minion]
-                        (println "minion" minion)
-                        (let [spell-damage-buff (as-> (get-minion-buff-values minion :spell-damage) $
-                                                      (reduce + $))
-                              spell-damage-def (as-> (get-definition (minion :name)) $
-                                                     (get $ :spell-damage))]
-                          (+ spell-damage-buff spell-damage-def)))))))
+                 (map (fn [m] (get-spell-damage m))))))
 
 (defn deal-spell-damage
   "Deals damage to a character taking into account the spell-damage"
@@ -935,51 +999,47 @@
                  (get-minions state player-id))))
 
 (defn unfreeze-characters
-  ; TODO : Find a better way to get the frozen effect than get-minion-buffs first
   "Unfreezes all characters of the player in turn that are Frozen if the conditions are met"
   {:test (fn []
            ; Minion frozen and didn't attack yet => should be unfrozen
-           (is= (-> (create-game [{:minions [(create-minion "Imp"
-                                                            :id "m1"
-                                                            :attacks-performed-this-turn 0
-                                                            :buffs [{:frozen true}])]}])
-                    (unfreeze-characters)
-                    (get-minion "m1")
-                    (get-minion-buff-values :frozen)
-                    (count))
-                0)
+           (is-not (-> (create-game [{:minions [(create-minion "Imp"
+                                                               :id "m1"
+                                                               :attacks-performed-this-turn 0
+                                                               :buffs [{:frozen true}])]}])
+                       (unfreeze-characters)
+                       (get-minion "m1")
+                       (frozen?)))
            ; Minion frozen and already attacked => should stay frozen
-           (is= (-> (create-game [{:minions [(create-minion "Imp"
-                                                            :id "m1"
-                                                            :attacks-performed-this-turn 1
-                                                            :buffs [{:frozen true}])]}])
-                    (unfreeze-characters)
-                    (get-minion "m1")
-                    (get-minion-buff-values :frozen)
-                    (first))
-                true)
+           (is (-> (create-game [{:minions [(create-minion "Imp"
+                                                           :id "m1"
+                                                           :attacks-performed-this-turn 1
+                                                           :buffs [{:frozen true}])]}])
+                   (unfreeze-characters)
+                   (get-minion "m1")
+                   (frozen?)))
            ; Hero frozen and didn't attack yet => should be unfrozen
-           (is= (-> (create-game [{:hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
-                    (unfreeze-characters)
-                    (get-hero "p1")
-                    (get-in [:effects :frozen]))
-                false)
+           (is-not (-> (create-game [{:hero (create-hero "Jaina Proudmoore"
+                                                         :buffs [{:frozen true}])}])
+                       (unfreeze-characters)
+                       (get-hero "p1")
+                       (frozen?)))
            ; Hero frozen and already attacked => should still be frozen
-           (is= (-> (create-game [{:attacks-performed-this-turn 1 :hero (create-hero "Jaina Proudmoore" :effects {:frozen true})}])
-                    (unfreeze-characters)
-                    (get-hero "p1")
-                    (get-in [:effects :frozen]))
-                true))}
+           (is (-> (create-game [{:attacks-performed-this-turn 1
+                                  :hero                        (create-hero "Jaina Proudmoore"
+                                                                            :buffs [{:frozen true}])}])
+                   (unfreeze-characters)
+                   (get-hero "p1")
+                   (frozen?))))}
   [state]
   (let [player (get-player state (get state :player-id-in-turn)) hero (get-hero state (:id player))]
     ; on minions
-    (as-> (get-minions state (:id player)) $
-          (reduce (fn [state minion]
-                    (if (and (-> (get-minion-buff-values minion :frozen) (first)) (= (:attacks-performed-this-turn minion) 0))
-                      (remove-buff state (:id minion) :frozen)
-                      state))
-                  state $)
-          ; on hero
-          (if (and (not (nil? (get-in hero [:effects :frozen]))) (= (:attacks-performed-this-turn player) 0))
-            (update-in-hero $ (:id hero) [:effects :frozen] false)
-            $))))
+    (as-> (conj (get-minions state (:id player)) (get-hero state (:id player))) $
+          (reduce (fn [state character]
+                    (let [has-attacked (> (:attacks-performed-this-turn (if (hero? character)
+                                                                          player
+                                                                          character))
+                                          0)]
+                      (if (and (frozen? character) (not has-attacked))
+                        (remove-buffs state (:id character) :frozen)
+                        state)))
+                  state $))))

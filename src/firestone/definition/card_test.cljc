@@ -35,9 +35,9 @@
          (as-> (create-game [{:minions [(create-minion "Imp" :id "imp")]
                               :hand    [(create-card "Bananas" :id "b")]}]) $
                (play-spell-card $ "p1" "b" {:target-id "imp"})
-               (do (is= (:extra-attack (get-minion-buffs $ "imp"))
+               (do (is= (get-extra-attack $ "imp")
                         1)
-                   (is= (:extra-health (get-minion-buffs $ "imp"))
+                   (is= (get-extra-health $ "imp")
                         1))))
 
 (deftest big-game-huner
@@ -116,7 +116,7 @@
                              {:minions [(create-minion "War Golem" :id "wg")] :deck [(create-card "Imp" :id "i2")]}]) $
                (play-spell-card $ "p1" "f" {:target-id "wg"})
                (let [minion (get-minion $ "wg") attacker (get-player $ "p1")]
-                 (is= (:frozen (get-minion-buffs minion))
+                 (is= (frozen? minion)
                       true)
                  ; We check it's 4 because "Dalaran Mage" has +1 spell damage
                  (is= (get minion :damage-taken)
@@ -127,8 +127,7 @@
                (end-turn $)
                ; Minion should stay frozen after the first end-turn
                (let [minion (get-minion $ "wg")]
-                 (is= (get-in minion [:effects :frozen])
-                      true)
+                 (is (frozen? minion))
                  (is= (get minion :attacks-performed-this-turn)
                       0)
                  (is= (-> ((get-player $ "p2") :hand)
@@ -137,7 +136,7 @@
                (end-turn $)
                ; Minion should be unfrozen after the second end-turn
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-minion-buffs minion))
+                 (is= (frozen? minion)
                       false)
                  (is= (-> ((get-player $ "p1") :hand)
                           (count))
@@ -150,13 +149,13 @@
                ;
                (play-spell-card $ "p1" "f1" {:target-id "wg"})
                (let [minion (get-minion $ "wg") attacker (get-player $ "p1")]
-                 (is= (:frozen (get-minion-buffs minion))
+                 (is= (frozen? minion)
                       true)
                  (is= (get minion :damage-taken)
                       5) $)
                (end-turn $)
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-minion-buffs minion))
+                 (is= (frozen? minion)
                       false)
                  (is= (-> ((get-player $ "p2") :hand)
                           (count))
@@ -168,22 +167,22 @@
                              {:deck [(create-card "Imp" :id "i2")]}]) $
                (play-spell-card $ "p1" "f1" {:target-id "wg"})
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-minion-buffs minion))
+                 (is= (frozen? minion)
                       true)
                  (is= (get minion :attacks-performed-this-turn)
                       1) $)
                (end-turn $)
                (let [minion (get-minion $ "wg")]
-                 (is= (:frozen (get-minion-buffs minion))
+                 (is= (frozen? minion)
                       true)
                  (is= (get minion :attacks-performed-this-turn)
                       1) $)
                (end-turn $)
-               (do (is= (get-in (get-minion $ "wg") [:effects :frozen])
-                        true) $)
+               (do (is (frozen? (get-minion $ "wg")))
+                   $)
                (end-turn $)
-               (do (is= (get-in (get-minion $ "wg") [:effects :frozen])
-                        false) $)))
+               (do (is-not (frozen? (get-minion $ "wg")))
+                   $)))
 
 (deftest frothing-berserker
          (is= (-> (create-game [{:minions [(create-minion "Frothing Berserker" :id "fb")]}
@@ -300,3 +299,18 @@
                   (get-minions "p1")
                   (count))
               7))
+
+(deftest sylvanas-windruner
+  (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}
+                         {:minions [(create-minion "War Golem" :id "wg")]}])
+           (attack-with-minion "s" "wg")
+           (get-minions "p1")
+           (first)
+           (:name))
+       "War Golem")
+  ; If there are no opposing minions, nothing happens
+  (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}])
+           (destroy-minion "s")
+           (get-minions "p1")
+           (count))
+       0))
