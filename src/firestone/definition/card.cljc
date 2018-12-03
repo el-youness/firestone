@@ -18,6 +18,7 @@
                                          remove-secrets
                                          get-hero
                                          get-damage
+                                         get-player-id-in-turn
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
@@ -444,34 +445,38 @@
     :description "Whenever a player casts a spell, put a copy into the other player's hand."}
 
    "Doomsayer"
-   {:name        "Doomsayer"
-    :attack      0
-    :health      7
-    :type        :minion
-    :mana-cost   2
-    :set         :classic
-    :rarity      :epic
-    :description "At the start of your turn destroy ALL minions."
+   {:name             "Doomsayer"
+    :attack           0
+    :health           7
+    :type             :minion
+    :mana-cost        2
+    :set              :classic
+    :rarity           :epic
+    :description      "At the start of your turn destroy ALL minions."
     :triggered-effect {:on-start-of-turn (fn [state doomsayer-id & _]
-                                           (reduce destroy-minion state (map :id (get-minions state))))}}
+                                           (if (= (get-player-id-in-turn state)
+                                                  (get-owner state (get-minion state doomsayer-id)))
+                                             (reduce destroy-minion state (map :id (get-minions state)))
+                                             state))}}
 
    "Rampage"
-   {:name        "Rampage"
-    :type        :spell
-    :mana-cost   2
-    :class       :warrior
-    :set         :classic
-    :rarity      :common
-    :description "Give a damaged minion +3/+3."
+   {:name             "Rampage"
+    :type             :spell
+    :mana-cost        2
+    :class            :warrior
+    :set              :classic
+    :rarity           :common
+    :description      "Give a damaged minion +3/+3."
+    :target-type      :all-minions
     :target-condition (defn damaged-minion?
                         [state target-id]
                         {:pre [(map? state) (string? target-id)]}
                         (let [minion (get-minion state target-id)]
                           (and minion
                                (> (get-damage minion) 0))))
-    :spell       (fn [state target-id]
-                   (add-buff state target-id {:extra-health 3
-                                              :extra-attack 3}))}
+    :spell            (fn [state target-id]
+                        (add-buff state target-id {:extra-health 3
+                                                   :extra-attack 3}))}
 
    "Trade Prince Gallywix"
    {:name        "Trade Prince Gallywix"

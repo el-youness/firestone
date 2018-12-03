@@ -321,6 +321,15 @@
                   (end-turn)
                   (get-minions)
                   (count))
+              2)
+         (is= (-> (create-game [{:minions [(create-minion "Doomsayer" :id "s")]}
+                                {:minions [(create-minion "War Golem" :id "wg")]}])
+                  (end-turn)
+                  (end-turn)
+                  (handle-triggers :on-start-of-turn)
+                  (get-owner "s")
+                  (get-minions)
+                  (count))
               0))
 
 (deftest rampage

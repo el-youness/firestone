@@ -1132,8 +1132,7 @@
      (minion? entity) (get-minion-triggered-effect entity)
      (secret? entity) (get-secret-triggered-effect entity)))
   ([state id]
-   (get-entity-triggered-effect (get-board-entity state id)))
-  )
+   (get-entity-triggered-effect (get-board-entity state id))))
 
 (defn get-triggered-effects
   "Gets all the active triggered effects or the ones with given trigger."

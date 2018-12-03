@@ -28,7 +28,6 @@
                                     get-attack
                                     damage-minion
                                     damage-hero
-                                    hero?
                                     valid-play?
                                     valid-plays
                                     valid-attacks
@@ -81,7 +80,7 @@
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
-          (handle-triggers :on-start-of-turn new-pid)
+          (handle-triggers :on-start-of-turn)
           (reset-minion-attack-this-turn new-pid)
           ))))
 
