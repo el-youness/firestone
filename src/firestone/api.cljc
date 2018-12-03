@@ -15,13 +15,13 @@
                                          get-card-from-hand
                                          remove-card-from-hand
                                          get-player
+                                         hero?
                                          update-hero-power]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
                                     damage-minion
                                     damage-hero
-                                    hero?
                                     valid-plays
                                     valid-attacks
                                     get-owner
