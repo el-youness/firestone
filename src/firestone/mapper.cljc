@@ -1,4 +1,4 @@
-(ns firestone.mapper
+  (ns firestone.mapper
   (:require [ysera.test :refer [is is=]]
             [clojure.spec.alpha :as spec]
             [clojure.set :refer [rename-keys]]
