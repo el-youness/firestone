@@ -350,6 +350,21 @@
                                             (summon-minion player-id "Snake")
                                             (summon-minion player-id "Snake"))
                                         state)))}}
+
+   "Abusive Sergeant"
+   {:name        "Abusive Sergeant"
+    :attack      1
+    :health      1
+    :mana-cost   1
+    :type        :minion
+    :set         :classic
+    :rarity      :common
+    :description "Battlecry: Give a minion +2 Attack this turn."
+    :target-type :all-minions
+    :battlecry   (fn [state _ target-id]
+                   (-> (add-buff state target-id {:extra-attack 2
+                                                  :turns-left   1})))}
+
    })
 
 (definitions/add-definitions! card-definitions)
