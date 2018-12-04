@@ -341,6 +341,7 @@
     :subtype          :secret
     :set              :classic
     :rarity           :epic
+    :class            :hunter
     :description      "Secret: When one of your minions is attacked summon three 1/1 Snakes."
     :triggered-effect {:on-attack (fn [state snake-trap-id [attacked-minion-id]]
                                     (let [player-id (get-owner state snake-trap-id)]

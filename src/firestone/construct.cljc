@@ -707,8 +707,10 @@
            (is= (-> (create-game)
                     (get-max-mana "p2"))
                 10))}
-  [state player-id]
-  (:max-mana (get-player state player-id)))
+  ([player]
+    (:max-mana player))
+  ([state player-id]
+   (get-max-mana (get-player state player-id))))
 
 (defn get-mana
   "Returns the mana available to use for the given player-id."
@@ -1202,10 +1204,10 @@
         []
 
         (<= size amount)
-        (subvec deck 0 size)
+        (take size deck)
 
         :else
-        (subvec deck 0 amount)))))
+        (take amount deck)))))
 
 (defn remove-card-from-deck
   "Removes a card with the given id from the given player's deck."

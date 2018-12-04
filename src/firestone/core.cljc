@@ -249,6 +249,18 @@
   ([state id]
    (frozen? (get-board-entity state id))))
 
+(defn deathrattle-minion?
+  "Checks if the minion has a deathrattle."
+  {:test (fn []
+           (is (-> (create-minion "Loot Hoarder")
+                   (deathrattle-minion?)))
+           (is-not (-> (create-minion "Imp")
+                       (deathrattle-minion?))))}
+  ([minion]
+    (:deathrattle (get-definition minion)))
+  ([state id]
+    (deathrattle-minion? (get-minion state id))))
+
 (defn hero-power?
   "Checks if the given entity-id is a hero power."
   {:test (fn []

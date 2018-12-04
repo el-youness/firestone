@@ -1,12 +1,14 @@
-  (ns firestone.mapper
+(ns firestone.mapper
   (:require [ysera.test :refer [is is=]]
             [clojure.spec.alpha :as spec]
-            [clojure.set :refer [rename-keys]]
+            [clojure.set :refer [rename-keys union]]
             [firestone.spec]
             [firestone.definitions :refer [get-definition]]
             [firestone.construct :refer [create-game
                                          get-player-id-in-turn
                                          get-players
+                                         create-minion
+                                         create-hero
                                          get-minions
                                          get-deck
                                          get-mana
@@ -15,15 +17,41 @@
                                          get-hand
                                          get-hero
                                          get-hero-power
-                                         get-hero-power-of-player
-                                         get-minion-effects]]
+                                         get-hero-power-of-player]]
             [firestone.core :refer [get-attack
                                     get-health
+                                    get-extra-health
                                     get-cost
                                     get-owner
                                     valid-plays
+                                    valid-attacks
+                                    frozen?
+                                    deathrattle-minion?
                                     available-targets
                                     sleepy?]]))
+
+(defn get-states
+  "Returns the states of the character."
+  {:test (fn []
+           (is= (-> (create-minion "Loot Hoarder")
+                    (get-states))
+                #{"DEATHRATTLE"})
+           (is= (-> (create-hero "Rexxar" :buffs [{:frozen true}])
+                    (get-states))
+                #{"FROZEN"})
+           (is= (-> (create-minion "Loot Hoarder" :buffs [{:frozen true}])
+                    (get-states))
+                #{"DEATHRATTLE" "FROZEN"}))}
+  [character]
+  (as-> #{} $
+        (if (frozen? character)
+          (conj $ "FROZEN")
+          $)
+        (if (deathrattle-minion? character)
+          (conj $ "DEATHRATTLE")
+          $))
+  )
+
 (defn core-hero-power->client-hero-power
   {:test (fn []
            (is (spec/valid? :firestone.spec/hero-power
@@ -58,17 +86,17 @@
      :owner-id         owner-id
      :entity-type      "hero"
      :attack           0
-     ;:can-attack TODO: Use valid-plays
+     :can-attack       (contains? (valid-attacks state) id)
      :health           (get-health hero)
      :id               id
      :mana             (get-mana state owner-id)
      :max-health       (:health definition)
-     :max-mana         (get-max-mana state id)
-     ; :states TODO
-     :valid-attack-ids []
-     :can-attack       false
+     :max-mana         (get-max-mana state owner-id)
+     :states           (get-states hero)
+     :valid-attack-ids (or (get (valid-attacks state) id)
+                           [])
      :armor            0
-     :class            (:class definition)
+     :class            (name (:class definition))
      :hero-power       (core-hero-power->client-hero-power state (get-hero-power-of-player state owner-id))
      }))
 
@@ -128,7 +156,7 @@
 
 (defn core-minion->client-minion
   {:test (fn []
-           (is (spec/explain :firestone.spec/minion
+           (is (spec/valid? :firestone.spec/minion
                             (let [state (create-game [{:minions ["Imp"]}])
                                   minion (-> (get-minions state)
                                              (first))]
@@ -138,23 +166,22 @@
         owner-id (get-owner minion)
         id (:id minion)]
     (merge
-      {:attack          (get-attack minion)
-       ; :can-attack                                            ; TODO Use valid-plays
-       :entity-type     "minion"
-       :health          (get-health minion)
-       :id              id
-       :name            (:name minion)
-       :mana-cost       (get-cost minion)
-       :max-health      (+ (:health definition) (:extra-health (get-minion-effects minion)))
-       :original-attack (:attack definition)
-       :original-health (:health definition)
-       :owner-id        owner-id
-       :position        (:position minion)
-       :set             (name (:set definition))
-       :sleepy          (sleepy? state id)
-       ;        :states (get-minion-states minion)             ; TODO: Implement get-minions states in core
-       ;         :valid-attack-ids (get-valid-attacks state (:id minion)); TODO: Implement get-valid-attacks in core
-       }
+      {:attack           (get-attack minion)
+       :can-attack       (contains? (valid-attacks state) id)
+       :entity-type      "minion"
+       :health           (get-health minion)
+       :id               id
+       :name             (:name minion)
+       :mana-cost        (get-cost minion)
+       :max-health       (+ (:health definition) (get-extra-health minion))
+       :original-attack  (:attack definition)
+       :original-health  (:health definition)
+       :owner-id         owner-id
+       :position         (:position minion)
+       :set              (name (:set definition))
+       :sleepy           (sleepy? state id)
+       :states           (get-states minion)
+       :valid-attack-ids (get (valid-attacks state) id)}
 
       ; Optional values from definition
       (reduce-kv (fn [m k v]
@@ -186,12 +213,19 @@
                           (core-card->client-card state c))
                         (get-hand player))
    :hero           (core-hero->client-hero state (get-hero player))
-   :id             "id"
+   :id             (:id player)
    })
 
-(defn core-game->client-game [state]
-  ; TODO: map according to spec
-  [{:id             "the-game-id"
+(defn core-game->client-game
+  {:test (fn []
+           (is (spec/valid? :firestone.spec/game-states
+                             (-> (create-game [{:minions ["Imp" "Loot Hoarder" "Acolyte of Pain"]
+                                                :hand    ["Snake Trap" "Imp"]
+                                                :deck    ["Frostbolt"]}
+                                               {:secrets ["Snake Trap"]}])
+                                 (core-game->client-game "the game id")))))}
+  [state id]
+  [{:id             id
     :player-in-turn (get-player-id-in-turn state)
     :players        (map (fn [p]
                            (core-player->client-player state p))
