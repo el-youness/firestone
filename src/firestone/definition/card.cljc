@@ -363,8 +363,6 @@
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
                    (-> (add-buff state target-id {:extra-attack 2
-                                                  :turns-left   1})))}
-
-   })
+                                                  :turns-left   1})))}})
 
 (definitions/add-definitions! card-definitions)
