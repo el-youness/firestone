@@ -184,7 +184,8 @@
                                                        :used-mana                   0
                                                        :fatigue                     1}}
                  :counter                       1
-                 :minion-ids-summoned-this-turn []}))}
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0}))}
   ([heroes]
     ; Creates Jaina Proudmoore heroes if heroes are missing.
    (let [heroes (->> (concat heroes [(create-hero "Jaina Proudmoore")
@@ -211,7 +212,8 @@
                                                     (assoc a (:id v) v))
                                                   {}))
       :counter                       1
-      :minion-ids-summoned-this-turn []}))
+      :minion-ids-summoned-this-turn []
+      :seed                          0}))
   ([]
    (create-empty-state [])))
 
@@ -501,7 +503,8 @@
                                                        :used-mana                   0
                                                        :fatigue                     1}}
                  :counter                       2
-                 :minion-ids-summoned-this-turn []})
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0})
 
            ; Test to create game with cards in the hand and deck
            (is= (create-game [{:attacks-performed-this-turn 1
@@ -539,7 +542,8 @@
                                                        :used-mana                   0
                                                        :fatigue                     1}}
                  :counter                       4
-                 :minion-ids-summoned-this-turn []})
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0})
            ; Test to add mana
            (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
                 {:player-id-in-turn             "p1"
@@ -574,7 +578,8 @@
                                                        :used-mana                   2
                                                        :fatigue                     4}}
                  :counter                       1
-                 :minion-ids-summoned-this-turn []})
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0})
            )}
   ([data & kvs]
    (let [state (as-> (create-empty-state (map (fn [player-data]
@@ -1210,3 +1215,22 @@
                 []))}
   [state player-id]
   (assoc-in state [:players player-id :secrets] []))
+
+(defn get-seed
+  "Returns the seed of the state."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-seed))
+                0))}
+  [state]
+  (:seed state))
+
+(defn set-seed
+  "Set the seed of the state."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                   (set-seed 5)
+                   (get-seed))
+               5))}
+  [state seed]
+  (assoc state :seed seed))
