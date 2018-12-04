@@ -21,6 +21,7 @@
                                          add-card-to-hand
                                          get-hand
                                          get-mana
+                                         get-board-entity
                                          get-hero-id
                                          get-player
                                          add-buff
@@ -234,9 +235,9 @@
     :target-type :all
     :spell       (fn [state target-id]
                    (as-> (deal-spell-damage state target-id 3) $
-                         (if (hero? state target-id)
-                           (update-in-hero $ target-id [:effects :frozen] true)
-                           (add-buff $ target-id {:frozen true}))))}
+                         (if (get-board-entity $ target-id)
+                           (add-buff $ target-id {:frozen true})
+                           $)))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
