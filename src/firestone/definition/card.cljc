@@ -379,6 +379,7 @@
     :type         :minion
     :set          :classic
     :rarity       :legendary
+    :race         :dragon
     :description  "Spell Damage +5"
     :spell-damage 5}})
 
