@@ -332,3 +332,20 @@
                    (end-turn $)
                    (and (is= (get-attack $ "i1") 1)
                         (is= (get-attack $ "i2") 1)))))
+
+(deftest shrinkmeister
+         (is (as-> (create-game [{:hand    [(create-card "Shrinkmeister" :id "s1")
+                                            (create-card "Shrinkmeister" :id "s2")]
+                                  :minions [(create-minion "Imp" :id "i1")]}
+                                 {:minions [(create-minion "War Golem" :id "wg1")]}]) $
+                   (play-minion-card $ "p1" "s1" {:position 0 :target-id "i1"})
+                   (do (is= (get-attack $ "i1") 0)
+                       (is= (get-attack $ "wg1") 7)
+                       $)
+                   (play-minion-card $ "p1" "s2" {:position 0 :target-id "wg1"})
+                   (do (is= (get-attack $ "i1") 0)
+                       (is= (get-attack $ "wg1") 5)
+                       $)
+                   (end-turn $)
+                   (and (is= (get-attack $ "i1") 1)
+                        (is= (get-attack $ "wg1") 7)))))
