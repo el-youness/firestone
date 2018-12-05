@@ -332,3 +332,17 @@
                    (end-turn $)
                    (and (is= (get-attack $ "i1") 1)
                         (is= (get-attack $ "i2") 1)))))
+
+(deftest malygos
+         (as-> (create-game [{:hand [(create-card "Malygos" :id "ms") (create-card "Frostbolt" :id "f1")]}
+                             {:deck [(create-card "Imp")]}]) $
+               (play-minion-card $ "p1" "ms" {:position 0})
+               (do (is= (count (get-hand $ "p1")) 1)
+                   (is= (count (get-minions $ "p1")) 1)
+                   $)
+               (end-turn $)
+               (end-turn $)
+               (play-spell-card $ "p1" "f1" {:target-id "h2"})
+               (do (is= (get-mana $ "p1") 8)
+                   (is= (get-health $ "h2") (- ((get-definition "Jaina Proudmoore") :health) 8))
+                   $)))

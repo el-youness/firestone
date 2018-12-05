@@ -1067,7 +1067,7 @@
                    (get-hero "p1")
                    (frozen?))))}
   [state]
-  (let [player (get-player state (get state :player-id-in-turn)) hero (get-hero state (:id player))]
+  (let [player (get-player state (get state :player-id-in-turn))]
     ; on minions
     (as-> (conj (get-minions state (:id player)) (get-hero state (:id player))) $
           (reduce (fn [state character]

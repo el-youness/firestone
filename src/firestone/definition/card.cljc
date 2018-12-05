@@ -368,6 +368,19 @@
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
                    (-> (add-buff state target-id {:extra-attack 2
-                                                  :counter   1})))}})
+                                                  :counter   1})))}
+
+
+   "Malygos"
+   {:name         "Malygos"
+    :mana-cost    9
+    :health       12
+    :attack       4
+    :type         :minion
+    :set          :classic
+    :rarity       :legendary
+    :race         :dragon
+    :description  "Spell Damage +5"
+    :spell-damage 5}})
 
 (definitions/add-definitions! card-definitions)
