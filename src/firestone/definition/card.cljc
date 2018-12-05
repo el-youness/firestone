@@ -24,6 +24,8 @@
                                          get-board-entity
                                          get-hero-id
                                          get-player
+                                         get-seed
+                                         set-seed
                                          add-buff
                                          hero?]]
             [firestone.core :refer [change-minion-board-side
@@ -205,10 +207,11 @@
     :race        :mech
     :description "Deathrattle: Summon a random Legendary minion."
     :deathrattle (fn [state player-id]
-                   (let [[_ legendary-minion] (->> (get-definitions)
-                                                   (filter (fn [v] (= (:rarity v) :legendary)))
-                                                   (random-nth 0))]
-                     (summon-minion state player-id legendary-minion)))}
+                   (let [[seed legendary-minion] (->> (get-definitions)
+                                                      (filter (fn [v] (= (:rarity v) :legendary)))
+                                                      (random-nth (get-seed state)))]
+                     (-> (summon-minion state player-id legendary-minion)
+                         (set-seed seed))))}
 
    "King Mukla"
    {:name            "King Mukla"
@@ -297,7 +300,9 @@
                    (let [opp-pid (opposing-player-id player-id)
                          opp-minions (get-minions state opp-pid)]
                      (if (> (count opp-minions) 0)
-                       (change-minion-board-side state (:id (second (random-nth 0 opp-minions))))
+                       (let [[seed minion] (random-nth (get-seed state) opp-minions)]
+                         (-> (change-minion-board-side state (:id minion))
+                             (set-seed seed)))
                        state)))}
 
    "Frothing Berserker"
@@ -351,6 +356,32 @@
                                             (summon-minion player-id "Snake")
                                             (summon-minion player-id "Snake")
                                             (summon-minion player-id "Snake"))
-                                        state)))}}})
+                                        state)))}}
 
+   "Abusive Sergeant"
+   {:name        "Abusive Sergeant"
+    :attack      1
+    :health      1
+    :mana-cost   1
+    :type        :minion
+    :set         :classic
+    :rarity      :common
+    :description "Battlecry: Give a minion +2 Attack this turn."
+    :target-type :all-minions
+    :battlecry   (fn [state _ target-id]
+                   (-> (add-buff state target-id {:extra-attack 2
+                                                  :counter   1})))}
+
+
+   "Malygos"
+   {:name         "Malygos"
+    :mana-cost    9
+    :health       12
+    :attack       4
+    :type         :minion
+    :set          :classic
+    :rarity       :legendary
+    :race         :dragon
+    :description  "Spell Damage +5"
+    :spell-damage 5}})
 (definitions/add-definitions! card-definitions)

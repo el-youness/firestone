@@ -17,7 +17,8 @@
                                          remove-card-from-hand
                                          get-player
                                          hero?
-                                         update-hero-power]]
+                                         update-hero-power
+                                         decrement-buff-counters]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -66,7 +67,7 @@
   (let [old-pid (get-player-id-in-turn state)]
     (let [new-pid (if (= "p1" old-pid) "p2" "p1")]
       (-> state
-          ;TODO: trigger the "end of turn" card effects
+          (decrement-buff-counters)
           (unfreeze-characters)
           (assoc :player-id-in-turn new-pid
                  :minion-ids-summoned-this-turn [])
@@ -74,9 +75,7 @@
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
-          ;TODO: trigger the "beginning of turn" card effects
-          (reset-minion-attack-this-turn new-pid)
-          ))))
+          (reset-minion-attack-this-turn new-pid)))))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."

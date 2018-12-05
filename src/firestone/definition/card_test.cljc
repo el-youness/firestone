@@ -262,7 +262,7 @@
 
 (deftest snake-trap
          (is= (as-> (create-game [{:hand [(create-card "Snake Trap" :id "st")] :minions [(create-minion "War Golem" :id "wg")]}
-                                  {:minions [(create-minion "Imp" :id "imp")]} :player-id-in-turn "p2"]) $
+                                  {:minions [(create-minion "Imp" :id "imp")]}]) $
                     (play-spell-card $ "p1" "st" {})
                     (end-turn $)
                     (attack-with-minion $ "imp" "wg")
@@ -272,7 +272,8 @@
               3)
          ; The Snake Trap should only work once
          (is= (as-> (create-game [{:secrets ["Snake Trap"] :minions [(create-minion "War Golem" :id "wg")]}
-                                  {:minions [(create-minion "Imp" :id "imp1") (create-minion "Imp" :id "imp2")]}] :player-id-in-turn "p2") $
+                                  {:minions [(create-minion "Imp" :id "imp1") (create-minion "Imp" :id "imp2")]}]
+                                 :player-id-in-turn "p2") $
                     (attack-with-minion $ "imp1" "wg")
                     (attack-with-minion $ "imp2" "wg")
                     (get-minions $ "p1")
@@ -308,16 +309,47 @@
               7))
 
 (deftest sylvanas-windruner
-  (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}
-                         {:minions [(create-minion "War Golem" :id "wg")]}])
-           (attack-with-minion "s" "wg")
-           (get-minions "p1")
-           (first)
-           (:name))
-       "War Golem")
-  ; If there are no opposing minions, nothing happens
-  (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}])
-           (destroy-minion "s")
-           (get-minions "p1")
-           (count))
-       0))
+         (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}
+                                {:minions [(create-minion "War Golem" :id "wg")]}])
+                  (attack-with-minion "s" "wg")
+                  (get-minions "p1")
+                  (first)
+                  (:name))
+              "War Golem")
+         ; If there are no opposing minions, nothing happens
+         (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}])
+                  (destroy-minion "s")
+                  (get-minions "p1")
+                  (count))
+              0))
+
+(deftest abusive-sergeant
+         (is (as-> (create-game [{:hand    [(create-card "Abusive Sergeant" :id "as1")
+                                            (create-card "Abusive Sergeant" :id "as2")]
+                                  :minions [(create-minion "Imp" :id "i1")]}
+                                 {:minions [(create-minion "Imp" :id "i2")]}]) $
+                   (play-minion-card $ "p1" "as1" {:position 0 :target-id "i1"})
+                   (do (is= (get-attack $ "i1") 3)
+                       (is= (get-attack $ "i2") 1)
+                       $)
+                   (play-minion-card $ "p1" "as2" {:position 0 :target-id "i2"})
+                   (do (is= (get-attack $ "i1") 3)
+                       (is= (get-attack $ "i2") 3)
+                       $)
+                   (end-turn $)
+                   (and (is= (get-attack $ "i1") 1)
+                        (is= (get-attack $ "i2") 1)))))
+
+(deftest malygos
+         (as-> (create-game [{:hand [(create-card "Malygos" :id "ms") (create-card "Frostbolt" :id "f1")]}
+                             {:deck [(create-card "Imp")]}]) $
+               (play-minion-card $ "p1" "ms" {:position 0})
+               (do (is= (count (get-hand $ "p1")) 1)
+                   (is= (count (get-minions $ "p1")) 1)
+                   $)
+               (end-turn $)
+               (end-turn $)
+               (play-spell-card $ "p1" "f1" {:target-id "h2"})
+               (do (is= (get-mana $ "p1") 8)
+                   (is= (get-health $ "h2") (- ((get-definition "Jaina Proudmoore") :health) 8))
+                   $)))
