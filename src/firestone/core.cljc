@@ -13,6 +13,7 @@
                                          remove-card-from-deck
                                          fatigue-damage
                                          get-hand
+                                         get-player-id-in-turn
                                          add-card-to-hand
                                          get-hero-id
                                          get-player
@@ -26,6 +27,7 @@
                                          update-in-hero
                                          get-hero
                                          get-hero-power
+                                         get-hero-power-of-player
                                          get-character
                                          get-board-entity
                                          get-mana
@@ -103,6 +105,7 @@
 (defn get-attack
   "Returns the attack of the minion with the given id."
   {:test (fn []
+           (is= (get-attack (create-minion "Imp")) 1)
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
                     (get-attack "i"))
                 1)
@@ -110,10 +113,11 @@
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :buffs [{:extra-attack 2}])]}])
                     (get-attack "wg"))
                 9))}
-  [state id]
-  (let [minion (get-minion state id)
-        definition (get-definition (:name minion))]
-    (+ (:attack definition) (get-extra-attack minion))))
+  ([character]
+    (let [definition (get-definition (:name character))]
+      (+ (:attack definition) (get-extra-attack character))))
+  ([state id]
+   (get-attack (get-board-entity state id))))
 
 (defn get-cost
   "Returns the cost of the card or hero power."
@@ -121,6 +125,7 @@
            (is= (-> (create-card "Imp" :id "i")
                     (get-cost))
                 1)
+           (is= (get-cost "Imp") 1)
            (is= (-> (create-card "Dalaran Mage" :id "i")
                     (get-cost))
                 3)
@@ -131,7 +136,9 @@
                     (get-cost "hp1"))
                 2))}
   ([source]
-   (get (get-definition (:name source)) :mana-cost))
+   (get (get-definition (if (string? source)
+                          source
+                          (:name source))) :mana-cost))
   ([state entity-id]
    (get-cost (or (get-card-from-hand state entity-id)
                  (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
@@ -176,7 +183,7 @@
                         (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn get-owner
-  "Returns the player-id of the owner of the character with the given id."
+  "Returns the player-id of the owner of the card, hero-power, character or secret with the given id."
   {:test (fn []
            ; Get owner of hero
            (is= (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
@@ -187,13 +194,31 @@
                                   {:minions [(create-minion "Imp" :id "imp")]}])
                     (get-owner "imp"))
                 "p2")
+           ; Get owner of secret
+           (is= (-> (create-game [{}
+                                  {:secrets [(create-secret "Snake Trap" :id "s")]}])
+                    (get-owner "s"))
+                "p2")
+           ; Get owner of card
+           (is= (-> (create-game [{}
+                                  {:hand [(create-card "Snake Trap" :id "s")]}])
+                    (get-owner "s"))
+                "p2")
+           ; Get owner of hero-power
+           (is= (-> (create-game)
+                    (get-owner "hp2"))
+                "p2")
            ; Get owner of non-existing character
            (is= (-> (create-game)
                     (get-owner "non-id"))
                 nil)
            )}
-  [state id]
-  (:owner-id (get-board-entity state id)))
+  ([entity]
+   (:owner-id entity))
+  ([state id]
+   (get-owner (or (get-hero-power state id)
+                  (get-card-from-hand state id)
+                  (get-board-entity state id)))))
 
 
 (defn sleepy?
@@ -223,6 +248,18 @@
       0))
   ([state id]
    (frozen? (get-board-entity state id))))
+
+(defn deathrattle-minion?
+  "Checks if the minion has a deathrattle."
+  {:test (fn []
+           (is (-> (create-minion "Loot Hoarder")
+                   (deathrattle-minion?)))
+           (is-not (-> (create-minion "Imp")
+                       (deathrattle-minion?))))}
+  ([minion]
+    (:deathrattle (get-definition minion)))
+  ([state id]
+    (deathrattle-minion? (get-minion state id))))
 
 (defn hero-power?
   "Checks if the given entity-id is a hero power."
@@ -311,7 +348,7 @@
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-board-entity state target-id)]
-    (and (= (:player-id-in-turn state) player-id)
+    (and (= (get-player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
@@ -646,7 +683,7 @@
         cost (get-cost state entity-id)]
     (and (<= cost available-mana)
          (if (hero-power? state entity-id)
-           (not (:used (get-hero-power state player-id)))
+           (not (:used (get-hero-power-of-player state player-id)))
            true)
          (if (minion-card? state entity-id)
            (not (full-board? state player-id))
@@ -773,7 +810,7 @@
                     (valid-plays))
                 {"hp1" ["h1" "h2"]}))}
   [state]
-  (let [player-in-turn (:player-id-in-turn state)]
+  (let [player-in-turn (get-player-id-in-turn state)]
     (reduce (fn [plays entity-id]
               (if (playable? state player-in-turn entity-id)
                 (let [targets (available-targets state player-in-turn entity-id)]
@@ -785,7 +822,7 @@
                 plays))
             {}
             (map :id (conj (get-hand state player-in-turn)
-                           (get-hero-power state player-in-turn))))))
+                           (get-hero-power-of-player state player-in-turn))))))
 
 (defn valid-attacks
   "Get all valid attackers and their valid targets."
@@ -864,7 +901,7 @@
                 1))}
   [card]
   (if (= (:subtype card) :secret)
-    (fn [state] (play-secret state (:player-id-in-turn state) (create-secret (:name card))))
+    (fn [state] (play-secret state (get-player-id-in-turn state) (create-secret (:name card))))
     (:spell (get-definition card))))
 
 (defn get-hero-power-function
@@ -1015,7 +1052,7 @@
                       (- ($ :health) 5)))
            )}
   [state target-id damage]
-  (let [total-damage (+ damage (get-player-spell-damage state (state :player-id-in-turn)))
+  (let [total-damage (+ damage (get-player-spell-damage state (get-player-id-in-turn state)))
         target (get-character state target-id)]
     (if (= (:entity-type target) :hero)
       (damage-hero state target-id total-damage)
