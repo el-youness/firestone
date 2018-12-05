@@ -367,8 +367,8 @@
     :description "Battlecry: Give a minion +2 Attack this turn."
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
-                   (-> (add-buff state target-id {:extra-attack 2
-                                                  :counter   1})))}
+                   (add-buff state target-id {:extra-attack 2
+                                                  :counter   1}))}
 
    "Shrinkmeister"
    {:name        "Shrinkmeister"
@@ -381,7 +381,7 @@
     :description "Battlecry: Give a minion -2 Attack this turn."
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
-                   (-> (add-buff state target-id {:extra-attack -2
-                                                  :counter      1})))}})
+                   (add-buff state target-id {:extra-attack -2
+                                                  :counter      1}))}})
 
 (definitions/add-definitions! card-definitions)
