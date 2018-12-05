@@ -321,6 +321,7 @@
     :mana-cost   1
     :type        :spell
     :set         :classic
+    :rarity      :none
     :description "Give a minion +1/+1."
     :target-type :all-minions
     :spell       (fn [state target-id]
