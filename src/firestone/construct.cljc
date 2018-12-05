@@ -985,9 +985,7 @@
                     (count))
                 2))}
   [state id buff]
-  (cond
-    (minion? state id) (update-minion state id :buffs (fn [buffs] (conj buffs buff)))
-    (hero? state id) (update-minion state id :buffs (fn [buffs] (conj buffs buff)))))
+  (update-entity state id :buffs (fn [buffs] (conj buffs buff))))
 
 (defn remove-buffs
   "Remove buffs with the given effect key."
@@ -1002,6 +1000,31 @@
                                    (filter (fn [b]
                                              (not (contains? b effect)))
                                            buffs))))
+
+(defn decrement-buff-counters
+  "Decrement all buff counters and remove the buff if the counter is 0."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack 1}
+                                                                                  {:extra-health 2 :counter 1}
+                                                                                  {:extra-attack 5 :counter 2}])]}])
+                    (decrement-buff-counters)
+                    (get-minion "i")
+                    (:buffs))
+                [{:extra-attack 1}
+                 {:extra-attack 5 :counter 1}]))}
+  [state]
+  (reduce (fn [state id]
+            (update-entity state id :buffs (fn [buffs]
+                                             (->> (map (fn [b]
+                                                         (if (contains? b :counter)
+                                                           (update b :counter dec)
+                                                           b))
+                                                       buffs)
+                                                  (remove (fn [b] (and (not (nil? (:counter b)))
+                                                                       (< (:counter b) 1))))))))
+          state (map :id (concat (get-minions state)
+                                 (get-heroes state)))))
+
 
 (defn get-character-buffs
   "Gets the buffs vector from the given character."
