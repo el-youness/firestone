@@ -1025,7 +1025,7 @@
                                                            (update b :counter dec)
                                                            b))
                                                        buffs)
-                                                  (remove (fn [b] (and (not (nil? (:counter b)))
+                                                  (remove (fn [b] (and (:counter b)
                                                                        (< (:counter b) 1))))))))
           state (map :id (concat (get-minions state)
                                  (get-heroes state)))))
