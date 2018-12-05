@@ -370,7 +370,6 @@
                    (-> (add-buff state target-id {:extra-attack 2
                                                   :counter   1})))}
 
-
    "Malygos"
    {:name         "Malygos"
     :mana-cost    9
@@ -381,6 +380,17 @@
     :rarity       :legendary
     :race         :dragon
     :description  "Spell Damage +5"
-    :spell-damage 5}})
+    :spell-damage 5}
+
+   "Steward"
+   {:name         "Steward"
+    :mana-cost    1
+    :health       1
+    :attack       1
+    :type         :minion
+    :set          :one-night-in-karazhan
+    :rarity      :none
+    :race         :dragon
+    :description  ""}})
 
 (definitions/add-definitions! card-definitions)
