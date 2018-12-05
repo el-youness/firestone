@@ -391,7 +391,5 @@
     :attack       1
     :type         :minion
     :set          :one-night-in-karazhan
-    :rarity      :none
-    :race         :dragon
-    :description  ""}})
+    :rarity      :none}})
 (definitions/add-definitions! card-definitions)
