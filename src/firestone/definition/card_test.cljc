@@ -182,7 +182,14 @@
                    $)
                (end-turn $)
                (do (is-not (frozen? (get-minion $ "wg")))
-                   $)))
+                   $))
+         ; Deal fatal damage to a minion with Frostbolt
+         (is= (-> (create-game [{:hand [(create-card "Frostbolt" :id "fb")]}
+                                {:minions [(create-minion "Imp" :id "imp")]}])
+                  (play-spell-card "p1" "fb" {:target-id "imp"})
+                  (get-minions)
+                  (count))
+              0))
 
 (deftest frothing-berserker
          (is= (-> (create-game [{:minions [(create-minion "Frothing Berserker" :id "fb")]}

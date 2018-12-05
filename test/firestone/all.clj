@@ -6,6 +6,7 @@
             [firestone.construct]
             [firestone.core]
             [firestone.api]
+            [firestone.mapper]
             [firestone.definition.card]
             [firestone.definition.card_test]
             [firestone.definition.hero]
