@@ -878,13 +878,13 @@
    (let [player-in-turn (get-player-id-in-turn state)
          targets (available-targets state player-in-turn entity-id)]
      (if (playable? state player-in-turn entity-id)
-       (if (nil? target-id)
-         (if (spell-with-target? state entity-id)
-           false
-           (empty? targets))
+       (if target-id
          (if (empty? targets)
            false
-           (some (fn [x] (= target-id x)) targets))) ; Is the target in targets ?
+           (some (fn [x] (= target-id x)) targets)) ; Is the target in targets ?
+         (if (spell-with-target? state entity-id)
+           false
+           (empty? targets)))
        false)))
   ([state entity-id]
    (valid-play? state entity-id nil)))
