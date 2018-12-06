@@ -37,6 +37,7 @@
                                          get-card-from-hand
                                          get-secrets
                                          create-secret
+                                         opposing-player-id
                                          remove-buffs
                                          get-triggered-effects
                                          hero?]]))
@@ -363,6 +364,43 @@
          (not= (:owner-id attacker) (:owner-id target))
          (not (:cannot-attack (get-definition attacker)))
          (not (frozen? attacker)))))
+
+(defn valid-attacks
+  "Get all valid attackers and their valid targets."
+  {:test (fn []
+           ; Enemy has one minion
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:minions [(create-minion "Defender" :id "d1")]}])
+                    (valid-attacks))
+                {"i1" ["d1" "h2"]
+                 "i2" ["d1" "h2"]})
+           ; Enemy has one minion, one of the player's minions has already attacked
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2" :attacks-performed-this-turn 1)]}
+                                  {:minions [(create-minion "Defender" :id "d1")]}])
+                    (valid-attacks))
+                {"i1" ["d1" "h2"]})
+           ; Enemy has no minion
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
+                    (valid-attacks))
+                {"i1" ["h2"]})
+           ; No minions on the board
+           (is= (-> (create-game)
+                    (valid-attacks))
+                {}))}
+  [state]
+  (let [player-in-turn (:player-id-in-turn state)]
+    (reduce (fn [attacks attacker-id]
+              (let [targets (filter (fn [target-id]
+                                      (valid-attack? state player-in-turn attacker-id target-id))
+                                    (map :id (concat (get-minions state)
+                                                     (get-heroes state))))]
+                (if (empty? targets)
+                  attacks
+                  (assoc attacks attacker-id targets))))
+            {}
+            (map :id (get-minions state player-in-turn)))))
 
 (defn handle-triggers
   "Handle the triggers of multiple event listeners."
@@ -729,7 +767,7 @@
                                       (first (filter (fn [hp] (= (:id hp) entity-id)) (get-hero-powers state)))))))
 
 (defn available-targets
-  "Takes the id of a card, hero or hero power and returns its valid targets"
+  "Takes the id of a card, minion, hero or hero power and returns its valid targets"
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "Imp" :id "i2")]}
@@ -760,31 +798,101 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "p1" "hp1"))
-                ["i1" "i2" "h1" "h2"]))}
+                ["i1" "i2" "h1" "h2"])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
+                                  {:minions [(create-minion "Imp" :id "i2")]}])
+                    (available-targets "p1" "i1"))
+                ["i2" "h2"])
+           ;TODO :O this combination should not be possible. Suggest removing player-id from arguments.
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:hand    [(create-card "Bananas" :id "b1")]}])
+                    (available-targets "p1" "b1"))
+                []))}
   [state player-id entity-id]
-  (let [target-type (get-target-type state entity-id)
-        targets (cond
-                  (= target-type :all)
-                  (concat (get-minions state)
-                          (get-heroes state))
+  (let [opp-player-id (opposing-player-id player-id)]
+    (if (nil? (get-minion state entity-id))
+      (let [target-type (get-target-type state entity-id)
+            targets (cond
+                      (= target-type :all)
+                      (concat (get-minions state)
+                              (get-heroes state))
 
-                  (= target-type :all-minions)
-                  (get-minions state)
+                      (= target-type :all-minions)
+                      (get-minions state)
 
-                  (= target-type :enemy-minions)
-                  (get-minions state (if (= player-id "p1") "p2" "p1"))
+                      (= target-type :enemy-minions)
+                      (get-minions state opp-player-id)
 
-                  (= target-type :friendly-minions)
-                  (get-minions state (if (= player-id "p1") "p1" "p2"))
+                      (= target-type :friendly-minions)
+                      (get-minions state player-id)
 
-                  ; TODO: Might need checks for other target-type.
-                  :else
-                  [])
-        targets-ids (map :id targets)]
-    (let [target-cond-func (get-target-condition-function state entity-id)]
-      (if (nil? target-cond-func)
-        targets-ids
-        (filter (fn [target-id] (target-cond-func state target-id)) targets-ids)))))
+                      ; TODO: Might need checks for other target-type.
+                      :else
+                      [])
+            targets-ids (map :id targets)]
+        (let [target-cond-func (get-target-condition-function state entity-id)]
+          (if (nil? target-cond-func)
+            targets-ids
+            (filter (fn [target-id] (target-cond-func state target-id)) targets-ids))))
+      (get (valid-attacks state) entity-id))))
+
+(defn valid-play?
+  "Determines if a card is playable (with a valid target if needed), or if a minion can attack an other one."
+  {:test (fn []
+           (let [state (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                                (create-minion "War Golem" :id "wg1")]
+                                      :hand    [(create-card "Bananas" :id "b1")
+                                                (create-card "Snake Trap" :id "st")
+                                                (create-card "Mind Control" :id "mc1")
+                                                (create-card "Imp" :id "i3")
+                                                (create-card "Big Game Hunter" :id "bgh1")]}
+                                     {:minions [(create-minion "Defender" :id "d1")
+                                                (create-minion "Defender" :id "d2")]}])]
+             (is     (valid-play? state "bgh1" "wg1"))      ; Battlecry target targets the right target (tongue twister)
+             (is-not (valid-play? state "bgh1" "i1"))       ; Battlecry target targets the wrong target
+             (is-not (valid-play? state "bgh1"))            ; Battlecry target required
+             (is     (valid-play? state "b1" "wg1"))        ; Spell target
+             (is     (valid-play? state "mc1" "d2"))        ; Target opposing minion
+             (is-not (valid-play? state "mc1" "i1"))        ; Non-valid target
+             (is     (valid-play? state "i3"))              ; Play a minion card
+             (is-not (valid-play? state "i3" "d2"))         ; Imps don't have a battlecry target
+             (is-not (valid-play? state "b1"))              ; Banana spell needs a target
+             (is-not (valid-play? state "hp1"))             ; Fireblast needs target (hero power)
+             (is     (valid-play? state "hp1" "d1"))        ; Fireblast targets minion
+             (is-not (valid-play? state "hp1" "st"))
+             )
+           ; Play minion
+           (is (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
+                    (valid-play? "wg")))
+           ; Play battlecry minion when there is an available target
+           (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
+                                  {:minions [(create-minion "War Golem" :id "wg")]}])
+                    (valid-play? "bgh" "wg")))
+           ; Play battlecry minion when there are no available targets
+           (let [state (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")
+                                             (create-card "Bananas" :id "b1")]}]) ]
+                 (is (valid-play? state "bgh"))
+                 (is-not (valid-play? state "b1")))
+           ; Cannot play a secret card if that secret it already in play.
+           (is-not (-> (create-game [{:secrets [(create-card "Snake Trap" :id "s1")]
+                                      :hand [(create-card "Snake Trap" :id "s2")]}])
+                       (valid-play? "s2")))
+           )}     ; Cannot target cards
+  ([state entity-id & [target-id]]
+   (let [player-in-turn (get-player-id-in-turn state)
+         targets (available-targets state player-in-turn entity-id)]
+     (if (playable? state player-in-turn entity-id)
+       (if target-id
+         (if (empty? targets)
+           false
+           (some (fn [x] (= target-id x)) targets)) ; Is the target in targets ?
+         (if (spell-with-target? state entity-id)
+           false
+           (empty? targets)))
+       false)))
+  ([state entity-id]
+   (valid-play? state entity-id nil)))
 
 (defn valid-plays
   "Get all playable cards and hero powers and their valid targets."
@@ -819,56 +927,19 @@
                     (valid-plays))
                 {"hp1" ["h1" "h2"]}))}
   [state]
-  (let [player-in-turn (get-player-id-in-turn state)]
-    (reduce (fn [plays entity-id]
-              (if (playable? state player-in-turn entity-id)
-                (let [targets (available-targets state player-in-turn entity-id)]
-                  (if (empty? targets)
-                    (if (spell-with-target? state entity-id)
-                      plays
-                      (assoc plays entity-id []))
-                    (assoc plays entity-id targets)))
-                plays))
-            {}
-            (map :id (conj (get-hand state player-in-turn)
-                           (get-hero-power-of-player state player-in-turn))))))
-
-(defn valid-attacks
-  "Get all valid attackers and their valid targets."
-  {:test (fn []
-           ; Enemy has one minion
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
-                                             (create-minion "Imp" :id "i2")]}
-                                  {:minions [(create-minion "Defender" :id "d1")]}])
-                    (valid-attacks))
-                {"i1" ["d1" "h2"]
-                 "i2" ["d1" "h2"]})
-           ; Enemy has one minion, one of the player's minions has already attacked
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
-                                             (create-minion "Imp" :id "i2" :attacks-performed-this-turn 1)]}
-                                  {:minions [(create-minion "Defender" :id "d1")]}])
-                    (valid-attacks))
-                {"i1" ["d1" "h2"]})
-           ; Enemy has no minion
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
-                    (valid-attacks))
-                {"i1" ["h2"]})
-           ; No minions on the board
-           (is= (-> (create-game)
-                    (valid-attacks))
-                {}))}
-  [state]
-  (let [player-in-turn (:player-id-in-turn state)]
-    (reduce (fn [attacks attacker-id]
-              (let [targets (filter (fn [target-id]
-                                      (valid-attack? state player-in-turn attacker-id target-id))
-                                    (map :id (concat (get-minions state)
+  (reduce (fn [plays entity-id]
+            (let [targets (filter (fn [target-id]
+                                    (valid-play? state entity-id target-id))
+                                  (map :id (concat (get-minions state)
                                                    (get-heroes state))))]
-                (if (empty? targets)
-                  attacks
-                  (assoc attacks attacker-id targets))))
-            {}
-            (map :id (get-minions state player-in-turn)))))
+              (if (empty? targets)
+                (if (valid-play? state entity-id)
+                  (assoc plays entity-id [])
+                  plays)
+                (assoc plays entity-id targets))))
+          {}
+          (map :id (conj (get-hand state (get-player-id-in-turn state))
+                         (get-hero-power-of-player state (get-player-id-in-turn state))))))
 
 (defn play-secret
   "Puts a secret into play if there is space."
