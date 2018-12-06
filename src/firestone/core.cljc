@@ -762,11 +762,11 @@
              (is-not (valid-play? state "hp1"))             ; Fireblast needs target (hero power)
              (is     (valid-play? state "hp1" "d1"))        ; Fireblast targets minion
              (is-not (valid-play? state "hp1" "st"))
-             (is     (valid-play? state "i1" "h2"))         ; A minion can attack an other
+             ;(is     (valid-play? state "i1" "h2"))         ; A minion can attack an other
              )
            ; Play minion
            (is (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
-                    (valid-play? "wg" nil)))
+                    (valid-play? "wg")))
            ; Play battlecry minion when there is an available target
            (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-minion "War Golem" :id "wg")]}])
@@ -775,17 +775,18 @@
            (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}])
                     (valid-play? "bgh")))
            )}     ; Cannot target cards
-  [state entity-id & [target-id]]
-  (let [player-in-turn (:player-id-in-turn state)
-        targets (available-targets state player-in-turn entity-id)]
-    (if (or (get-minion state entity-id)       ; If it is a minion id, the second statement of 'or' is not checked
-            (playable? state player-in-turn entity-id))
-      (if (nil? target-id)
-        (empty? targets)
-        (if (empty? targets)
-          false
-          (some (fn [x] (= target-id x)) targets))) ; Is the target in targets ?
-      false)))
+  ([state entity-id & [target-id]]
+   (let [player-in-turn (:player-id-in-turn state)
+         targets (available-targets state player-in-turn entity-id)]
+     (if (playable? state player-in-turn entity-id)
+       (if (nil? target-id)
+         (empty? targets)
+         (if (empty? targets)
+           false
+           (some (fn [x] (= target-id x)) targets))) ; Is the target in targets ?
+       false)))
+  ([state entity-id]
+   (valid-play? state entity-id nil)))
 
 (defn valid-plays
   "Get all playable cards and hero powers and their valid targets."
