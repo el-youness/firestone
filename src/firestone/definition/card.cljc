@@ -392,5 +392,17 @@
     :attack       1
     :type         :minion
     :set          :one-night-in-karazhan
-    :rarity      :none}})
+    :rarity      :none}
+
+   "Competitive Spirit"
+   {:name             "Competitive Spirit"
+    :mana-cost        1
+    :type             :spell
+    :subtype          :secret
+    :set              :grand-tournament
+    :rarity           :rare
+    :class            :paladin
+    :description      "When your turn starts, give your minions +1/+1."
+    :triggered-effect {:on-start-turn}
+    }})
 (definitions/add-definitions! card-definitions)
