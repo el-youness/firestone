@@ -112,10 +112,14 @@
            ; Minion with extra-attack effect
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :buffs [{:extra-attack 2}])]}])
                     (get-attack "wg"))
-                9))}
+                9)
+           ; Minion cannot have negative attack
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack -2}])]}])
+                    (get-attack "i"))
+                0))}
   ([character]
     (let [definition (get-definition (:name character))]
-      (+ (:attack definition) (get-extra-attack character))))
+      (max 0 (+ (:attack definition) (get-extra-attack character)))))
   ([state id]
    (get-attack (get-board-entity state id))))
 
@@ -371,13 +375,18 @@
            ; Should not be able to attack if "frozen" is true
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
-                       (valid-attack? "p1" "i" "wg"))))}
+                       (valid-attack? "p1" "i" "wg")))
+           ; Should not be able to attack if attacker has 0 attack
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack -1}])]}])
+                       (valid-attack? "p1" "i" "h2")))
+           )}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-board-entity state target-id)
         cannot-attack-function (get-cannot-attack-function attacker)]
     (and (= (get-player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
+         (> (get-attack attacker) 0)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
          (not (if cannot-attack-function (cannot-attack-function state) false))

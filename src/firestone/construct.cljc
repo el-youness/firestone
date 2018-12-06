@@ -1346,3 +1346,15 @@
                 5))}
   [state seed]
   (assoc state :seed seed))
+
+(defn get-position
+  "Returns the position of a minion."
+  {:test (fn []
+           (is= (-> (create-game [{:minions ["Imp" "Imp"]}])
+                    (add-minion-to-board {:player-id "p1" :minion (create-minion "War Golem" :id "wg") :position 1})
+                    (get-position "wg"))
+                1))}
+  ([minion]
+    (:position minion))
+  ([state id]
+    (get-position (get-minion state id))))
