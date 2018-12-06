@@ -37,6 +37,7 @@
                                          get-effects
                                          get-secrets
                                          create-secret
+                                         get-player-id-in-turn
                                          opposing-player-id]]))
 
 (defn get-health
@@ -762,7 +763,6 @@
              (is-not (valid-play? state "hp1"))             ; Fireblast needs target (hero power)
              (is     (valid-play? state "hp1" "d1"))        ; Fireblast targets minion
              (is-not (valid-play? state "hp1" "st"))
-             ;(is     (valid-play? state "i1" "h2"))         ; A minion can attack an other
              )
            ; Play minion
            (is (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
@@ -772,15 +772,23 @@
                                   {:minions [(create-minion "War Golem" :id "wg")]}])
                     (valid-play? "bgh" "wg")))
            ; Play battlecry minion when there are no available targets
-           (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}])
-                    (valid-play? "bgh")))
+           (let [state (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")
+                                             (create-card "Bananas" :id "b1")]}]) ]
+                 (is (valid-play? state "bgh"))
+                 (is-not (valid-play? state "b1")))
+           ; Cannot play a secret card if that secret it already in play.
+           (is-not (-> (create-game [{:secrets [(create-card "Snake Trap" :id "s1")]
+                                      :hand [(create-card "Snake Trap" :id "s2")]}])
+                       (valid-play? "s2")))
            )}     ; Cannot target cards
   ([state entity-id & [target-id]]
-   (let [player-in-turn (:player-id-in-turn state)
+   (let [player-in-turn (get-player-id-in-turn state)
          targets (available-targets state player-in-turn entity-id)]
      (if (playable? state player-in-turn entity-id)
        (if (nil? target-id)
-         (empty? targets)
+         (if (spell-with-target? state entity-id)
+           false
+           (empty? targets))
          (if (empty? targets)
            false
            (some (fn [x] (= target-id x)) targets))) ; Is the target in targets ?
