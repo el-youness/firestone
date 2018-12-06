@@ -934,7 +934,7 @@
                 (assoc plays entity-id targets))))
           {}
           (map :id (conj (get-hand state (get-player-id-in-turn state))
-                         (get-hero-power state (get-player-id-in-turn state))))))
+                         (get-hero-power-of-player state (get-player-id-in-turn state))))))
 
 (defn play-secret
   "Puts a secret into play if there is space."
