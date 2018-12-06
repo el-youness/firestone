@@ -348,12 +348,17 @@
            ; Should not be able to attack if "frozen" is true
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
-                       (valid-attack? "p1" "i" "wg"))))}
+                       (valid-attack? "p1" "i" "wg")))
+           ; Should not be able to attack if attacker has 0 attack
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack -1}])]}])
+                       (valid-attack? "p1" "i" "h2")))
+           )}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-board-entity state target-id)]
     (and (= (get-player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
+         (> (get-attack attacker) 0)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
          (not (:cannot-attack (get-definition attacker)))
