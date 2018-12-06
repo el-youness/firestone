@@ -21,6 +21,7 @@
                                          add-card-to-hand
                                          get-hand
                                          get-mana
+                                         get-board-entity
                                          get-hero-id
                                          get-player
                                          get-seed
@@ -237,9 +238,9 @@
     :target-type :all
     :spell       (fn [state target-id]
                    (as-> (deal-spell-damage state target-id 3) $
-                         (if (hero? state target-id)
-                           (update-in-hero $ target-id [:effects :frozen] true)
-                           (add-buff $ target-id {:frozen true}))))}
+                         (if (get-board-entity $ target-id)
+                           (add-buff $ target-id {:frozen true})
+                           $)))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
@@ -321,6 +322,7 @@
     :mana-cost   1
     :type        :spell
     :set         :classic
+    :rarity      :none
     :description "Give a minion +1/+1."
     :target-type :all-minions
     :spell       (fn [state target-id]
@@ -346,6 +348,7 @@
     :subtype          :secret
     :set              :classic
     :rarity           :epic
+    :class            :hunter
     :description      "Secret: When one of your minions is attacked summon three 1/1 Snakes."
     :triggered-effect {:on-attack (fn [state snake-trap-id [attacked-minion-id]]
                                     (let [player-id (get-owner state snake-trap-id)]
@@ -368,7 +371,7 @@
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
                    (add-buff state target-id {:extra-attack 2
-                                                  :counter   1}))}
+                                              :counter      1}))}
 
    "Shrinkmeister"
    {:name        "Shrinkmeister"
@@ -382,6 +385,27 @@
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
                    (add-buff state target-id {:extra-attack -2
-                                                  :counter      1}))}})
+                                              :counter      1}))}
+
+   "Malygos"
+   {:name         "Malygos"
+    :mana-cost    9
+    :health       12
+    :attack       4
+    :type         :minion
+    :set          :classic
+    :rarity       :legendary
+    :race         :dragon
+    :description  "Spell Damage +5"
+    :spell-damage 5}
+
+   "Steward"
+   {:name      "Steward"
+    :mana-cost 1
+    :health    1
+    :attack    1
+    :type      :minion
+    :set       :one-night-in-karazhan
+    :rarity    :none}})
 
 (definitions/add-definitions! card-definitions)

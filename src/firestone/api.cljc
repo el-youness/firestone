@@ -6,9 +6,10 @@
             [firestone.construct :refer [create-game
                                          create-minion
                                          get-minion
+                                         get-player-id-in-turn
                                          get-minions
                                          create-hero
-                                         get-hero-power
+                                         get-hero-power-of-player
                                          get-board-entity
                                          update-minion
                                          create-card
@@ -63,7 +64,7 @@
                 (create-game [{:fatigue 2 :hero (create-hero "Jaina Proudmoore" :damage-taken 1)}]
                              :player-id-in-turn "p1")))}
   [state]
-  (let [old-pid (get state :player-id-in-turn)]
+  (let [old-pid (get-player-id-in-turn state)]
     (let [new-pid (if (= "p1" old-pid) "p2" "p1")]
       (-> state
           (decrement-buff-counters)
@@ -202,7 +203,7 @@
                     (count))
                 0))}
   [state player-id {target-id :target-id}]
-  (let [hero-power (get-hero-power state player-id)]
+  (let [hero-power (get-hero-power-of-player state player-id)]
     (-> (if (nil? target-id)
           ((get-hero-power-function hero-power) state)
           ((get-hero-power-function hero-power) state target-id))
