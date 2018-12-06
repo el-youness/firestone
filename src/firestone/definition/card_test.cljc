@@ -353,3 +353,18 @@
                (do (is= (get-mana $ "p1") 8)
                    (is= (get-health $ "h2") (- ((get-definition "Jaina Proudmoore") :health) 8))
                    $)))
+
+(deftest ancient-watcher
+         (error? (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                   {:minions [(create-minion "War Golem" :id "wg")]}])
+                     (attack-with-minion "p1" "aw"))))
+
+(deftest unpowered-mauler
+         (as-> (create-game [{:minions [(create-minion "Unpowered Mauler" :id "um")]
+                              :hand    [(create-card "Frostbolt" :id "f")]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (do (error? (attack-with-minion $ "um" "wg"))
+                   $)
+               (play-spell-card $ "p1" "f" {:target-id "h2"})
+               ; TODO: (attack-with-minion $ "um" "wg")
+               ))

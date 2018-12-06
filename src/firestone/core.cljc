@@ -309,6 +309,16 @@
        false
        (secret-card? card)))))
 
+(defn get-cannot-attack-function
+  "Get the cannot attack function in the definition of a card."
+  {:test (fn []
+           (is (-> (create-game)
+                   ((get-cannot-attack-function (create-minion "Ancient Watcher"))))))}
+  ([minion]
+   (:cannot-attack (get-definition minion)))
+  ([state minion-id]
+   (get-cannot-attack-function (get-minion state minion-id))))
+
 (defn valid-attack?
   "Checks if the attack is valid."
   {:test (fn []
@@ -347,12 +357,13 @@
                        (valid-attack? "p1" "i" "wg"))))}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
-        target (get-board-entity state target-id)]
+        target (get-board-entity state target-id)
+        cannot-attack-function (get-cannot-attack-function attacker)]
     (and (= (get-player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not (:cannot-attack (get-definition attacker)))
+         (not (if cannot-attack-function (cannot-attack-function state) false))
          (not (frozen? attacker)))))
 
 (defn handle-triggers

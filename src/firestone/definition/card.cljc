@@ -194,7 +194,7 @@
     :set           :classic
     :rarity        :rare
     :description   "Can't attack."
-    :cannot-attack true}
+    :cannot-attack (fn [_] true)}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"
@@ -386,11 +386,24 @@
     :spell-damage 5}
 
    "Steward"
-   {:name         "Steward"
-    :mana-cost    1
-    :health       1
-    :attack       1
-    :type         :minion
-    :set          :one-night-in-karazhan
-    :rarity      :none}})
+   {:name      "Steward"
+    :mana-cost 1
+    :health    1
+    :attack    1
+    :type      :minion
+    :set       :one-night-in-karazhan
+    :rarity    :none}
+
+   "Unpowered Mauler"
+   {:name          "Unpowered Mauler"
+    :attack        2
+    :health        4
+    :mana-cost     2
+    :type          :minion
+    :set           :the-boomsday-project
+    :rarity        :rare
+    :race          :mech
+    :description   "Can only attack if you cast a spell this turn."
+    :cannot-attack (fn [state] true)}
+   })
 (definitions/add-definitions! card-definitions)
