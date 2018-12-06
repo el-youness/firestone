@@ -28,6 +28,7 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0
+                 :buffs        []
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
                                 :target-type :all
@@ -36,6 +37,7 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0
+                 :buffs        []
                  :owner-id     "p1"
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
@@ -45,6 +47,7 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 10
+                 :buffs        []
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
                                 :target-type :all
@@ -53,6 +56,7 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0
+                 :buffs        []
                  :effects      {:frozen true}
                  :hero-power   {:name        "Fireblast"
                                 :type        :hero-power
@@ -62,6 +66,7 @@
                 {:name         "Jaina Proudmoore"
                  :entity-type  :hero
                  :damage-taken 0
+                 :buffs        []
                  :hero-power   {:name        "Reinforce"
                                 :type        :hero-power
                                 :target-type nil
@@ -70,6 +75,7 @@
   (let [hero {:name         name
               :entity-type  :hero
               :damage-taken 0
+              :buffs        []
               :hero-power   (create-hero-power (:hero-power (get-definition name)))}]
     (if (empty? kvs)
       hero
@@ -105,27 +111,24 @@
                  :entity-type                 :minion
                  :name                        "Ancient Watcher"
                  :id                          "i"
-                 :effects                     {:cannot-attack true
-                                               :extra-attack 0
-                                               :extra-health 0}})
+                 :silenced                    false
+                 :buffs                       []})
            (is= (create-minion "Acolyte of Pain" :id "i" :attacks-performed-this-turn 1)
                 {:attacks-performed-this-turn 1
                  :damage-taken                0
                  :entity-type                 :minion
                  :name                        "Acolyte of Pain"
                  :id                          "i"
-                 :effects                      {:on-damage  "Acolyte of Pain effect"
-                                                :extra-attack 0
-                                                :extra-health 0}}))}
+                 :silenced                    false
+                 :buffs                       []}))}
   [name & kvs]
   (let [definition (get-definition name)                    ; Will be used later
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
-                :effects                     (assoc (select-keys definition [:on-damage :cannot-attack :deathrattle :frozen :spell-damage])
-                                                    :extra-attack 0
-                                                    :extra-health 0)}]
+                :silenced                    false
+                :buffs                       []}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))
@@ -136,17 +139,14 @@
            (is= (create-secret "Snake Trap" :id "s")
                 {:name        "Snake Trap"
                  :id          "s"
-                 :effects     {:on-attack "Snake Trap effect"}
                  :entity-type :secret}))}
   [name & kvs]
   (let [definition (get-definition name)
         secret {:name        name
-                :entity-type :secret
-                :effects     (select-keys definition [:on-damage :on-attack])}]
+                :entity-type :secret}]
     (if (empty? kvs)
       secret
       (apply assoc secret kvs))))
-
 
 (defn create-empty-state
   "Creates an empty state with the given heroes."
@@ -167,7 +167,7 @@
                                                        :hero                        (create-hero "Jaina Proudmoore"
                                                                                                  :id "h1"
                                                                                                  :owner-id "p1"
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -179,12 +179,13 @@
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore" :id "h2"
                                                                                                  :owner-id "p2"
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
                  :counter                       1
-                 :minion-ids-summoned-this-turn []}))}
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0}))}
   ([heroes]
     ; Creates Jaina Proudmoore heroes if heroes are missing.
    (let [heroes (->> (concat heroes [(create-hero "Jaina Proudmoore")
@@ -201,9 +202,10 @@
                                                           :secrets                     []
                                                           :hero                        (assoc hero :id (str "h" (inc index))
                                                                                                    :owner-id (str "p" (inc index))
-                                                                                                   :hero-power (assoc (:hero-power hero)
-                                                                                                                 :id
-                                                                                                                 (str "hp" (inc index))))
+                                                                                                   :hero-power (-> (assoc (:hero-power hero)
+                                                                                                                     :id
+                                                                                                                     (str "hp" (inc index)))
+                                                                                                                   (assoc :owner-id (str "p" (inc index)))))
                                                           :max-mana                    10
                                                           :used-mana                   0
                                                           :fatigue                     1}))
@@ -211,7 +213,8 @@
                                                     (assoc a (:id v) v))
                                                   {}))
       :counter                       1
-      :minion-ids-summoned-this-turn []}))
+      :minion-ids-summoned-this-turn []
+      :seed                          0}))
   ([]
    (create-empty-state [])))
 
@@ -224,6 +227,7 @@
                 "p1"))}
   [state player-id]
   (get-in state [:players player-id]))
+
 
 (defn get-player-id-in-turn
   "Returns the player-id of the player in turn."
@@ -254,14 +258,26 @@
   [state]
   (assoc state :player-id-in-turn (opposing-player-id (get-player-id-in-turn state)) ))
 
+(defn get-players
+  "Rrturns the players."
+  {:test (fn []
+           (is= (as-> (create-empty-state) $
+                    (get-players $)
+                    (map (fn [p] (:id p)) $))
+                ["p1" "p2"]))}
+  [state]
+  [(get-player state "p1") (get-player state "p2")])
+
 (defn get-hand
   "Returns the hand for the given player-id."
   {:test (fn []
            (is= (-> (create-empty-state)
                     (get-hand "p1"))
                 []))}
+  ([player]
+    (:hand player))
   ([state player-id]
-   (:hand (get-player state player-id))))
+   (get-hand (get-player state player-id))))
 
 (defn get-deck
   "Returns the deck for the given player-id."
@@ -269,8 +285,10 @@
            (is= (-> (create-empty-state)
                     (get-deck "p1"))
                 []))}
+  ([player]
+    (:deck player))
   ([state player-id]
-   (:deck (get-player state player-id))))
+   (get-deck (get-player state player-id))))
 
 (defn get-secrets
   "Returns the secrets for the given player-id."
@@ -305,14 +323,20 @@
                 [])
            (is= (-> (create-empty-state)
                     (get-minions))
+                [])
+           (is= (-> (create-empty-state)
+                    (get-player "p1")
+                    (get-minions))
                 []))}
   ([state player-id]
    (:minions (get-player state player-id)))
-  ([state]
-   (->> (:players state)
-        (vals)
-        (map :minions)
-        (apply concat))))
+  ([state-or-player]
+   (if (contains? state-or-player :players)
+     (->> (:players state-or-player)
+          (vals)
+          (map :minions)
+          (apply concat))
+     (:minions state-or-player))))
 
 (defn fatigue-damage
   "Increase a player's fatigue and return a tuple with the new state and the old fatigue."
@@ -510,7 +534,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :damage-taken 0
                                                                                                  :owner-id "p1"
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -525,12 +549,13 @@
                                                                                                  :entity-type :hero
                                                                                                  :damage-taken 0
                                                                                                  :owner-id "p2"
-                                                                                                 :hero-power (create-hero-power "Lesser Heal" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Lesser Heal" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
                  :counter                       2
-                 :minion-ids-summoned-this-turn []})
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0})
 
            ; Test to create game with cards in the hand and deck
            (is= (create-game [{:attacks-performed-this-turn 1
@@ -548,7 +573,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p1"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -563,12 +588,13 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p2"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Lesser Heal" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Lesser Heal" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}}
                  :counter                       4
-                 :minion-ids-summoned-this-turn []})
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0})
            ; Test to add mana
            (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
                 {:player-id-in-turn             "p1"
@@ -583,7 +609,7 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p1"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp1"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
                                                        :fatigue                     1}
@@ -598,12 +624,13 @@
                                                                                                  :entity-type :hero
                                                                                                  :owner-id "p2"
                                                                                                  :damage-taken 0
-                                                                                                 :hero-power (create-hero-power "Fireblast" :id "hp2"))
+                                                                                                 :hero-power (create-hero-power "Fireblast" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    5
                                                        :used-mana                   2
                                                        :fatigue                     4}}
                  :counter                       1
-                 :minion-ids-summoned-this-turn []})
+                 :minion-ids-summoned-this-turn []
+                 :seed                          0})
            )}
   ([data & kvs]
    (let [state (as-> (create-empty-state (map (fn [player-data]
@@ -701,6 +728,17 @@
   ([]
    (create-game [])))
 
+(defn get-max-mana
+  "Returns the max mana for the player with the given id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-max-mana "p2"))
+                10))}
+  ([player]
+    (:max-mana player))
+  ([state player-id]
+   (get-max-mana (get-player state player-id))))
+
 (defn get-mana
   "Returns the mana available to use for the given player-id."
   {:test (fn []
@@ -716,7 +754,7 @@
            )}
   [state player-id]
   (let [player-data (get-player state player-id)]
-    (- (:max-mana player-data) (:used-mana player-data))))
+    (- (get-max-mana state player-id) (:used-mana player-data))))
 
 (defn get-minion
   "Returns the minion with the given id."
@@ -756,35 +794,49 @@
        (map :hero)))
 
 (defn get-hero
-  "Returns the hero for the given player-id."
+  "Returns the hero for the given player."
   {:test (fn []
            (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}
                                     {:hero (create-hero "Anduin Wrynn")}]) $
-                    [((get-hero $ "p1") :name) ((get-hero $ "p2") :name)])
+                      [((get-hero $ "p1") :name) ((get-hero $ "p2") :name)])
                 ["Jaina Proudmoore" "Anduin Wrynn"]))}
-  [state owner-id]
-  (->> (get-heroes state)
-       (filter (fn [h] (= (:owner-id h) owner-id)))
-       (first)))
+  ([player]
+    (:hero player))
+  ([state owner-id]
+   (->> (get-heroes state)
+        (filter (fn [h] (= (:owner-id h) owner-id)))
+        (first))))
 
 (defn get-hero-powers
   "Returns the hero-powers of both players."
   {:test (fn []
            (is= (->> (create-game [{:hero (create-hero "Jaina Proudmoore")}
-                                    {:hero (create-hero "Anduin Wrynn")}])
-                      (get-hero-powers)
-                      (map :name))
+                                   {:hero (create-hero "Anduin Wrynn")}])
+                     (get-hero-powers)
+                     (map :name))
                 ["Fireblast" "Lesser Heal"]))}
   [state]
   (->> (get-heroes state)
        (map :hero-power)))
 
 (defn get-hero-power
+  "Returns the hero power with the given id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-hero-power "hp1")
+                    (:name))
+                "Fireblast"))}
+  [state id]
+  (->> (get-hero-powers state)
+       (filter (fn [hp] (= (:id hp) id)))
+       (first)))
+
+(defn get-hero-power-of-player
   "Returns the hero-power for the given player-id."
   {:test (fn []
            (is= (as-> (create-game [{:hero (create-hero "Jaina Proudmoore")}
                                     {:hero (create-hero "Anduin Wrynn")}]) $
-                      [((get-hero-power $ "p1") :name) ((get-hero-power $ "p2") :name)])
+                      [((get-hero-power-of-player $ "p1") :name) ((get-hero-power-of-player $ "p2") :name)])
                 ["Fireblast" "Lesser Heal"]))}
   [state owner-id]
   (->> (get-heroes state)
@@ -809,27 +861,6 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
-(defn get-minion-effects
-  "Gets the effects map from the given minion."
-  {:test (fn []
-           (is= (-> (create-minion "Imp")
-                    (get-minion-effects))
-                {:extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-minion "Acolyte of Pain")
-                    (get-minion-effects))
-                {:on-damage "Acolyte of Pain effect"
-                 :extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
-                    (get-minion-effects "imp"))
-                {:extra-attack 0
-                 :extra-health 0}))}
-  ([minion]
-   (:effects minion))
-  ([state id]
-    (get-minion-effects (get-minion state id))))
-
 (defn get-board-entity
   "Returns the hero, minion or secret with the given id from the state."
   {:test (fn []
@@ -852,25 +883,39 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
-(defn get-effects
-  "Gets the effects map from the given minion or secret."
+(defn hero?
+  "Checks if the character with given id is a hero."
   {:test (fn []
-           (is= (-> (create-minion "Imp")
-                    (get-effects))
-                {:extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-minion "Acolyte of Pain")
-                    (get-effects))
-                {:on-damage    "Acolyte of Pain effect"
-                 :extra-attack 0
-                 :extra-health 0})
-           (is= (-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]}])
-                    (get-effects "s"))
-                {:on-attack "Snake Trap effect"}))}
-  ([entity]
-   (:effects entity))
+           (is (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                   (hero? "h1")))
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
+                       (hero? "imp"))))}
+  ([entiy]
+   (= (get entiy :entity-type) :hero))
   ([state id]
-   (get-effects (get-board-entity state id))))
+   (hero? (get-board-entity state id))))
+
+(defn minion?
+  "Checks if the character with given id is a hero."
+  {:test (fn []
+           (is-not (-> (create-game [{:minion (create-hero "Rexxar" :id "h1")}])
+                       (minion? "h1")))
+           (is (minion? (create-minion "Imp"))))}
+  ([entiy]
+   (= (get entiy :entity-type) :minion))
+  ([state id]
+   (minion? (get-board-entity state id))))
+
+(defn secret?
+  "Checks if the character with given id is a hero."
+  {:test (fn []
+           (is-not (-> (create-game [{:hero (create-hero "Rexxar" :id "h1")}])
+                       (secret? "h1")))
+           (is (secret? (create-secret "Snake Trap"))))}
+  ([entity]
+   (= (get entity :entity-type) :secret))
+  ([state id]
+   (secret? (get-board-entity state id))))
 
 (defn get-card-from-hand
   "Returns the card with the given id from the hand."
@@ -959,26 +1004,6 @@
                             (update minion key function-or-value)
                             (assoc minion key function-or-value)))))
 
-(defn update-in-minion
-  "Updates the value of the given key nested inside the minion with the given id. If function-or-value is a value it will be the
-   new value, else if it is a function it will be applied on the existing value to produce the new value."
-  {:test (fn []
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (update-in-minion "i" [:effects :extra-health] inc)
-                    (get-minion "i")
-                    (get-in [:effects :extra-health]))
-                1)
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (update-in-minion "i" [:effects :extra-health] 5)
-                    (get-minion "i")
-                    (get-in [:effects :extra-health]))
-                5))}
-  [state id keys function-or-value]
-  (let [minion (get-minion state id)]
-    (replace-minion state (if (function? function-or-value)
-                            (update-in minion keys function-or-value)
-                            (assoc-in minion keys function-or-value)))))
-
 (defn update-hero
   "Updates the value of the given key for the hero with the given id. If function-or-value is a value it will be the
    new value, else if it is a function it will be applied on the existing value to produce the new value."
@@ -1005,11 +1030,11 @@
   {:test (fn []
            (is (-> (create-game)
                    (update-hero-power "p1" :used true)
-                   (get-hero-power "p1")
+                   (get-hero-power-of-player "p1")
                    :used)))}
   [state player-id key function-or-value]
   (let [hero (get-hero state player-id)
-        hero-power (get-hero-power state player-id)]
+        hero-power (get-hero-power-of-player state player-id)]
     (replace-hero state (assoc hero :hero-power (if (function? function-or-value)
                                                   (update hero-power key function-or-value)
                                                   (assoc hero-power key function-or-value))))))
@@ -1028,6 +1053,176 @@
     (replace-hero state (if (function? function-or-value)
                           (update-in hero keys function-or-value)
                           (assoc-in hero keys function-or-value)))))
+
+(defn update-entity
+  "Updates the value of the given key for the entity with the given id. If function-or-value is a value it will be the\n
+  new value, else if it is a function it will be applied on the existing value to produce the new value."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (update-entity "i" :damage-taken inc)
+                    (get-minion "i")
+                    (:damage-taken))
+                1)
+           (is= (-> (create-game)
+                    (update-entity "h1" :damage-taken inc)
+                    (get-board-entity "h1")
+                    (:damage-taken))
+                1))}
+  [state id key function-or-value]
+  (cond
+    (minion? state id) (update-minion state id key function-or-value)
+    (hero? state id) (update-hero state id key function-or-value)))
+
+(defn add-buff
+  "Adds buff to the given character"
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
+                    (add-buff "i" {:frozen true})
+                    (get-minion "i")
+                    :buffs)
+                [{:frozen true}])
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true}])]}])
+                    (add-buff "i" {:extra-attack 1
+                                   :extra-health 1})
+                    (get-minion "i")
+                    (:buffs)
+                    (count))
+                2))}
+  [state id buff]
+  (update-entity state id :buffs (fn [buffs] (conj buffs buff))))
+
+(defn remove-buffs
+  "Remove buffs with the given effect key."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:frozen true} {:extra-attack 1}])]}])
+                    (remove-buffs "i" :frozen)
+                    (get-minion "i")
+                    (:buffs))
+                '({:extra-attack 1})))}
+  [state id effect]
+  (update-entity state id :buffs (fn [buffs]
+                                   (filter (fn [b]
+                                             (not (contains? b effect)))
+                                           buffs))))
+
+(defn decrement-buff-counters
+  "Decrement all buff counters and remove the buff if the counter is 0."
+  {:test (fn []
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack 1}
+                                                                                  {:extra-health 2 :counter 1}
+                                                                                  {:extra-attack 5 :counter 2}])]}])
+                    (decrement-buff-counters)
+                    (get-minion "i")
+                    (:buffs))
+                [{:extra-attack 1}
+                 {:extra-attack 5 :counter 1}]))}
+  [state]
+  (reduce (fn [state id]
+            (update-entity state id :buffs (fn [buffs]
+                                             (->> (map (fn [b]
+                                                         (if (contains? b :counter)
+                                                           (update b :counter dec)
+                                                           b))
+                                                       buffs)
+                                                  (remove (fn [b] (and (:counter b)
+                                                                       (< (:counter b) 1))))))))
+          state (map :id (concat (get-minions state)
+                                 (get-heroes state)))))
+
+
+(defn get-character-buffs
+  "Gets the buffs vector from the given character."
+  {:test (fn []
+           (is= (-> (create-minion "Imp" :buffs [{:extra-attack 1 :extra-health 1}])
+                    (get-character-buffs))
+                [{:extra-attack 1
+                  :extra-health 1}])
+           (is= (-> (create-hero "Rexxar" :buffs [{:frozen true}])
+                    (get-character-buffs))
+                [{:frozen true}]))}
+  ([character]
+   (:buffs character))
+  ([state id]
+   (get-character-buffs (get-minion state id))))
+
+(defn get-secret-triggered-effect
+  "Gets the triggered effect from the given secret."
+  {:test (fn []
+           (is= (as-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]
+                                     :minions [(create-minion "Imp" :id "imp")]}]) $
+                      ((:on-attack (get-secret-triggered-effect $ "s")) $ "s" ["imp"])
+                      (get-minions $ "p1")
+                      (count $))
+                4))}
+  ([secret]
+   (:triggered-effect (get-definition secret)))
+  ([state id]
+   (get-secret-triggered-effect (get-secret state id)))
+  )
+
+(defn get-minion-triggered-effect
+  "Gets the triggered effect from the given minion."
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "Acolyte of Pain" :id "ap")]
+                                     :deck    ["Imp"]}]) $
+                      ((:on-damage (get-minion-triggered-effect $ "ap")) $ "ap" ["ap"])
+                      (get-hand $ "p1")
+                      (count $))
+                1))}
+  ([minion]
+   (:triggered-effect (get-definition minion)))
+  ([state id]
+   (get-minion-triggered-effect (get-minion state id)))
+  )
+
+(defn get-entity-triggered-effect
+  "Gets the triggered effect from the given entity."
+  {:test (fn []
+           ; Minion
+           (is= (as-> (create-game [{:minions [(create-minion "Acolyte of Pain" :id "ap")]
+                                     :deck    ["Imp"]}]) $
+                      ((:on-damage (get-entity-triggered-effect $ "ap")) $ "ap" ["ap"])
+                      (get-hand $ "p1")
+                      (count $))
+                1)
+           ; Secret
+           (is= (as-> (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]
+                                     :minions [(create-minion "Imp" :id "imp")]}]) $
+                      ((:on-attack (get-entity-triggered-effect $ "s")) $ "s" ["imp"])
+                      (get-minions $ "p1")
+                      (count $))
+                4))}
+  ([entity]
+   (cond
+     (minion? entity) (get-minion-triggered-effect entity)
+     (secret? entity) (get-secret-triggered-effect entity)))
+  ([state id]
+   (get-entity-triggered-effect (get-board-entity state id)))
+  )
+
+(defn get-triggered-effects
+  "Gets all the active triggered effects or the ones with given trigger."
+  {:test (fn []
+           (let [state (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]
+                                      :minions [(create-minion "Acolyte of Pain" :id "ap")
+                                                (create-minion "Frothing Berserker" :id "fb")]
+                                      :deck    ["Imp"]}])
+                 on-damage-effects (get-triggered-effects state :on-damage)
+                 on-attack-effects (get-triggered-effects state :on-attack)]
+             (as-> ((get on-damage-effects "ap") state "ap" ["ap"]) $
+                   ((get on-damage-effects "fb") $ "fb" ["ap"])
+                   ((get on-attack-effects "s") $ "s" ["ap"])
+                   (do (is= (count (get-minions $ "p1")) 5) ; p1 summons 3 snakes from Snake Trap effect
+                       (is= (get-character-buffs $ "fb") [{:extra-attack 1}]) ; Frothing Berseker gets +1 attack buff
+                       (is= (count (get-hand $ "p1")) 1)))))} ; p1 draws one card from Acolyte of Pain effect
+  [state trigger]
+  (->> (concat (get-minions state) (get-secrets state))
+       (reduce (fn [m e]
+                 (let [triggered-effect (get-entity-triggered-effect e)]
+                   (if (contains? triggered-effect trigger)
+                     (assoc m (:id e) (trigger triggered-effect))
+                     m)))
+               {})))
 
 (defn remove-minion
   "Removes a minion with the given id from the state."
@@ -1082,10 +1277,10 @@
         []
 
         (<= size amount)
-        (subvec deck 0 size)
+        (take size deck)
 
         :else
-        (subvec deck 0 amount)))))
+        (take amount deck)))))
 
 (defn remove-card-from-deck
   "Removes a card with the given id from the given player's deck."
@@ -1132,3 +1327,22 @@
                 []))}
   [state player-id]
   (assoc-in state [:players player-id :secrets] []))
+
+(defn get-seed
+  "Returns the seed of the state."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-seed))
+                0))}
+  [state]
+  (:seed state))
+
+(defn set-seed
+  "Set the seed of the state."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                   (set-seed 5)
+                   (get-seed))
+               5))}
+  [state seed]
+  (assoc state :seed seed))

@@ -10,9 +10,10 @@
                                          switch-player-in-turn
                                          create-minion
                                          get-minion
+                                         get-player-id-in-turn
                                          get-minions
                                          create-hero
-                                         get-hero-power
+                                         get-hero-power-of-player
                                          get-board-entity
                                          get-minion-ids-summoned-this-turn
                                          reset-minion-ids-summoned-this-turn
@@ -20,13 +21,14 @@
                                          create-card
                                          get-card-from-hand
                                          remove-card-from-hand
-                                         update-hero-power]]
+                                         update-hero-power
+                                         hero?
+                                         decrement-buff-counters]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
                                     damage-minion
                                     damage-hero
-                                    hero?
                                     valid-play?
                                     valid-plays
                                     valid-attacks
@@ -71,7 +73,7 @@
   (let [old-pid (get-player-id-in-turn state)]
     (let [new-pid (opposing-player-id old-pid)]
       (-> state
-          ;TODO: trigger the "end of turn" card effects
+          (decrement-buff-counters)
           (unfreeze-characters)
           (reset-minion-ids-summoned-this-turn)
           (switch-player-in-turn)
@@ -79,7 +81,6 @@
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
-          ;TODO: trigger the "beginning of turn" card effects
           (reset-minion-attack-this-turn new-pid)))))
 
 (defn attack-with-minion
@@ -244,7 +245,7 @@
                                          {:minions [(create-minion "Imp" :id "i2")]}])
                            (use-hero-power "p1" {:target-id "i2"})))))}
   [state player-id {target-id :target-id}]
-  (let [hero-power (get-hero-power state player-id)]
+  (let [hero-power (get-hero-power-of-player state player-id)]
     (if (valid-play? state (:id hero-power) target-id)
       (-> (if (nil? target-id)
             ((get-hero-power-function hero-power) state)

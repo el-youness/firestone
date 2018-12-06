@@ -1,31 +1,40 @@
 (ns firestone.definition.card
   (:require [firestone.definitions :as definitions]
+            [firestone.definitions :refer [get-definitions]]
             [clojure.test :refer [function?]]
             [ysera.test :refer [is is-not is= error?]]
+            [ysera.random :refer [random-nth]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          create-card
                                          create-secret
                                          update-minion
-                                         update-in-minion
                                          update-in-hero
                                          get-character
                                          get-minion
                                          get-minions
                                          get-secrets
-                                         get-effects
+                                         remove-secret
                                          remove-secrets
                                          get-hero
-                                         get-minion-effects
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
                                          get-mana
-                                         get-player]]
+                                         get-board-entity
+                                         get-hero-id
+                                         get-player
+                                         get-seed
+                                         set-seed
+                                         add-buff
+                                         hero?]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
+                                    heal-hero
                                     get-health
+                                    summon-minion
+                                    draw-card
                                     damage-minion
                                     damage-hero
                                     valid-plays
@@ -33,8 +42,7 @@
                                     valid-attack?
                                     give-card
                                     add-to-max-mana
-                                    deal-spell-damage
-                                    hero?]]
+                                    deal-spell-damage]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -136,8 +144,8 @@
     :battlecry   (fn [state eater-of-secrets-id]
                    (let [opponent-id (opposing-player-id (get-owner state eater-of-secrets-id))]
                      (let [number-of-secrets (count (get-secrets state opponent-id))]
-                       (-> (update-in-minion state eater-of-secrets-id [:effects :extra-attack] (partial + number-of-secrets))
-                           (update-in-minion eater-of-secrets-id [:effects :extra-health] (partial + number-of-secrets))
+                       (-> (add-buff state eater-of-secrets-id {:extra-attack number-of-secrets
+                                                                :extra-health number-of-secrets})
                            (remove-secrets opponent-id)))))}
 
    "Arcane Golem"
@@ -149,20 +157,23 @@
     :set         :classic
     :rarity      :rare
     :description "Battlecry: Give your opponent a Mana Crystal."
-    :battlecry    (fn [state golem-id]
-                    (let [opponent-player-id (opposing-player-id (get-owner state golem-id))]
-                      (add-to-max-mana state opponent-player-id 1))) }
+    :battlecry   (fn [state golem-id]
+                   (let [opponent-player-id (opposing-player-id (get-owner state golem-id))]
+                     (add-to-max-mana state opponent-player-id 1)))}
 
    "Acolyte of Pain"
-   {:name        "Acolyte of Pain"
-    :attack      1
-    :health      3
-    :mana-cost   3
-    :type        :minion
-    :set         :classic
-    :rarity      :common
-    :description "Whenever this minion takes damage, draw a card."
-    :on-damage   "Acolyte of Pain effect"}
+   {:name             "Acolyte of Pain"
+    :attack           1
+    :health           3
+    :mana-cost        3
+    :type             :minion
+    :set              :classic
+    :rarity           :common
+    :description      "Whenever this minion takes damage, draw a card."
+    :triggered-effect {:on-damage (fn [state acolyte-id [damaged-minion-id]]
+                                    (if (= damaged-minion-id acolyte-id)
+                                      (draw-card state (get-owner state acolyte-id))
+                                      state))}}
 
    "Snake"
    {:name      "Snake"
@@ -195,22 +206,27 @@
     :rarity      :legendary
     :race        :mech
     :description "Deathrattle: Summon a random Legendary minion."
-    :deathrattle "Sneed's Old Shredder deathrattle"}
+    :deathrattle (fn [state player-id]
+                   (let [[seed legendary-minion] (->> (get-definitions)
+                                                      (filter (fn [v] (= (:rarity v) :legendary)))
+                                                      (random-nth (get-seed state)))]
+                     (-> (summon-minion state player-id legendary-minion)
+                         (set-seed seed))))}
 
    "King Mukla"
-   {:name        "King Mukla"
-    :attack      5
-    :health      5
-    :mana-cost   3
-    :type        :minion
-    :set         :classic
-    :rarity      :legendary
-    :description "Battlecry: Give your opponent 2 Bananas."
+   {:name            "King Mukla"
+    :attack          5
+    :health          5
+    :mana-cost       3
+    :type            :minion
+    :set             :classic
+    :rarity          :legendary
+    :description     "Battlecry: Give your opponent 2 Bananas."
     :on-playing-card "King Mukla battelcry"
-    :battlecry    (fn [state minion-id]
-                    (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
-                      (-> (give-card state opponent-player-id (create-card "Bananas"))
-                          (give-card       opponent-player-id (create-card "Bananas")))))}
+    :battlecry       (fn [state minion-id]
+                       (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
+                         (-> (give-card state opponent-player-id (create-card "Bananas"))
+                             (give-card opponent-player-id (create-card "Bananas")))))}
 
    "Frostbolt"
    {:name        "Frostbolt"
@@ -220,11 +236,11 @@
     :rarity      :none
     :description "Deal 3 damage to a character and Freeze it."
     :target-type :all
-    :spell        (fn [state target-id]
-                    (as-> (deal-spell-damage state target-id 3) $
-                        (if (hero? state target-id)
-                          (update-in-hero $ target-id [:effects :frozen] true)
-                          (update-in-minion $ target-id [:effects :frozen] true))))}
+    :spell       (fn [state target-id]
+                   (as-> (deal-spell-damage state target-id 3) $
+                         (if (get-board-entity $ target-id)
+                           (add-buff $ target-id {:frozen true})
+                           $)))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
@@ -268,7 +284,8 @@
     :set         :the-witchwood
     :rarity      :common
     :description "Deathrattle: Restore 8 Health to your hero."
-    :deathrattle "Deranged Doctor deathrattle"}
+    :deathrattle (fn [state player-id]
+                   (heal-hero state (get-hero-id state player-id) 8))}
 
    "Sylvanas Windrunner"
    {:name        "Sylvanas Windrunner"
@@ -279,29 +296,38 @@
     :set         :hall-of-fame
     :rarity      :legendary
     :description "Deathrattle: Take control of a random enemy minion."
-    :deathrattle "Sylvanas Windrunner deathrattle"}
+    :deathrattle (fn [state player-id]
+                   (let [opp-pid (opposing-player-id player-id)
+                         opp-minions (get-minions state opp-pid)]
+                     (if (> (count opp-minions) 0)
+                       (let [[seed minion] (random-nth (get-seed state) opp-minions)]
+                         (-> (change-minion-board-side state (:id minion))
+                             (set-seed seed)))
+                       state)))}
 
    "Frothing Berserker"
-   {:name        "Frothing Berserker"
-    :attack      2
-    :health      4
-    :mana-cost   3
-    :type        :minion
-    :set         :classic
-    :rarity      :rare
-    :description "Whenever a minion takes damage, gain +1 Attack."
-    :on-damage   "Frothing Berserker effect"}
+   {:name             "Frothing Berserker"
+    :attack           2
+    :health           4
+    :mana-cost        3
+    :type             :minion
+    :set              :classic
+    :rarity           :rare
+    :description      "Whenever a minion takes damage, gain +1 Attack."
+    :triggered-effect {:on-damage (fn [state frothing-berserker-id & _]
+                                    (add-buff state frothing-berserker-id {:extra-attack 1}))}}
 
    "Bananas"
    {:name        "Bananas"
     :mana-cost   1
     :type        :spell
     :set         :classic
+    :rarity      :none
     :description "Give a minion +1/+1."
     :target-type :all-minions
     :spell       (fn [state target-id]
-                   (-> (update-in-minion state target-id [:effects :extra-health] inc)
-                       (update-in-minion target-id [:effects :extra-attack] inc)))}
+                   (add-buff state target-id {:extra-health 1
+                                              :extra-attack 1}))}
 
    "Loot Hoarder"
    {:name        "Loot Hoarder"
@@ -312,17 +338,74 @@
     :set         :classic
     :rarity      :common
     :description "Deathrattle: Draw a card."
-    :deathrattle "Loot Hoarder deathrattle"}
+    :deathrattle (fn [state player-id]
+                   (draw-card state player-id))}
 
    "Snake Trap"
-   {:name        "Snake Trap"
-    :mana-cost   2
-    :type        :spell
-    :subtype     :secret
+   {:name             "Snake Trap"
+    :mana-cost        2
+    :type             :spell
+    :subtype          :secret
+    :set              :classic
+    :rarity           :epic
+    :class            :hunter
+    :description      "Secret: When one of your minions is attacked summon three 1/1 Snakes."
+    :triggered-effect {:on-attack (fn [state snake-trap-id [attacked-minion-id]]
+                                    (let [player-id (get-owner state snake-trap-id)]
+                                      (if (= player-id (get-owner state attacked-minion-id))
+                                        (-> (remove-secret state player-id snake-trap-id)
+                                            (summon-minion player-id "Snake")
+                                            (summon-minion player-id "Snake")
+                                            (summon-minion player-id "Snake"))
+                                        state)))}}
+
+   "Abusive Sergeant"
+   {:name        "Abusive Sergeant"
+    :attack      1
+    :health      1
+    :mana-cost   1
+    :type        :minion
     :set         :classic
-    :rarity      :epic
-    :description "Secret: When one of your minions is attacked summon three 1/1 Snakes."
-    :on-attack   "Snake Trap effect"}
-   })
+    :rarity      :common
+    :description "Battlecry: Give a minion +2 Attack this turn."
+    :target-type :all-minions
+    :battlecry   (fn [state _ target-id]
+                   (add-buff state target-id {:extra-attack 2
+                                              :counter      1}))}
+
+   "Shrinkmeister"
+   {:name        "Shrinkmeister"
+    :attack      3
+    :health      2
+    :mana-cost   2
+    :type        :minion
+    :set         :classic
+    :rarity      :goblins-vs-gnomes
+    :description "Battlecry: Give a minion -2 Attack this turn."
+    :target-type :all-minions
+    :battlecry   (fn [state _ target-id]
+                   (add-buff state target-id {:extra-attack -2
+                                              :counter      1}))}
+
+   "Malygos"
+   {:name         "Malygos"
+    :mana-cost    9
+    :health       12
+    :attack       4
+    :type         :minion
+    :set          :classic
+    :rarity       :legendary
+    :race         :dragon
+    :description  "Spell Damage +5"
+    :spell-damage 5}
+
+   "Steward"
+   {:name      "Steward"
+    :mana-cost 1
+    :health    1
+    :attack    1
+    :type      :minion
+    :set       :one-night-in-karazhan
+    :rarity    :none}})
 
 (definitions/add-definitions! card-definitions)
