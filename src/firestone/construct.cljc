@@ -941,7 +941,7 @@
   (:minion-ids-summoned-this-turn state))
 
 (defn reset-minion-ids-summoned-this-turn
-  "Returns the player with the given id."
+  "Wakes up all the minions."
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}] :minion-ids-summoned-this-turn ["i"])
                     (reset-minion-ids-summoned-this-turn)
