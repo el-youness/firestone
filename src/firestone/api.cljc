@@ -18,7 +18,8 @@
                                          get-player
                                          hero?
                                          update-hero-power
-                                         decrement-buff-counters]]
+                                         decrement-buff-counters
+                                         add-card-id-to-card-ids-played-this-turn]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -70,7 +71,8 @@
           (decrement-buff-counters)
           (unfreeze-characters)
           (assoc :player-id-in-turn new-pid
-                 :minion-ids-summoned-this-turn [])
+                 :minion-ids-summoned-this-turn []
+                 :card-ids-played-this-turn [])
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
@@ -146,7 +148,8 @@
           ((get-spell-function card) state)
           ((get-spell-function card) state target-id))
         (consume-mana player-id (get-cost card))
-        (remove-card-from-hand player-id card-id))))
+        (remove-card-from-hand player-id card-id)
+        (add-card-id-to-card-ids-played-this-turn card-id))))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
@@ -156,7 +159,8 @@
                     (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions   ["War Golem"]
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
-                             :minion-ids-summoned-this-turn ["m1"]))
+                             :minion-ids-summoned-this-turn ["m1"]
+                             :card-ids-played-this-turn ["wg"]))
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-card "War Golem" :id "wg")]}])
@@ -175,7 +179,8 @@
         battlecry-function (get-battlecry-function card)
         state (-> (consume-mana state player-id (get-cost card))
                   (summon-minion player-id card position)
-                  (remove-card-from-hand player-id card-id))
+                  (remove-card-from-hand player-id card-id)
+                  (add-card-id-to-card-ids-played-this-turn card-id))
         minion-id (-> (:minion-ids-summoned-this-turn state)
                       (last))]
     (if battlecry-function
