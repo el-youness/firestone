@@ -73,10 +73,12 @@
   (let [old-pid (get-player-id-in-turn state)]
     (let [new-pid (opposing-player-id old-pid)]
       (-> state
+          ; End of turn events for player
           (decrement-buff-counters)
           (unfreeze-characters)
           (reset-minion-ids-summoned-this-turn)
           (switch-player-in-turn)
+          (handle-triggers :on-start-turn)
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
