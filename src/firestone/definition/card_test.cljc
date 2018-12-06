@@ -370,5 +370,6 @@
                (do (is= (count (get-minions $ "p2")) 0)
                    (is= (get-health $ "um") 3)
                    $)
-
-               ))
+               (end-turn $)
+               (end-turn $)
+               (error? (attack-with-minion $ "um" "h2"))))

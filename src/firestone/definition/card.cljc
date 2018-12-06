@@ -373,7 +373,7 @@
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
                    (-> (add-buff state target-id {:extra-attack 2
-                                                  :counter   1})))}
+                                                  :counter      1})))}
 
    "Malygos"
    {:name         "Malygos"
@@ -409,6 +409,5 @@
     :cannot-attack (fn [state]
                      (-> (filter (fn [card] (spell-card? card)) (get-cards-played-this-turn state))
                          (count)
-                         (= 0)))}
-   })
+                         (= 0)))}})
 (definitions/add-definitions! card-definitions)
