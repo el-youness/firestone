@@ -10,6 +10,7 @@
                                          create-secret
                                          update-minion
                                          update-in-hero
+                                         minion?
                                          get-character
                                          get-minion
                                          get-minions
@@ -381,7 +382,10 @@
     :class       :mage
     :set         :basic
     :rarity      :none
-    :description "go and grab it from the internet"}
+    :description "go and grab it from the internet"
+    :target-type :all
+    :spell       (fn [state target-id]
+                   (deal-spell-damage state target-id 6))}
 
    "Abusive Sergeant"
    {:name        "Abusive Sergeant"
@@ -414,15 +418,22 @@
     :description "At the start of your turn swap this minion with a random one in your hand."}
 
    "Archmage Antonidas"
-   {:name        "Archmage Antonidas"
-    :attack      5
-    :health      7
-    :type        :minion
-    :mana-cost   7
-    :class       :mage
-    :set         :classic
-    :rarity      :legendary
-    :description "Whenever you cast a spell, add a 'Fireball' spell to your hand."}
+   {:name             "Archmage Antonidas"
+    :attack           5
+    :health           7
+    :type             :minion
+    :mana-cost        7
+    :class            :mage
+    :set              :classic
+    :rarity           :legendary
+    :description      "Whenever you cast a spell, add a 'Fireball' spell to your hand."
+    :triggered-effect {:on-play-card (fn [state archmage-id & [card-id]]
+                                       (println "hey\n")
+                                       (if (and (not (minion? state card-id))
+                                                (= (get-owner state card-id)
+                                                   (get-owner state archmage-id)))
+                                         (give-card state (get-owner state archmage-id) (create-card "Fireball"))
+                                         state))}}
 
    "Unpowered Mauler"
    {:name        "Unpowered Mauler"

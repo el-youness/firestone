@@ -339,7 +339,16 @@
                   (get-health "wg"))
               8)
          ; uncomment when merging with error thrower
-         ;(is (error? (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
-         ;                              {:minions [(create-minion "War Golem" :id "wg")]}])
-         ;                (play-spell-card "p1" "r" {:target-id "wg"}))))
+         (is (error? (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
+                                       {:minions [(create-minion "War Golem" :id "wg")]}])
+                         (play-spell-card "p1" "r" {:target-id "wg"}))))
          )
+
+(deftest archmage-antonidas
+         (is= (-> (create-game [{:hand [(create-card "Frostbolt" :id "f")]
+                                 :minions [(create-card "Archmage Antonidas" :id "aa")]}])
+                  (play-spell-card "p1" "f" {:target-id "h2"})
+                  (get-hand "p1")
+                  (first)
+                  :name)
+              "Fireball"))
