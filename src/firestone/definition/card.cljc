@@ -25,8 +25,12 @@
                                          get-hero-id
                                          get-player
                                          get-seed
+                                         remove-minion
                                          set-seed
+                                         get-position
                                          add-buff
+                                         get-player-id-in-turn
+                                         remove-card-from-hand
                                          hero?]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
@@ -41,6 +45,7 @@
                                     destroy-minion
                                     valid-attack?
                                     give-card
+                                    minion-card?
                                     add-to-max-mana
                                     deal-spell-damage]]
             [firestone.api :refer [attack-with-minion
@@ -49,6 +54,31 @@
 
 (def card-definitions
   {
+
+   "Alarm-o-Bot"
+   {:name             "Alarm-o-Bot"
+    :mana-cost        3
+    :health           3
+    :attack           0
+    :type             :minion
+    :rarity           :rare
+    :race             :mech
+    :set              :classic
+    :description      "At the start of your turn, swap this minion with a random one in your hand."
+    :triggered-effect {:on-start-turn (fn [state this _]
+                                        (let [owner-id (get-owner state this)
+                                              minion-cards-in-hand (->> (get-hand state owner-id)
+                                                                        (filter (fn [c] (minion-card? c))))]
+                                          (if (and (= owner-id (get-player-id-in-turn state))
+                                                (> (count minion-cards-in-hand) 0))
+                                            (let [[seed random-minion-card] (random-nth (get-seed state) minion-cards-in-hand)
+                                                  position (get-position state this)]
+                                              (-> (set-seed state seed)
+                                                  (remove-minion this)
+                                                  (summon-minion owner-id random-minion-card position)
+                                                  (remove-card-from-hand owner-id (:id random-minion-card))
+                                                  (give-card owner-id (create-card "Alarm-o-Bot"))))
+                                            state)))}}
 
    "Dalaran Mage"
    {:name         "Dalaran Mage"
@@ -371,7 +401,7 @@
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
                    (-> (add-buff state target-id {:extra-attack 2
-                                                  :counter   1})))}
+                                                  :counter      1})))}
 
    "Malygos"
    {:name         "Malygos"
@@ -386,13 +416,13 @@
     :spell-damage 5}
 
    "Steward"
-   {:name         "Steward"
-    :mana-cost    1
-    :health       1
-    :attack       1
-    :type         :minion
-    :set          :one-night-in-karazhan
-    :rarity      :none}
+   {:name      "Steward"
+    :mana-cost 1
+    :health    1
+    :attack    1
+    :type      :minion
+    :set       :one-night-in-karazhan
+    :rarity    :none}
 
    "Competitive Spirit"
    {:name             "Competitive Spirit"
@@ -410,9 +440,9 @@
                                           (if (> (count minions) 1)
                                             (as-> (remove-secret state player-id competitive-spirit-id) $
                                                   (reduce (fn [state minion]
-                                                          (add-buff state (minion :id) {:extra-health 1
-                                                                                        :extra-attack 1}))
-                                                        $
-                                                        (get-minions $ player-id)))
+                                                            (add-buff state (minion :id) {:extra-health 1
+                                                                                          :extra-attack 1}))
+                                                          $
+                                                          (get-minions $ player-id)))
                                             state)))}}})
 (definitions/add-definitions! card-definitions)

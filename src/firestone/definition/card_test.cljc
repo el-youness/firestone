@@ -20,6 +20,62 @@
                   (count))
               1))
 
+(deftest alarm-o-bot
+         (as-> (create-game [{:hand [(create-minion "Alarm-o-Bot" :id "ab") "Imp" "Frostbolt"]}]) $
+               (play-minion-card $ "p1" "ab" {:position 0})
+               (end-turn $)
+               ; Alram-o-Bot still on board after end of turn
+               (do (is= (->> (get-minions $ "p1")
+                             (first)
+                             :name)
+                        "Alarm-o-Bot")
+                   $)
+               (end-turn $)
+               ; Alarm-o-Bot back in hand.
+               (do (is= (->> (get-hand $ "p1")
+                             (filter (fn [c] (= (:name c) "Alarm-o-Bot")))
+                             (count))
+                        1)
+                   ; Imp on board
+                   (is= (->> (get-minions $ "p1")
+                             (first)
+                             :name)
+                        "Imp")
+                   $)
+               (let [alarm-o-bot-id (->> (get-hand $ "p1")
+                                         (filter (fn [c] (= (:name c) "Alarm-o-Bot")))
+                                         (first)
+                                         :id)]
+                 (as-> (play-minion-card $ "p1" alarm-o-bot-id {:position 0}) $
+                       (end-turn $)
+                       (end-turn $)
+                       ; Cannot swap with spell, Alarm-o-Bot still on board
+                       (do (is= (->> (get-minions $ "p1")
+                                     (filter (fn [m] (= (:name m) "Alarm-o-Bot")))
+                                     (count))
+                                1)
+                           ; Frostbolt still in hand
+                           (is= (->> (get-hand $ "p1")
+                                     (filter (fn [c] (= (:name c) "Frostbolt")))
+                                     (count))
+                                1)))))
+         ; Works even if board and hand are full
+         (as-> (create-game [{:hand    (conj (repeat 9 "War Golem") (create-minion "Alarm-o-Bot" :id "ab"))
+                              :deck    ["War Golem"]
+                              :minions (repeat 6 "Imp")}]) $
+               (play-minion-card $ "p1" "ab" {:position 5})
+               (end-turn $)
+               (end-turn $)
+               (do (is= (->> (get-minions $ "p1")
+                             (filter (fn [m] (= (:name m) "War Golem")))
+                             (first)
+                             (get-position))
+                        5)
+                   (is= (->> (get-hand $ "p1")
+                             (filter (fn [c] (= (:name c) "Alarm-o-Bot")))
+                             (count))
+                        1))))
+
 (deftest arcane-golem
          (as-> (create-game [{:hand [(create-card "Arcane Golem" :id "ag1") (create-card "Arcane Golem" :id "ag2")]}
                              {:max-mana 9}]) $
