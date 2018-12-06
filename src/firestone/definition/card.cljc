@@ -27,7 +27,8 @@
                                          get-seed
                                          set-seed
                                          add-buff
-                                         hero?]]
+                                         hero?
+                                         get-cards-played-this-turn]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -42,7 +43,8 @@
                                     valid-attack?
                                     give-card
                                     add-to-max-mana
-                                    deal-spell-damage]]
+                                    deal-spell-damage
+                                    spell-card?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -404,6 +406,9 @@
     :rarity        :rare
     :race          :mech
     :description   "Can only attack if you cast a spell this turn."
-    :cannot-attack (fn [state] true)}
+    :cannot-attack (fn [state]
+                     (-> (filter (fn [card] (spell-card? card)) (get-cards-played-this-turn state))
+                         (count)
+                         (= 0)))}
    })
 (definitions/add-definitions! card-definitions)

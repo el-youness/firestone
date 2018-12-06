@@ -185,7 +185,7 @@
                                                        :fatigue                     1}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []
-                 :card-ids-played-this-turn     []
+                 :cards-played-this-turn        []
                  :seed                          0}))}
   ([heroes]
     ; Creates Jaina Proudmoore heroes if heroes are missing.
@@ -215,7 +215,7 @@
                                                   {}))
       :counter                       1
       :minion-ids-summoned-this-turn []
-      :card-ids-played-this-turn     []
+      :cards-played-this-turn        []
       :seed                          0}))
   ([]
    (create-empty-state [])))
@@ -234,8 +234,8 @@
   "Rrturns the players."
   {:test (fn []
            (is= (as-> (create-empty-state) $
-                    (get-players $)
-                    (map (fn [p] (:id p)) $))
+                      (get-players $)
+                      (map (fn [p] (:id p)) $))
                 ["p1" "p2"]))}
   [state]
   [(get-player state "p1") (get-player state "p2")])
@@ -247,7 +247,7 @@
                     (get-hand "p1"))
                 []))}
   ([player]
-    (:hand player))
+   (:hand player))
   ([state player-id]
    (get-hand (get-player state player-id))))
 
@@ -258,7 +258,7 @@
                     (get-deck "p1"))
                 []))}
   ([player]
-    (:deck player))
+   (:deck player))
   ([state player-id]
    (get-deck (get-player state player-id))))
 
@@ -527,7 +527,7 @@
                                                        :fatigue                     1}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []
-                 :card-ids-played-this-turn     []
+                 :cards-played-this-turn        []
                  :seed                          0})
 
            ; Test to create game with cards in the hand and deck
@@ -567,7 +567,7 @@
                                                        :fatigue                     1}}
                  :counter                       4
                  :minion-ids-summoned-this-turn []
-                 :card-ids-played-this-turn     []
+                 :cards-played-this-turn        []
                  :seed                          0})
            ; Test to add mana
            (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
@@ -604,7 +604,7 @@
                                                        :fatigue                     4}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []
-                 :card-ids-played-this-turn     []
+                 :cards-played-this-turn        []
                  :seed                          0})
            )}
   ([data & kvs]
@@ -718,7 +718,7 @@
                     (get-max-mana "p2"))
                 10))}
   ([player]
-    (:max-mana player))
+   (:max-mana player))
   ([state player-id]
    (get-max-mana (get-player state player-id))))
 
@@ -782,7 +782,7 @@
                       [((get-hero $ "p1") :name) ((get-hero $ "p2") :name)])
                 ["Jaina Proudmoore" "Anduin Wrynn"]))}
   ([player]
-    (:hero player))
+   (:hero player))
   ([state owner-id]
    (->> (get-heroes state)
         (filter (fn [h] (= (:owner-id h) owner-id)))
@@ -1033,24 +1033,24 @@
     (minion? state id) (update-minion state id key function-or-value)
     (hero? state id) (update-hero state id key function-or-value)))
 
-(defn get-card-ids-played-this-turn
-  "Get all card ids that have been played this turn"
+(defn get-cards-played-this-turn
+  "Get all cards that have been played this turn"
   {:test (fn []
            (is= (-> (create-game)
-                    (get-card-ids-played-this-turn))
+                    (get-cards-played-this-turn))
                 []))}
   [state]
-  (:card-ids-played-this-turn state))
+  (:cards-played-this-turn state))
 
-(defn add-card-id-to-card-ids-played-this-turn
-  "Add a card id to card ids played this turn"
+(defn add-to-cards-played-this-turn
+  "Add a card to cards played this turn"
   {:test (fn []
            (is= (-> (create-game)
-                    (add-card-id-to-card-ids-played-this-turn "c1")
-                    (get-card-ids-played-this-turn))
-                ["c1"]))}
-  [state id]
-  (assoc-in state [:card-ids-played-this-turn] (conj (:card-ids-played-this-turn state) id)))
+                    (add-to-cards-played-this-turn (create-card "Imp" :id "i"))
+                    (get-cards-played-this-turn))
+                [(create-card "Imp" :id "i")]))}
+  [state card]
+  (assoc-in state [:cards-played-this-turn] (conj (:cards-played-this-turn state) card)))
 
 (defn add-buff
   "Adds buff to the given character"
@@ -1330,8 +1330,8 @@
   "Set the seed of the state."
   {:test (fn []
            (is= (-> (create-empty-state)
-                   (set-seed 5)
-                   (get-seed))
-               5))}
+                    (set-seed 5)
+                    (get-seed))
+                5))}
   [state seed]
   (assoc state :seed seed))

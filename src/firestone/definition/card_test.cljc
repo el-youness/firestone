@@ -362,9 +362,13 @@
 (deftest unpowered-mauler
          (as-> (create-game [{:minions [(create-minion "Unpowered Mauler" :id "um")]
                               :hand    [(create-card "Frostbolt" :id "f")]}
-                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
-               (do (error? (attack-with-minion $ "um" "wg"))
+                             {:minions [(create-minion "Imp" :id "i")]}]) $
+               (do (error? (attack-with-minion $ "um" "i"))
                    $)
                (play-spell-card $ "p1" "f" {:target-id "h2"})
-               ; TODO: (attack-with-minion $ "um" "wg")
+               (attack-with-minion $ "um" "i")
+               (do (is= (count (get-minions $ "p2")) 0)
+                   (is= (get-health $ "um") 3)
+                   $)
+
                ))

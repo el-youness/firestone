@@ -292,6 +292,23 @@
        false
        (minion-card? card)))))
 
+(defn spell-card?
+  "Checks if the card or the card with the given id is a spell card."
+  {:test (fn []
+           (is (spell-card? (create-card "Frostbolt")))
+           (is (spell-card? "Frostbolt"))
+           (is (-> (create-game [{:hand [(create-card "Frostbolt" :id "f")]}])
+                   (spell-card? "f")))
+           (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                       (spell-card? "i"))))}
+  ([card]
+   (= (:type (get-definition card)) :spell))
+  ([state id]
+   (let [card (get-card-from-hand state id)]
+     (if (nil? card)
+       false
+       (spell-card? card)))))
+
 (defn secret-card?
   "Checks if the card or the card with the given id is a secret card."
   {:test (fn []

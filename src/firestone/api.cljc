@@ -19,7 +19,7 @@
                                          hero?
                                          update-hero-power
                                          decrement-buff-counters
-                                         add-card-id-to-card-ids-played-this-turn]]
+                                         add-to-cards-played-this-turn]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -72,7 +72,7 @@
           (unfreeze-characters)
           (assoc :player-id-in-turn new-pid
                  :minion-ids-summoned-this-turn []
-                 :card-ids-played-this-turn [])
+                 :cards-played-this-turn [])
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
@@ -149,7 +149,7 @@
           ((get-spell-function card) state target-id))
         (consume-mana player-id (get-cost card))
         (remove-card-from-hand player-id card-id)
-        (add-card-id-to-card-ids-played-this-turn card-id))))
+        (add-to-cards-played-this-turn card))))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
@@ -160,7 +160,7 @@
                 (create-game [{:minions   ["War Golem"]
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
                              :minion-ids-summoned-this-turn ["m1"]
-                             :card-ids-played-this-turn ["wg"]))
+                             :cards-played-this-turn [(create-card "War Golem" :id "wg" :owner-id "p1")]))
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-card "War Golem" :id "wg")]}])
@@ -180,7 +180,7 @@
         state (-> (consume-mana state player-id (get-cost card))
                   (summon-minion player-id card position)
                   (remove-card-from-hand player-id card-id)
-                  (add-card-id-to-card-ids-played-this-turn card-id))
+                  (add-to-cards-played-this-turn card))
         minion-id (-> (:minion-ids-summoned-this-turn state)
                       (last))]
     (if battlecry-function
