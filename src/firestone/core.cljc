@@ -710,7 +710,13 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "p1" "i1"))
-                ["i2" "h2"]))}
+                ["i2" "h2"])
+           ;TODO :O this combination should not be possible. Suggest removing player-id from arguments.
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:hand    [(create-card "Bananas" :id "b1")]}])
+                    (available-targets "p1" "b1"))
+                []))}
   [state player-id entity-id]
   (let [opp-player-id (opposing-player-id player-id)]
     (if (nil? (get-minion state entity-id))
