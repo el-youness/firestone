@@ -835,19 +835,19 @@
                     (valid-plays))
                 {"hp1" ["h1" "h2"]}))}
   [state]
-  (let [player-in-turn (:player-id-in-turn state)]
-    (reduce (fn [plays entity-id]
-              (if (playable? state player-in-turn entity-id)
-                (let [targets (available-targets state player-in-turn entity-id)]
-                  (if (empty? targets)
-                    (if (spell-with-target? state entity-id)
-                      plays
-                      (assoc plays entity-id []))
-                    (assoc plays entity-id targets)))
-                plays))
-            {}
-            (map :id (conj (get-hand state player-in-turn)
-                           (get-hero-power state player-in-turn))))))
+  (reduce (fn [plays entity-id]
+            (let [targets (filter (fn [target-id]
+                                    (valid-play? state entity-id target-id))
+                                  (map :id (concat (get-minions state)
+                                                   (get-heroes state))))]
+              (if (empty? targets)
+                (if (valid-play? state entity-id)
+                  (assoc plays entity-id [])
+                  plays)
+                (assoc plays entity-id targets))))
+          {}
+          (map :id (conj (get-hand state (get-player-id-in-turn state))
+                         (get-hero-power state (get-player-id-in-turn state))))))
 
 (defn play-secret
   "Puts a secret into play if there is space."
