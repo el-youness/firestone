@@ -21,7 +21,7 @@
               1))
 
 (deftest alarm-o-bot
-         (as-> (create-game [{:hand [(create-minion "Alarm-o-Bot" :id "ab") "Imp" "Frostbolt"]}]) $
+         (as-> (create-game [{:hand [(create-card "Alarm-o-Bot" :id "ab") "Imp" "Frostbolt"]}]) $
                (play-minion-card $ "p1" "ab" {:position 0})
                (end-turn $)
                ; Alram-o-Bot still on board after end of turn
