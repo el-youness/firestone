@@ -400,12 +400,34 @@
     :spell-damage 5}
 
    "Steward"
-   {:name      "Steward"
-    :mana-cost 1
-    :health    1
-    :attack    1
-    :type      :minion
-    :set       :one-night-in-karazhan
-    :rarity    :none}})
+   {:name         "Steward"
+    :mana-cost    1
+    :health       1
+    :attack       1
+    :type         :minion
+    :set          :one-night-in-karazhan
+    :rarity      :none}
+
+   "Competitive Spirit"
+   {:name             "Competitive Spirit"
+    :mana-cost        1
+    :type             :spell
+    :subtype          :secret
+    :set              :grand-tournament
+    :rarity           :rare
+    :class            :paladin
+    :description      "When your turn starts, give your minions +1/+1."
+    :triggered-effect {:on-start-turn (fn [state competitive-spirit-id _]
+                                        (let [player-id (get-owner state competitive-spirit-id)
+                                              minions (get-minions state player-id)]
+                                          ; If there are no minions on the board the secret doesn't activate
+                                          (if (> (count minions) 1)
+                                            (as-> (remove-secret state player-id competitive-spirit-id) $
+                                                  (reduce (fn [state minion]
+                                                          (add-buff state (minion :id) {:extra-health 1
+                                                                                        :extra-attack 1}))
+                                                        $
+                                                        (get-minions $ player-id)))
+                                            state)))}}})
 
 (definitions/add-definitions! card-definitions)
