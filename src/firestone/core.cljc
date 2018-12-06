@@ -775,17 +775,16 @@
            (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}])
                     (valid-play? "bgh")))
            )}     ; Cannot target cards
-  [state entity-id & target-id]
+  [state entity-id & [target-id]]
   (let [player-in-turn (:player-id-in-turn state)
         targets (available-targets state player-in-turn entity-id)]
-    (if (or (get-minion state entity-id)       ; If it is a minion id, the second statement of or is not checked
+    (if (or (get-minion state entity-id)       ; If it is a minion id, the second statement of 'or' is not checked
             (playable? state player-in-turn entity-id))
-      (if (or (nil? target-id)
-              (= target-id [nil]))                          ; happens when you use (valid-play? state entity-id nil)
+      (if (nil? target-id)
         (empty? targets)
         (if (empty? targets)
           false
-          (some (fn [x] (= (first target-id) x)) targets))) ; Is the target in targets ?
+          (some (fn [x] (= target-id x)) targets))) ; Is the target in targets ?
       false)))
 
 (defn valid-plays
