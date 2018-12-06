@@ -1052,6 +1052,17 @@
   [state card]
   (assoc-in state [:cards-played-this-turn] (conj (:cards-played-this-turn state) card)))
 
+(defn reset-cards-played-this-turn
+  "Reset which cards have been played this turn"
+  {:test (fn []
+           (is= (-> (create-game [] :cards-played-this-turn ["c"])
+                    (reset-cards-played-this-turn)
+                    (get-cards-played-this-turn)
+                    (count))
+                0))}
+  [state]
+  (assoc state :cards-played-this-turn []))
+
 (defn add-buff
   "Adds buff to the given character"
   {:test (fn []

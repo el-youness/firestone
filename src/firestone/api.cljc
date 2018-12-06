@@ -19,7 +19,8 @@
                                          hero?
                                          update-hero-power
                                          decrement-buff-counters
-                                         add-to-cards-played-this-turn]]
+                                         add-to-cards-played-this-turn
+                                         reset-cards-played-this-turn]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -71,8 +72,8 @@
           (decrement-buff-counters)
           (unfreeze-characters)
           (assoc :player-id-in-turn new-pid
-                 :minion-ids-summoned-this-turn []
-                 :cards-played-this-turn [])
+                 :minion-ids-summoned-this-turn [])
+          (reset-cards-played-this-turn)
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
@@ -116,7 +117,7 @@
   [state attacker-id target-id]
   (if (let [valid-attacks (valid-attacks state)]
         (and (contains? valid-attacks attacker-id)
-             (seq-contains? (get valid-attacks attacker-id) target-id)<))
+             (seq-contains? (get valid-attacks attacker-id) target-id)))
     (let [state (-> (update-minion state attacker-id :attacks-performed-this-turn 1)
                     (handle-triggers :on-attack target-id))
           attacker-attack (get-attack state attacker-id)]
