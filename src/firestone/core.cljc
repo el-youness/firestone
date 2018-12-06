@@ -112,10 +112,14 @@
            ; Minion with extra-attack effect
            (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :buffs [{:extra-attack 2}])]}])
                     (get-attack "wg"))
-                9))}
+                9)
+           ; Minion cannot have negative attack
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack -2}])]}])
+                    (get-attack "i"))
+                0))}
   ([character]
     (let [definition (get-definition (:name character))]
-      (+ (:attack definition) (get-extra-attack character))))
+      (max 0 (+ (:attack definition) (get-extra-attack character)))))
   ([state id]
    (get-attack (get-board-entity state id))))
 
