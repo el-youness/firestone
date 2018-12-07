@@ -594,6 +594,29 @@
   [state id amount]
   (update-hero state id :damage-taken (fn [x] (max (- x amount) 0))))
 
+(defn add-event
+  "Adds an event to the state."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (add-event {:name   "minion-summoned"
+                                :minion (create-minion "Imp")})
+                    (:event))
+                {:name   "minion-summoned"
+                 :minion (create-minion "Imp")}))}
+  [state event]
+  (assoc state :event event))
+
+(defn clear-events
+  "Clears the events of the state."
+  {:test (fn []
+           (is-not (-> (create-game)
+                       (add-event {:name   "minion-summoned"
+                                   :minion (create-minion "Imp")})
+                       (clear-events)
+                       :event)))}
+  [state]
+  (dissoc state :event))
+
 (defn summon-minion
   "Plays a minion card-"
   {:test (fn []
@@ -618,8 +641,8 @@
                                    (:name card)))]
        (-> state
            (add-minion-to-board {:player-id player-id :minion minion :position position})
-           (assoc :event {:name   "minion-summoned"
-                          :minion minion})))
+           (add-event {:name   "minion-summoned"
+                       :minion minion})))
      state))
   ([state player-id card]
    (summon-minion state player-id card 0)))
