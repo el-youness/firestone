@@ -1,6 +1,7 @@
 (ns firestone.edn-api
   (:require [firestone.construct :as construct :refer [create-game]]
             [firestone.mapper :refer [core-game->client-game]]
+            [firestone.definition.card :refer [card-definitions]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    play-spell-card
@@ -16,10 +17,8 @@
       (construct/get-player-id-in-turn)))
 
 (defn create-game! [game-id]
-  (core-game->client-game (reset! state-atom (create-game [{:hand ["Imp" "War Golem" "Sylvanas Windrunner"]
-                                                            :deck ["Acolyte of Pain" "Snake Trap" "Snake Trap" "Big Game Hunter"]}
-                                                           {:hand ["War Golem" "Frostbolt" "Eater of Secrets"]
-                                                            :deck ["Sneed's Old Shredder" "Frostbolt" "Dalaran Mage"]}])) game-id))
+  (core-game->client-game (reset! state-atom (create-game [{:deck (keys card-definitions)}
+                                                           {:deck (keys card-definitions)}])) game-id))
 
 (defn attack! [game-id player-id attacker-id target-id]
   (core-game->client-game (swap! state-atom attack-with-minion attacker-id target-id) game-id))
