@@ -431,7 +431,7 @@
 (deftest ancient-watcher
          (error? (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
                                    {:minions [(create-minion "War Golem" :id "wg")]}])
-                     (attack-with-minion "p1" "aw"))))
+                     (attack-with-minion "aw" "wg"))))
 
 (deftest unpowered-mauler
          (as-> (create-game [{:minions [(create-minion "Unpowered Mauler" :id "um")]
