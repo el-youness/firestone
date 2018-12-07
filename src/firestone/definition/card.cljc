@@ -487,6 +487,36 @@
     :rarity           :none
     :description      "Gain 1 Mana Crystal this turn only."
     :spell            (fn [state]
-                        (add-extra-mana state (get state :player-id-in-turn) 1))}})
+                        (add-extra-mana state (get state :player-id-in-turn) 1))}
+
+   "Gallywix's Coin"
+   {:name             "Gallywix's Coin"
+    :mana-cost        0
+    :type             :spell
+    :set              :goblins-vs-gnomes
+    :rarity           :none
+    :description      "Gain 1 Mana Crystal this turn only."
+    :spell            (fn [state]
+                        (add-extra-mana state (get state :player-id-in-turn) 1))}
+
+   "Trade Prince Gallywix"
+   {:name             "Trade Prince Gallywix"
+    :attack           5
+    :health           8
+    :mana-cost        6
+    :type             :minion
+    :class            :rogue
+    :set              :goblins-vs-gnomes
+    :rarity           :legendary
+    :description      "Whenever your opponent casts a spell, gain a copy of it and give them a Coin."
+    :triggered-effect  {:on-spell-casted (fn [state trade-prince-id [spell-name]]
+                                           (if (= spell-name "Gallywix's Coin")
+                                             state
+                                             (let [owner-id (get-owner state trade-prince-id)
+                                                   opponent-id (if (= owner-id "p1") "p2" "p1")]
+                                               (give-card state owner-id (create-card spell-name))
+                                               (give-card state opponent-id (create-card "Gallywix's Coin"))
+                                               ))
+                                           )}}})
 
 (definitions/add-definitions! card-definitions)
