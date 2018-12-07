@@ -624,7 +624,8 @@
            (let [state (-> (create-game)
                            (summon-minion "p1" (create-card "Imp" :id "c1")))]
              (is= (:minion-ids-summoned-this-turn state) ["m1"])
-             (is= (map :name (get-minions state)) ["Imp"]))
+             (is= (map :name (get-minions state)) ["Imp"])
+             (is= (:name (:event state)) "minion-summoned"))
            ; Play a minion card on a board with one minion
            (let [state (-> (create-game [{:minions ["War Golem"]}])
                            (summon-minion "p1" (create-card "Imp" :id "c1") 1))]
@@ -987,11 +988,12 @@
 (defn play-secret
   "Puts a secret into play if there is space."
   {:test (fn []
-           (is= (-> (create-game)
-                    (play-secret "p1" (create-secret "Snake Trap"))
-                    (get-secrets)
-                    (count))
-                1)
+           (let [state (-> (create-game)
+                           (play-secret "p1" (create-secret "Snake Trap")))]
+             (is= (->> (get-secrets state)
+                      (map :name))
+                  ["Snake Trap"])
+             (is= (:name (:event state)) "secret-added"))
            ; Cannot have more than 5 secrets in play (need more secrets for better test)
            (is= (-> (create-game [{:secrets ["Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap" "Snake Trap"]}])
                     (play-secret "p1" (create-secret "Snake Trap"))
@@ -1007,7 +1009,9 @@
   [state player-id secret]
   (if (and (not (secret-active? state player-id secret))
            (< (count (get-secrets state player-id)) 5))
-    (add-secret-to-player state player-id secret)
+    (-> (add-secret-to-player state player-id secret)
+        (add-event {:name "secret-added"
+                    :secret secret}))
     state))
 
 (defn get-spell-function
@@ -1026,6 +1030,27 @@
   (if (= (:subtype card) :secret)
     (fn [state] (play-secret state (get-player-id-in-turn state) (create-secret (:name card))))
     (:spell (get-definition card))))
+
+(defn cast-spell
+  "Executes the spell function of the card with the given arguments."
+  {:test (fn []
+           ; With target
+           (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}]) $
+                      (cast-spell $ (create-card "Bananas") "i1")
+                      [(get-attack $ "i1") (get-health $ "i1")])
+                [2 2])
+           ; No target
+           (is= (as-> (create-game []) $
+                      (cast-spell $ (create-card "Snake Trap"))
+                      (get-secrets $ "p1")
+                      (count $))
+                1))}
+  ([state card target-id]
+   (if target-id
+     ((get-spell-function card) state target-id)
+     ((get-spell-function card) state)))
+  ([state card]
+    (cast-spell state card nil)))
 
 (defn get-hero-power-function
   "Get the hero power function in the definition of the hero power."

@@ -36,7 +36,7 @@
                                     valid-plays
                                     valid-attacks
                                     get-owner
-                                    get-spell-function
+                                    cast-spell
                                     get-hero-power-function
                                     get-battlecry-function
                                     battlecry-minion-with-target?
@@ -176,11 +176,9 @@
   (when-not (valid-play? state card-id target-id)
     (error "You cannot play the spell like this you fool.\n"))
   (let [card (get-card-from-hand state card-id)]
-    (-> (if (nil? target-id)                                ; TODO: Move this logic to separate function
-          ((get-spell-function card) state)
-          ((get-spell-function card) state target-id))
+    (-> (clear-events state)
+        (cast-spell card target-id)
         (consume-mana player-id (get-cost card))
-        (clear-events)
         (remove-card-from-hand player-id card-id)
         (add-to-cards-played-this-turn card))))
 
