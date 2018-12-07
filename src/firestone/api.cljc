@@ -25,7 +25,8 @@
                                          decrement-buff-counters
                                          add-to-cards-played-this-turn
                                          reset-cards-played-this-turn
-                                         hero?]]
+                                         hero?
+                                         reset-extra-mana]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -81,6 +82,7 @@
           ; End of turn events for player
           (decrement-buff-counters)
           (unfreeze-characters)
+          (reset-extra-mana old-pid)
           ; Change the player-in-turn
           (switch-player-in-turn)
           (reset-cards-played-this-turn)
@@ -93,6 +95,9 @@
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
           (reset-minion-attack-this-turn new-pid)))))
+
+(defn clear-events [state]
+  (dissoc state :event))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."

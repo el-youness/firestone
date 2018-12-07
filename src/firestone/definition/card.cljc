@@ -32,7 +32,8 @@
                                          hero?
                                          get-cards-played-this-turn
                                          get-player-id-in-turn
-                                         remove-card-from-hand]]
+                                         remove-card-from-hand
+                                         add-extra-mana]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -477,6 +478,15 @@
                                                                                           :extra-attack 1}))
                                                           $
                                                           (get-minions $ owner-id)))
-                                            state)))}}})
+                                            state)))}}
+   "The Coin"
+   {:name             "The Coin"
+    :mana-cost        0
+    :type             :spell
+    :set              :basic
+    :rarity           :none
+    :description      "Gain 1 Mana Crystal this turn only."
+    :spell            (fn [state]
+                        (add-extra-mana state (get state :player-id-in-turn) 1))}})
 
 (definitions/add-definitions! card-definitions)
