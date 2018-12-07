@@ -49,6 +49,9 @@
                                     unfreeze-characters
                                     handle-triggers]]))
 
+(defn clear-events [state]
+  (dissoc state :event))
+
 (defn end-turn
   "Ends the turn of the playing hero"
   {:test (fn []
@@ -179,9 +182,6 @@
         (consume-mana player-id (get-cost card))
         (remove-card-from-hand player-id card-id)
         (add-to-cards-played-this-turn card))))
-
-(defn clear-events [state]
-  (dissoc state :event))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
