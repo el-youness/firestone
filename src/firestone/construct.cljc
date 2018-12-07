@@ -978,8 +978,8 @@
                    (hero? "h1")))
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "imp")]}])
                        (hero? "imp"))))}
-  ([entiy]
-   (= (get entiy :entity-type) :hero))
+  ([entity]
+   (= (get entity :entity-type) :hero))
   ([state id]
    (hero? (get-board-entity state id))))
 
