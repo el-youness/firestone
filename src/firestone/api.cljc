@@ -25,7 +25,8 @@
                                          decrement-buff-counters
                                          add-to-cards-played-this-turn
                                          reset-cards-played-this-turn
-                                         hero?]]
+                                         hero?
+                                         reset-extra-mana]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -78,6 +79,7 @@
           ; End of turn events for player
           (decrement-buff-counters)
           (unfreeze-characters)
+          (reset-extra-mana old-pid)
           ; Change the player-in-turn
           (switch-player-in-turn)
           (reset-cards-played-this-turn)

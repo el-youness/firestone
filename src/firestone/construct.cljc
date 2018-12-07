@@ -752,7 +752,7 @@
    (create-game [])))
 
 (defn get-max-mana
-  "Returns the max mana for the player with the given id."
+  "Returns the maximum usable mana for the player with the given id."
   {:test (fn []
            (is= (-> (create-game)
                     (get-max-mana "p1"))
@@ -776,7 +776,6 @@
   ([state player-id]
    (get-max-mana (get-player state player-id))))
 
-
 (defn get-extra-mana
   "Returns the extra mana for the player with the given id."
   {:test (fn []
@@ -799,6 +798,15 @@
                 (create-game [{:extra-mana 2}])))}
   ([state player-id amount]
    (update-in state [:players player-id :extra-mana] (partial + amount))))
+
+(defn reset-extra-mana
+  {:test (fn []
+           (is= (-> (create-game [{:extra-mana 2}])
+                    (reset-extra-mana "p1")
+                    (get-extra-mana "p1"))
+                0))}
+  [state player-id]
+  (assoc-in state [:players player-id :extra-mana] 0))
 
 (defn get-mana
   "Returns the mana available to use for the given player-id."
