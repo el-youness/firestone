@@ -196,11 +196,11 @@
   {:test (fn []
            ; Play minion
            (is= (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
-                    (play-minion-card "p1" "wg" {:position 0}))
-                (create-game [{:minions   ["War Golem"]
-                               :used-mana (:mana-cost (get-definition "War Golem"))}]
-                             :minion-ids-summoned-this-turn ["m1"]
-                             :cards-played-this-turn [(create-card "War Golem" :id "wg" :owner-id "p1")]))
+                    (play-minion-card "p1" "wg" {:position 0})
+                    (get-minions "p1")
+                    (first)
+                    (:name))
+                "War Golem")
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-minion "War Golem" :id "wg")]}])
