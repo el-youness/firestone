@@ -170,6 +170,7 @@
                                                                                                  :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  0
                                                        :fatigue                     1}
                                                  "p2" {:id                          "p2"
                                                        :attacks-performed-this-turn 0
@@ -182,6 +183,7 @@
                                                                                                  :hero-power (create-hero-power "Fireblast" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  0
                                                        :fatigue                     1}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []
@@ -209,6 +211,7 @@
                                                                                                                    (assoc :owner-id (str "p" (inc index)))))
                                                           :max-mana                    10
                                                           :used-mana                   0
+                                                          :extra-mana                  0
                                                           :fatigue                     1}))
                                           (reduce (fn [a v]
                                                     (assoc a (:id v) v))
@@ -539,6 +542,7 @@
                                                                                                  :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  0
                                                        :fatigue                     1}
                                                  "p2" {:id                          "p2"
                                                        :attacks-performed-this-turn 0
@@ -554,6 +558,7 @@
                                                                                                  :hero-power (create-hero-power "Lesser Heal" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  0
                                                        :fatigue                     1}}
                  :counter                       2
                  :minion-ids-summoned-this-turn []
@@ -579,6 +584,7 @@
                                                                                                  :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  0
                                                        :fatigue                     1}
                                                  "p2" {:id                          "p2"
                                                        :attacks-performed-this-turn 0
@@ -594,13 +600,14 @@
                                                                                                  :hero-power (create-hero-power "Lesser Heal" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  0
                                                        :fatigue                     1}}
                  :counter                       4
                  :minion-ids-summoned-this-turn []
                  :cards-played-this-turn        []
                  :seed                          0})
            ; Test to add mana
-           (is= (create-game [{} {:max-mana 5 :used-mana 2 :fatigue 4}])
+           (is= (create-game [{:extra-mana 1} {:max-mana 5 :used-mana 2 :fatigue 4}])
                 {:player-id-in-turn             "p1"
                  :players                       {"p1" {:id                          "p1"
                                                        :attacks-performed-this-turn 0
@@ -616,6 +623,7 @@
                                                                                                  :hero-power (create-hero-power "Fireblast" :owner-id "p1" :id "hp1"))
                                                        :max-mana                    10
                                                        :used-mana                   0
+                                                       :extra-mana                  1
                                                        :fatigue                     1}
                                                  "p2" {:id                          "p2"
                                                        :attacks-performed-this-turn 0
@@ -631,6 +639,7 @@
                                                                                                  :hero-power (create-hero-power "Fireblast" :owner-id "p2" :id "hp2"))
                                                        :max-mana                    5
                                                        :used-mana                   2
+                                                       :extra-mana                  0
                                                        :fatigue                     4}}
                  :counter                       1
                  :minion-ids-summoned-this-turn []
@@ -706,9 +715,15 @@
                                           data))
 
                      ; Add mana and fatigue to the players
-                     (reduce (fn [state {player-id :player-id max-mana :max-mana used-mana :used-mana fatigue :fatigue aptt :attacks-performed-this-turn}]
+                     (reduce (fn [state {player-id :player-id
+                                         max-mana :max-mana
+                                         used-mana :used-mana
+                                         extra-mana :extra-mana
+                                         fatigue :fatigue
+                                         aptt :attacks-performed-this-turn}]
                                (-> (assoc-in state [:players player-id :max-mana] max-mana)
                                    (assoc-in [:players player-id :used-mana] used-mana)
+                                   (assoc-in [:players player-id :extra-mana] extra-mana)
                                    (assoc-in [:players player-id :fatigue] fatigue)
                                    (assoc-in [:players player-id :attacks-performed-this-turn] aptt)))
                              $
@@ -723,6 +738,9 @@
                                              :used-mana                   (if (nil? (:used-mana player-data))
                                                                             0
                                                                             (:used-mana player-data))
+                                             :extra-mana                  (if (nil? (:extra-mana player-data))
+                                                                            0
+                                                                            (:extra-mana player-data))
                                              :attacks-performed-this-turn (if (nil? (:attacks-performed-this-turn player-data))
                                                                             0
                                                                             (:attacks-performed-this-turn player-data))})
@@ -744,6 +762,30 @@
   ([state player-id]
    (get-max-mana (get-player state player-id))))
 
+
+(defn get-extra-mana
+  "Returns the extra mana for the player with the given id."
+  {:test (fn []
+           (is= (-> (create-game)
+                    (get-extra-mana "p2"))
+                0)
+           (is= (-> (create-game [{:extra-mana 2}])
+                    (get-extra-mana "p1"))
+                2))}
+  ([player]
+   (:extra-mana player))
+  ([state player-id]
+   (get-extra-mana (get-player state player-id))))
+
+(defn add-extra-mana
+  "Adds a given amount of extra-mana for the given player-id."
+  {:test (fn []
+           (is= (-> (create-game [{:extra-mana 1}])
+                    (add-extra-mana "p1" 1))
+                (create-game [{:extra-mana 2}])))}
+  ([state player-id amount]
+   (update-in state [:players player-id :extra-mana] (partial + amount))))
+
 (defn get-mana
   "Returns the mana available to use for the given player-id."
   {:test (fn []
@@ -758,8 +800,10 @@
                 6)
            )}
   [state player-id]
-  (let [player-data (get-player state player-id)]
-    (- (get-max-mana state player-id) (:used-mana player-data))))
+  (let [player-data (get-player state player-id)
+        avaliable-mana (+ (:max-mana player-data) (:extra-mana player-data))
+        used-mana (:used-mana player-data)]
+    (- avaliable-mana used-mana)))
 
 (defn get-minion
   "Returns the minion with the given id."

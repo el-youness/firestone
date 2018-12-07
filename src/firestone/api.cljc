@@ -91,6 +91,9 @@
           (update-hero-power new-pid :used false)
           (reset-minion-attack-this-turn new-pid)))))
 
+(defn clear-events [state]
+  (dissoc state :event))
+
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."
   {:test (fn []
@@ -179,9 +182,6 @@
         (consume-mana player-id (get-cost card))
         (remove-card-from-hand player-id card-id)
         (add-to-cards-played-this-turn card))))
-
-(defn clear-events [state]
-  (dissoc state :event))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
