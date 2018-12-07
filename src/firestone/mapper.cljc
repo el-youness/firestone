@@ -219,14 +219,27 @@
 (defn core-game->client-game
   {:test (fn []
            (is (spec/valid? :firestone.spec/game-states
-                             (-> (create-game [{:minions ["Imp" "Loot Hoarder" "Acolyte of Pain"]
-                                                :hand    ["Snake Trap" "Imp"]
-                                                :deck    ["Frostbolt"]}
-                                               {:secrets ["Snake Trap"]}])
-                                 (core-game->client-game "the game id")))))}
+                            (-> (create-game [{:minions ["Imp" "Loot Hoarder" "Acolyte of Pain"]
+                                               :hand    ["Snake Trap" "Imp"]
+                                               :deck    ["Frostbolt"]}
+                                              {:secrets ["Snake Trap"]}])
+                                (core-game->client-game "the game id")))))}
   [state id]
-  [{:id             id
-    :player-in-turn (get-player-id-in-turn state)
-    :players        (map (fn [p]
-                           (core-player->client-player state p))
-                         (get-players state))}])
+  [(merge {:id             id
+           :player-in-turn (get-player-id-in-turn state)
+           :players        (map (fn [p]
+                                  (core-player->client-player state p))
+                                (get-players state))}
+          (when (:event state)
+            {:event (:event state)}))])
+
+
+
+
+
+
+
+
+
+
+

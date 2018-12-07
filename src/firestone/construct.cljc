@@ -849,6 +849,20 @@
        (first)
        :hero-power))
 
+(defn get-characters
+  {:test (fn []
+           (is= (->> (create-game [{:hero "Rexxar"}])
+                    (get-characters)
+                    (map :name))
+                ["Rexxar" "Jaina Proudmoore"])
+           (is= (->> (create-game [{:minions ["Imp"]}])
+                    (get-characters)
+                    (map :name))
+                ["Imp" "Jaina Proudmoore" "Jaina Proudmoore"]))}
+  [state]
+  (concat (get-minions state)
+          (get-heroes state)))
+
 (defn get-character
   "Returns the character with the given id from the state."
   {:test (fn []
@@ -861,10 +875,13 @@
                     (:name))
                 "Imp"))}
   [state id]
-  (->> (concat (get-minions state)
-               (get-heroes state))
+  (->> (get-characters state)
        (filter (fn [c] (= (:id c) id)))
        (first)))
+
+(defn get-trigger-entities [state]
+  (concat (get-minions state)
+          (get-secrets state)))
 
 (defn get-board-entity
   "Returns the hero, minion or secret with the given id from the state."
@@ -1236,7 +1253,7 @@
   )
 
 (defn get-triggered-effects
-  "Gets all the active triggered effects or the ones with given trigger."
+  "Gets all the active triggered effects or the ones with given trigger." ;TODO change this
   {:test (fn []
            (let [state (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]
                                       :minions [(create-minion "Acolyte of Pain" :id "ap")
@@ -1251,6 +1268,7 @@
                        (is= (get-character-buffs $ "fb") [{:extra-attack 1}]) ; Frothing Berseker gets +1 attack buff
                        (is= (count (get-hand $ "p1")) 1)))))} ; p1 draws one card from Acolyte of Pain effect
   [state trigger]
+  {:pre [(keyword? trigger)]}
   (->> (concat (get-minions state) (get-secrets state))
        (reduce (fn [m e]
                  (let [triggered-effect (get-entity-triggered-effect e)]

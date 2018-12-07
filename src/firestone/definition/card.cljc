@@ -411,8 +411,8 @@
     :health      2
     :mana-cost   2
     :type        :minion
-    :set         :classic
-    :rarity      :goblins-vs-gnomes
+    :set         :goblins-vs-gnomes
+    :rarity      :rare
     :description "Battlecry: Give a minion -2 Attack this turn."
     :target-type :all-minions
     :battlecry   (fn [state _ target-id]
