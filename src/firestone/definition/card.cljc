@@ -466,16 +466,17 @@
     :class            :paladin
     :description      "When your turn starts, give your minions +1/+1."
     :triggered-effect {:on-start-turn (fn [state competitive-spirit-id _]
-                                        (let [player-id (get-owner state competitive-spirit-id)
-                                              minions (get-minions state player-id)]
+                                        (let [owner-id (get-owner state competitive-spirit-id)
+                                              minions (get-minions state owner-id)]
                                           ; If there are no minions on the board the secret doesn't activate
-                                          (if (> (count minions) 1)
-                                            (as-> (remove-secret state player-id competitive-spirit-id) $
+                                          (if (and (= owner-id (get-player-id-in-turn state))
+                                                   (> (count minions) 1))
+                                            (as-> (remove-secret state owner-id competitive-spirit-id) $
                                                   (reduce (fn [state minion]
                                                             (add-buff state (minion :id) {:extra-health 1
                                                                                           :extra-attack 1}))
                                                           $
-                                                          (get-minions $ player-id)))
+                                                          (get-minions $ owner-id)))
                                             state)))}}})
 
 (definitions/add-definitions! card-definitions)
