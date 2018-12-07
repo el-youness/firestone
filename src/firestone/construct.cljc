@@ -755,10 +755,24 @@
   "Returns the max mana for the player with the given id."
   {:test (fn []
            (is= (-> (create-game)
-                    (get-max-mana "p2"))
-                10))}
+                    (get-max-mana "p1"))
+                10)
+           (is= (-> (create-game [{:extra-mana 2}])
+                    (get-max-mana "p1"))
+                10)
+           (is= (-> (create-game [{:max-mana 7 :extra-mana 5}])
+                    (get-max-mana "p1"))
+                10)
+           (is= (-> (create-game [{:max-mana 7 :extra-mana 2}])
+                    (get-max-mana "p1"))
+                9))}
   ([player]
-   (:max-mana player))
+   (let [extra-mana (:extra-mana player)
+         max-mana (:max-mana player)]
+     (if (> (+ max-mana extra-mana) 10)
+       10
+       (+ max-mana extra-mana)))
+    )
   ([state player-id]
    (get-max-mana (get-player state player-id))))
 
@@ -801,7 +815,7 @@
            )}
   [state player-id]
   (let [player-data (get-player state player-id)
-        avaliable-mana (+ (:max-mana player-data) (:extra-mana player-data))
+        avaliable-mana (get-max-mana state player-id)
         used-mana (:used-mana player-data)]
     (- avaliable-mana used-mana)))
 
