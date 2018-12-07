@@ -30,21 +30,21 @@
       (game-response (edn-api/create-game! game-id))
 
       "/endTurn"
-      (let [player-id (edn-api/get-player-id-in-turn game-id)]
+      (let [player-id (edn-api/get-player-id-in-turn)]
         (game-response (edn-api/end-turn! game-id player-id)))
 
       "/attack"
       (let [params (json/read-json (slurp (:body request)))
             attacker-id (:attackerId params)
             target-id (:targetId params)
-            player-id (edn-api/get-player-id-in-turn game-id)]
+            player-id (edn-api/get-player-id-in-turn)]
         (game-response (edn-api/attack! game-id player-id attacker-id target-id)))
 
       "/playMinionCard"
       (let [params (json/read-json (slurp (:body request)))
             card-id (:cardId params)
             position (Integer. (:position params))
-            player-id (edn-api/get-player-id-in-turn game-id)
+            player-id (edn-api/get-player-id-in-turn)
             target-id (:targetId params)]
         (game-response (edn-api/play-minion-card! game-id player-id card-id position target-id)))
 
@@ -52,12 +52,12 @@
       (let [params (json/read-json (slurp (:body request)))
             card-id (:cardId params)
             target-id (:targetId params)
-            player-id (edn-api/get-player-id-in-turn game-id)]
+            player-id (edn-api/get-player-id-in-turn)]
         (game-response (edn-api/play-spell-card! game-id player-id card-id target-id)))
 
       "/useHeroPower"
       (let [params (json/read-json (slurp (:body request)))
-            player-id (edn-api/get-player-id-in-turn game-id)
+            player-id (edn-api/get-player-id-in-turn)
             target-id (:targetId params)]
         (game-response (edn-api/use-hero-power! game-id player-id target-id)))
       )))

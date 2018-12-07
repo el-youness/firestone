@@ -20,6 +20,62 @@
                   (count))
               1))
 
+(deftest alarm-o-bot
+         (as-> (create-game [{:hand [(create-card "Alarm-o-Bot" :id "ab") "Imp" "Frostbolt"]}]) $
+               (play-minion-card $ "p1" "ab" {:position 0})
+               (end-turn $)
+               ; Alram-o-Bot still on board after end of turn
+               (do (is= (->> (get-minions $ "p1")
+                             (first)
+                             :name)
+                        "Alarm-o-Bot")
+                   $)
+               (end-turn $)
+               ; Alarm-o-Bot back in hand.
+               (do (is= (->> (get-hand $ "p1")
+                             (filter (fn [c] (= (:name c) "Alarm-o-Bot")))
+                             (count))
+                        1)
+                   ; Imp on board
+                   (is= (->> (get-minions $ "p1")
+                             (first)
+                             :name)
+                        "Imp")
+                   $)
+               (let [alarm-o-bot-id (->> (get-hand $ "p1")
+                                         (filter (fn [c] (= (:name c) "Alarm-o-Bot")))
+                                         (first)
+                                         :id)]
+                 (as-> (play-minion-card $ "p1" alarm-o-bot-id {:position 0}) $
+                       (end-turn $)
+                       (end-turn $)
+                       ; Cannot swap with spell, Alarm-o-Bot still on board
+                       (do (is= (->> (get-minions $ "p1")
+                                     (filter (fn [m] (= (:name m) "Alarm-o-Bot")))
+                                     (count))
+                                1)
+                           ; Frostbolt still in hand
+                           (is= (->> (get-hand $ "p1")
+                                     (filter (fn [c] (= (:name c) "Frostbolt")))
+                                     (count))
+                                1)))))
+         ; Works even if board and hand are full
+         (as-> (create-game [{:hand    (conj (repeat 9 "War Golem") (create-minion "Alarm-o-Bot" :id "ab"))
+                              :deck    ["War Golem"]
+                              :minions (repeat 6 "Imp")}]) $
+               (play-minion-card $ "p1" "ab" {:position 5})
+               (end-turn $)
+               (end-turn $)
+               (do (is= (->> (get-minions $ "p1")
+                             (filter (fn [m] (= (:name m) "War Golem")))
+                             (first)
+                             (get-position))
+                        5)
+                   (is= (->> (get-hand $ "p1")
+                             (filter (fn [c] (= (:name c) "Alarm-o-Bot")))
+                             (count))
+                        1))))
+
 (deftest arcane-golem
          (as-> (create-game [{:hand [(create-card "Arcane Golem" :id "ag1") (create-card "Arcane Golem" :id "ag2")]}
                              {:max-mana 9}]) $
@@ -182,7 +238,14 @@
                    $)
                (end-turn $)
                (do (is-not (frozen? (get-minion $ "wg")))
-                   $)))
+                   $))
+         ; Deal fatal damage to a minion with Frostbolt
+         (is= (-> (create-game [{:hand [(create-card "Frostbolt" :id "fb")]}
+                                {:minions [(create-minion "Imp" :id "imp")]}])
+                  (play-spell-card "p1" "fb" {:target-id "imp"})
+                  (get-minions)
+                  (count))
+              0))
 
 (deftest frothing-berserker
          (is= (-> (create-game [{:minions [(create-minion "Frothing Berserker" :id "fb")]}
@@ -255,7 +318,7 @@
 
 (deftest snake-trap
          (is= (as-> (create-game [{:hand [(create-card "Snake Trap" :id "st")] :minions [(create-minion "War Golem" :id "wg")]}
-                                  {:minions [(create-minion "Imp" :id "imp")]} :player-id-in-turn "p2"]) $
+                                  {:minions [(create-minion "Imp" :id "imp")]}]) $
                     (play-spell-card $ "p1" "st" {})
                     (end-turn $)
                     (attack-with-minion $ "imp" "wg")
@@ -265,7 +328,8 @@
               3)
          ; The Snake Trap should only work once
          (is= (as-> (create-game [{:secrets ["Snake Trap"] :minions [(create-minion "War Golem" :id "wg")]}
-                                  {:minions [(create-minion "Imp" :id "imp1") (create-minion "Imp" :id "imp2")]}] :player-id-in-turn "p2") $
+                                  {:minions [(create-minion "Imp" :id "imp1") (create-minion "Imp" :id "imp2")]}]
+                                 :player-id-in-turn "p2") $
                     (attack-with-minion $ "imp1" "wg")
                     (attack-with-minion $ "imp2" "wg")
                     (get-minions $ "p1")
@@ -301,19 +365,144 @@
               7))
 
 (deftest sylvanas-windruner
-  (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}
-                         {:minions [(create-minion "War Golem" :id "wg")]}])
-           (attack-with-minion "s" "wg")
-           (get-minions "p1")
-           (first)
-           (:name))
-       "War Golem")
-  ; If there are no opposing minions, nothing happens
-  (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}])
-           (destroy-minion "s")
-           (get-minions "p1")
-           (count))
-       0))
+         (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}
+                                {:minions [(create-minion "War Golem" :id "wg")]}])
+                  (attack-with-minion "s" "wg")
+                  (get-minions "p1")
+                  (first)
+                  (:name))
+              "War Golem")
+         ; If there are no opposing minions, nothing happens
+         (is= (-> (create-game [{:minions [(create-minion "Sylvanas Windrunner" :id "s")]}])
+                  (destroy-minion "s")
+                  (get-minions "p1")
+                  (count))
+              0))
+
+(deftest abusive-sergeant
+         (is (as-> (create-game [{:hand    [(create-card "Abusive Sergeant" :id "as1")
+                                            (create-card "Abusive Sergeant" :id "as2")]
+                                  :minions [(create-minion "Imp" :id "i1")]}
+                                 {:minions [(create-minion "Imp" :id "i2")]}]) $
+                   (play-minion-card $ "p1" "as1" {:position 0 :target-id "i1"})
+                   (do (is= (get-attack $ "i1") 3)
+                       (is= (get-attack $ "i2") 1)
+                       $)
+                   (play-minion-card $ "p1" "as2" {:position 0 :target-id "i2"})
+                   (do (is= (get-attack $ "i1") 3)
+                       (is= (get-attack $ "i2") 3)
+                       $)
+                   (end-turn $)
+                   (and (is= (get-attack $ "i1") 1)
+                        (is= (get-attack $ "i2") 1)))))
+
+(deftest shrinkmeister
+         (is (as-> (create-game [{:hand    [(create-card "Shrinkmeister" :id "s1")
+                                            (create-card "Shrinkmeister" :id "s2")]
+                                  :minions [(create-minion "Imp" :id "i1")]}
+                                 {:minions [(create-minion "War Golem" :id "wg1")]}]) $
+                   (play-minion-card $ "p1" "s1" {:position 0 :target-id "i1"})
+                   (do (is= (get-attack $ "i1") 0)
+                       (is= (get-attack $ "wg1") 7)
+                       $)
+                   (play-minion-card $ "p1" "s2" {:position 0 :target-id "wg1"})
+                   (do (is= (get-attack $ "i1") 0)
+                       (is= (get-attack $ "wg1") 5)
+                       $)
+                   (end-turn $)
+                   (and (is= (get-attack $ "i1") 1)
+                        (is= (get-attack $ "wg1") 7)))))
+
+(deftest malygos
+         (as-> (create-game [{:hand [(create-card "Malygos" :id "ms") (create-card "Frostbolt" :id "f1")]}
+                             {:deck [(create-card "Imp")]}]) $
+               (play-minion-card $ "p1" "ms" {:position 0})
+               (do (is= (count (get-hand $ "p1")) 1)
+                   (is= (count (get-minions $ "p1")) 1)
+                   $)
+               (end-turn $)
+               (end-turn $)
+               (play-spell-card $ "p1" "f1" {:target-id "h2"})
+               (do (is= (get-mana $ "p1") 8)
+                   (is= (get-health $ "h2") (- ((get-definition "Jaina Proudmoore") :health) 8))
+                   $)))
+
+
+(deftest ancient-watcher
+         (error? (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                   {:minions [(create-minion "War Golem" :id "wg")]}])
+                     (attack-with-minion "aw" "wg"))))
+
+(deftest unpowered-mauler
+         (as-> (create-game [{:minions [(create-minion "Unpowered Mauler" :id "um")]
+                              :hand    [(create-card "Frostbolt" :id "f")]}
+                             {:minions [(create-minion "Imp" :id "i")]}]) $
+               (do (error? (attack-with-minion $ "um" "i"))
+                   $)
+               (play-spell-card $ "p1" "f" {:target-id "h2"})
+               (attack-with-minion $ "um" "i")
+               (do (is= (count (get-minions $ "p2")) 0)
+                   (is= (get-health $ "um") 3)
+                   $)
+               (end-turn $)
+               (end-turn $)
+               (error? (attack-with-minion $ "um" "h2"))))
+
+(deftest competitive-spirit
+         (as-> (create-game [{:hand [(create-card "Competitive Spirit" :id "cs")] :minions ["Imp" "Imp"]}]) $
+               (play-spell-card $ "p1" "cs" {})
+               (do (is= (-> (get-secrets $ "p1")
+                            (first)
+                            :name)
+                        "Competitive Spirit") $)
+               (end-turn $)
+               (do (is= (->> (get-minions $ "p1")
+                             (map (fn [m] (get-extra-attack m))))
+                        '(0 0))
+                   (is= (count (get-secrets $ "p1"))
+                        1)
+                   $)
+               (end-turn $)
+               (do (is= (->> (get-minions $ "p1")
+                             (map (fn [m] (get-character-buffs m))))
+                        '(({:extra-health 1 :extra-attack 1})
+                          ({:extra-health 1 :extra-attack 1})))
+                   (is= (count (get-secrets $ "p1"))
+                        0)
+                   $))
+         ; When there is no minion on the board the secret doesn't activate (i.e doesn't get removed)
+         (as-> (create-game [{:hand [(create-card "Competitive Spirit" :id "cs")]}]) $
+               (play-spell-card $ "p1" "cs" {})
+               (do (is= (-> (get-secrets $ "p1")
+                            (first)
+                            :name)
+                        "Competitive Spirit") $)
+               (end-turn $)
+               (end-turn $)
+               (do (is= (-> (get-secrets $ "p1")
+                            (first)
+                            :name)
+                        "Competitive Spirit") $)))
+
+(deftest the-coin
+         (as-> (create-game [{:max-mana 7 :hand [(create-card "The Coin" :id "tc") (create-card "War Golem" :id "wg") (create-card "Imp" :id "i")]}]) $
+               (play-minion-card $ "p1" "wg" {:position 0})
+               (do (is= (get-extra-mana $ "p1")
+                        0)
+                   (is= (get-mana $ "p1")
+                        0) $)
+               (play-spell-card $ "p1" "tc" {})
+               (do (is= (get-extra-mana $ "p1")
+                        1)
+                   (is= (get-mana $ "p1")
+                        1) $)
+               (play-minion-card $ "p1" "i" {:position 1})
+               (end-turn $)
+               (end-turn $)
+               (do (is= (get-extra-mana $ "p1")
+                        0)
+                   (is= (get-mana $ "p1")
+                        8) $)))
 
 (deftest doomsayer
          (is= (-> (create-game [{:minions [(create-minion "Doomsayer" :id "s")]}

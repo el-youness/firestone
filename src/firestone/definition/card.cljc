@@ -24,10 +24,19 @@
                                          add-card-to-hand
                                          get-hand
                                          get-mana
+                                         get-board-entity
                                          get-hero-id
                                          get-player
+                                         get-seed
+                                         remove-minion
+                                         set-seed
+                                         get-position
                                          add-buff
-                                         hero?]]
+                                         hero?
+                                         get-cards-played-this-turn
+                                         get-player-id-in-turn
+                                         remove-card-from-hand
+                                         add-extra-mana]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -41,14 +50,41 @@
                                     destroy-minion
                                     valid-attack?
                                     give-card
+                                    minion-card?
                                     add-to-max-mana
-                                    deal-spell-damage]]
+                                    deal-spell-damage
+                                    spell-card?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
 
 (def card-definitions
   {
+
+   "Alarm-o-Bot"
+   {:name             "Alarm-o-Bot"
+    :mana-cost        3
+    :health           3
+    :attack           0
+    :type             :minion
+    :rarity           :rare
+    :race             :mech
+    :set              :classic
+    :description      "At the start of your turn, swap this minion with a random one in your hand."
+    :triggered-effect {:on-start-turn (fn [state this _]
+                                        (let [owner-id (get-owner state this)
+                                              minion-cards-in-hand (->> (get-hand state owner-id)
+                                                                        (filter (fn [c] (minion-card? c))))]
+                                          (if (and (= owner-id (get-player-id-in-turn state))
+                                                (> (count minion-cards-in-hand) 0))
+                                            (let [[seed random-minion-card] (random-nth (get-seed state) minion-cards-in-hand)
+                                                  position (get-position state this)]
+                                              (-> (set-seed state seed)
+                                                  (remove-minion this)
+                                                  (summon-minion owner-id random-minion-card position)
+                                                  (remove-card-from-hand owner-id (:id random-minion-card))
+                                                  (give-card owner-id (create-card "Alarm-o-Bot"))))
+                                            state)))}}
 
    "Dalaran Mage"
    {:name         "Dalaran Mage"
@@ -194,7 +230,7 @@
     :set           :classic
     :rarity        :rare
     :description   "Can't attack."
-    :cannot-attack true}
+    :cannot-attack (fn [_] true)}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"
@@ -207,10 +243,11 @@
     :race        :mech
     :description "Deathrattle: Summon a random Legendary minion."
     :deathrattle (fn [state player-id]
-                   (let [[_ legendary-minion] (->> (get-definitions)
-                                                   (filter (fn [v] (= (:rarity v) :legendary)))
-                                                   (random-nth 0))]
-                     (summon-minion state player-id legendary-minion)))}
+                   (let [[seed legendary-minion] (->> (get-definitions)
+                                                      (filter (fn [v] (= (:rarity v) :legendary)))
+                                                      (random-nth (get-seed state)))]
+                     (-> (summon-minion state player-id legendary-minion)
+                         (set-seed seed))))}
 
    "King Mukla"
    {:name            "King Mukla"
@@ -237,9 +274,9 @@
     :target-type :all
     :spell       (fn [state target-id]
                    (as-> (deal-spell-damage state target-id 3) $
-                         (if (hero? state target-id)
-                           (update-in-hero $ target-id [:effects :frozen] true)
-                           (add-buff $ target-id {:frozen true}))))}
+                         (if (get-board-entity $ target-id)
+                           (add-buff $ target-id {:frozen true})
+                           $)))}
 
    "Cabal Shadow Priest"
    {:name             "Cabal Shadow Priest"
@@ -299,7 +336,9 @@
                    (let [opp-pid (opposing-player-id player-id)
                          opp-minions (get-minions state opp-pid)]
                      (if (> (count opp-minions) 0)
-                       (change-minion-board-side state (:id (second (random-nth 0 opp-minions))))
+                       (let [[seed minion] (random-nth (get-seed state) opp-minions)]
+                         (-> (change-minion-board-side state (:id minion))
+                             (set-seed seed)))
                        state)))}
 
    "Frothing Berserker"
@@ -319,6 +358,7 @@
     :mana-cost   1
     :type        :spell
     :set         :classic
+    :rarity      :none
     :description "Give a minion +1/+1."
     :target-type :all-minions
     :spell       (fn [state target-id]
@@ -344,6 +384,7 @@
     :subtype          :secret
     :set              :classic
     :rarity           :epic
+    :class            :hunter
     :description      "Secret: When one of your minions is attacked summon three 1/1 Snakes."
     :triggered-effect {:on-attack (fn [state snake-trap-id [attacked-minion-id]]
                                     (let [player-id (get-owner state snake-trap-id)]
@@ -557,5 +598,102 @@
     :rarity      :rare
     :description "All minions lose Stealth. Destroy all enemy Secrets. Draw a card."}
    })
+
+   "Abusive Sergeant"
+   {:name        "Abusive Sergeant"
+    :attack      1
+    :health      1
+    :mana-cost   1
+    :type        :minion
+    :set         :classic
+    :rarity      :common
+    :description "Battlecry: Give a minion +2 Attack this turn."
+    :target-type :all-minions
+    :battlecry   (fn [state _ target-id]
+                   (add-buff state target-id {:extra-attack 2
+                                              :counter      1}))}
+
+   "Shrinkmeister"
+   {:name        "Shrinkmeister"
+    :attack      3
+    :health      2
+    :mana-cost   2
+    :type        :minion
+    :set         :goblins-vs-gnomes
+    :rarity      :rare
+    :description "Battlecry: Give a minion -2 Attack this turn."
+    :target-type :all-minions
+    :battlecry   (fn [state _ target-id]
+                   (add-buff state target-id {:extra-attack -2
+                                              :counter      1}))}
+
+   "Malygos"
+   {:name         "Malygos"
+    :mana-cost    9
+    :health       12
+    :attack       4
+    :type         :minion
+    :set          :classic
+    :rarity       :legendary
+    :race         :dragon
+    :description  "Spell Damage +5"
+    :spell-damage 5}
+
+   "Steward"
+   {:name      "Steward"
+    :mana-cost 1
+    :health    1
+    :attack    1
+    :type      :minion
+    :set       :one-night-in-karazhan
+    :rarity    :none}
+
+
+   "Unpowered Mauler"
+   {:name          "Unpowered Mauler"
+    :attack        2
+    :health        4
+    :mana-cost     2
+    :type          :minion
+    :set           :the-boomsday-project
+    :rarity        :rare
+    :race          :mech
+    :description   "Can only attack if you cast a spell this turn."
+    :cannot-attack (fn [state]
+                     (-> (filter (fn [card] (spell-card? card)) (get-cards-played-this-turn state))
+                         (count)
+                         (= 0)))}
+
+   "Competitive Spirit"
+   {:name             "Competitive Spirit"
+    :mana-cost        1
+    :type             :spell
+    :subtype          :secret
+    :set              :grand-tournament
+    :rarity           :rare
+    :class            :paladin
+    :description      "When your turn starts, give your minions +1/+1."
+    :triggered-effect {:on-start-turn (fn [state competitive-spirit-id _]
+                                        (let [owner-id (get-owner state competitive-spirit-id)
+                                              minions (get-minions state owner-id)]
+                                          ; If there are no minions on the board the secret doesn't activate
+                                          (if (and (= owner-id (get-player-id-in-turn state))
+                                                   (> (count minions) 0))
+                                            (as-> (remove-secret state owner-id competitive-spirit-id) $
+                                                  (reduce (fn [state minion]
+                                                            (add-buff state (minion :id) {:extra-health 1
+                                                                                          :extra-attack 1}))
+                                                          $
+                                                          (get-minions $ owner-id)))
+                                            state)))}}
+   "The Coin"
+   {:name             "The Coin"
+    :mana-cost        0
+    :type             :spell
+    :set              :basic
+    :rarity           :none
+    :description      "Gain 1 Mana Crystal this turn only."
+    :spell            (fn [state]
+                        (add-extra-mana state (get state :player-id-in-turn) 1))}})
 
 (definitions/add-definitions! card-definitions)

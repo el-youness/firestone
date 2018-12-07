@@ -7,4 +7,6 @@
                  [org.clojure/data.json "0.2.6"]]
   :main ^:skip-aot firestone.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  ;:jvm-opts ["--add-modules" "java.xml.bind"]
+  )

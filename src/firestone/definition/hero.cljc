@@ -1,7 +1,8 @@
 (ns firestone.definition.hero
   (:require [firestone.definitions :as definitions]
             [firestone.construct :refer [create-card
-                                         get-character]]
+                                         get-character
+                                         get-player-id-in-turn]]
             [firestone.core :refer [heal-minion
                                     damage-minion
                                     heal-hero
@@ -66,7 +67,7 @@
     :type        :hero-power
     :description "Summon a 1/1 Silver Hand Recruit."
     :power       (fn [state]
-                   (summon-minion state (:player-id-in-turn state) (create-card "Silver Hand Recruit") 0))}
+                   (summon-minion state (get-player-id-in-turn state) (create-card "Silver Hand Recruit") 0))}
 
    "Steady Shot"
    {:name        "Steady Shot"
@@ -75,7 +76,7 @@
     :description "Deal 2 damage to the enemy hero."
     :power       (fn [state]
                    (damage-hero state
-                                (if (= (:player-id-in-turn state) "p1")
+                                (if (= (get-player-id-in-turn state) "p1")
                                   "h2"
                                   "h1")
                                 2))}
