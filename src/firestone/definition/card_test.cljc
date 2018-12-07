@@ -427,6 +427,27 @@
                    (is= (get-health $ "h2") (- ((get-definition "Jaina Proudmoore") :health) 8))
                    $)))
 
+
+(deftest ancient-watcher
+         (error? (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                   {:minions [(create-minion "War Golem" :id "wg")]}])
+                     (attack-with-minion "aw" "wg"))))
+
+(deftest unpowered-mauler
+         (as-> (create-game [{:minions [(create-minion "Unpowered Mauler" :id "um")]
+                              :hand    [(create-card "Frostbolt" :id "f")]}
+                             {:minions [(create-minion "Imp" :id "i")]}]) $
+               (do (error? (attack-with-minion $ "um" "i"))
+                   $)
+               (play-spell-card $ "p1" "f" {:target-id "h2"})
+               (attack-with-minion $ "um" "i")
+               (do (is= (count (get-minions $ "p2")) 0)
+                   (is= (get-health $ "um") 3)
+                   $)
+               (end-turn $)
+               (end-turn $)
+               (error? (attack-with-minion $ "um" "h2"))))
+
 (deftest competitive-spirit
          (as-> (create-game [{:hand [(create-card "Competitive Spirit" :id "cs")] :minions ["Imp" "Imp"]}]) $
                (play-spell-card $ "p1" "cs" {})
@@ -455,6 +476,5 @@
                (do (is= (-> (get-secrets $ "p1")
                             (first)
                             :name)
-                        "Competitive Spirit") $))
-         )
+                        "Competitive Spirit") $)))
 

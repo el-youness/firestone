@@ -22,8 +22,10 @@
                                          get-card-from-hand
                                          remove-card-from-hand
                                          update-hero-power
-                                         hero?
-                                         decrement-buff-counters]]
+                                         decrement-buff-counters
+                                         add-to-cards-played-this-turn
+                                         reset-cards-played-this-turn
+                                         hero?]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -76,8 +78,12 @@
           ; End of turn events for player
           (decrement-buff-counters)
           (unfreeze-characters)
-          (reset-minion-ids-summoned-this-turn)
+          ; Change the player-in-turn
           (switch-player-in-turn)
+          (reset-cards-played-this-turn)
+          (reset-minion-ids-summoned-this-turn)
+
+          ; Start of turn events for the new player
           (handle-triggers :on-start-turn)
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
@@ -112,12 +118,12 @@
                              :player-id-in-turn "p2"))
            ; A minion cannot attack twice on the same turn so throws an error
            (is (as-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
-                                    {:hero (create-hero "Rexxar")}]) $
-                      (attack-with-minion $ "i" "h2")
-                      (error? (attack-with-minion $ "i" "h2"))))
+                                   {:hero (create-hero "Rexxar")}]) $
+                     (attack-with-minion $ "i" "h2")
+                     (error? (attack-with-minion $ "i" "h2"))))
            ; Invalid attack throws an error
            (is (as-> (create-game [{:minions [(create-minion "Imp" :id "i")
-                                             (create-minion "War Golem" :id "wg")]}]) $
+                                              (create-minion "War Golem" :id "wg")]}]) $
                      (error? (attack-with-minion $ "i" "wg")))))}
   [state attacker-id target-id]
   (if (valid-attack? state (get-player-id-in-turn state) attacker-id target-id)
@@ -147,10 +153,10 @@
                     (get-owner "i"))
                 "p1")
            ; Throw an error on misclick or hax-attempt
-           (let [state (create-game [{:hand [(create-card "Mind Control" :id "mindgames")
-                                             (create-card "Bananas" :id "bananas")
-                                             (create-card "Snake Trap" :id "snakes")
-                                             (create-card "Snake Trap" :id "snakes2")]
+           (let [state (create-game [{:hand    [(create-card "Mind Control" :id "mindgames")
+                                                (create-card "Bananas" :id "bananas")
+                                                (create-card "Snake Trap" :id "snakes")
+                                                (create-card "Snake Trap" :id "snakes2")]
                                       :minions [(create-minion "Imp" :id "i1")]}
                                      {:minions [(create-minion "Imp" :id "i2")]}])]
              (is (error? (play-spell-card state "p1" "mindgames" {})))
@@ -169,7 +175,8 @@
             ((get-spell-function card) state)
             ((get-spell-function card) state target-id))
           (consume-mana player-id (get-cost card))
-          (remove-card-from-hand player-id card-id)))
+          (remove-card-from-hand player-id card-id)
+          (add-to-cards-played-this-turn card)))
     (error "You cannot play the spell like this you fool.\n")))
 
 (defn play-minion-card
@@ -180,7 +187,8 @@
                     (play-minion-card "p1" "wg" {:position 0}))
                 (create-game [{:minions   ["War Golem"]
                                :used-mana (:mana-cost (get-definition "War Golem"))}]
-                             :minion-ids-summoned-this-turn ["m1"]))
+                             :minion-ids-summoned-this-turn ["m1"]
+                             :cards-played-this-turn [(create-card "War Golem" :id "wg" :owner-id "p1")]))
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-minion "War Golem" :id "wg")]}])
@@ -199,7 +207,7 @@
                                          {:minions [(create-minion "Imp" :id "i")]}])
                            (play-minion-card "p1" "bgh" {:position 0 :target-id "i"}))))
            ; Throw error (not enough mana)
-           (is (error? (-> (create-game [{:hand [(create-card "Imp" :id "i")]
+           (is (error? (-> (create-game [{:hand      [(create-card "Imp" :id "i")]
                                           :used-mana 10}])
                            (play-minion-card "p1" "i" {:position 0})))))}
   [state player-id card-id {position :position target-id :target-id}]
@@ -208,7 +216,8 @@
           battlecry-function (get-battlecry-function card)
           state (-> (consume-mana state player-id (get-cost card))
                     (summon-minion player-id card position)
-                    (remove-card-from-hand player-id card-id))
+                    (remove-card-from-hand player-id card-id)
+                    (add-to-cards-played-this-turn card))
           minion-id (-> (get-minion-ids-summoned-this-turn state)
                         (last))]
       (if battlecry-function

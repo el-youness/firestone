@@ -29,9 +29,10 @@
                                          set-seed
                                          get-position
                                          add-buff
+                                         hero?
+                                         get-cards-played-this-turn
                                          get-player-id-in-turn
-                                         remove-card-from-hand
-                                         hero?]]
+                                         remove-card-from-hand]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -47,7 +48,8 @@
                                     give-card
                                     minion-card?
                                     add-to-max-mana
-                                    deal-spell-damage]]
+                                    deal-spell-damage
+                                    spell-card?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -224,7 +226,7 @@
     :set           :classic
     :rarity        :rare
     :description   "Can't attack."
-    :cannot-attack true}
+    :cannot-attack (fn [_] true)}
 
    "Sneed's Old Shredder"
    {:name        "Sneed's Old Shredder"
@@ -437,6 +439,22 @@
     :type      :minion
     :set       :one-night-in-karazhan
     :rarity    :none}
+
+
+   "Unpowered Mauler"
+   {:name          "Unpowered Mauler"
+    :attack        2
+    :health        4
+    :mana-cost     2
+    :type          :minion
+    :set           :the-boomsday-project
+    :rarity        :rare
+    :race          :mech
+    :description   "Can only attack if you cast a spell this turn."
+    :cannot-attack (fn [state]
+                     (-> (filter (fn [card] (spell-card? card)) (get-cards-played-this-turn state))
+                         (count)
+                         (= 0)))}
 
    "Competitive Spirit"
    {:name             "Competitive Spirit"

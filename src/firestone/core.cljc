@@ -119,8 +119,8 @@
                     (get-attack "i"))
                 0))}
   ([character]
-    (let [definition (get-definition (:name character))]
-      (max 0 (+ (:attack definition) (get-extra-attack character)))))
+   (let [definition (get-definition (:name character))]
+     (max 0 (+ (:attack definition) (get-extra-attack character)))))
   ([state id]
    (get-attack (get-board-entity state id))))
 
@@ -262,9 +262,9 @@
            (is-not (-> (create-minion "Imp")
                        (deathrattle-minion?))))}
   ([minion]
-    (:deathrattle (get-definition minion)))
+   (:deathrattle (get-definition minion)))
   ([state id]
-    (deathrattle-minion? (get-minion state id))))
+   (deathrattle-minion? (get-minion state id))))
 
 (defn hero-power?
   "Checks if the given entity-id is a hero power."
@@ -297,6 +297,23 @@
        false
        (minion-card? card)))))
 
+(defn spell-card?
+  "Checks if the card or the card with the given id is a spell card."
+  {:test (fn []
+           (is (spell-card? (create-card "Frostbolt")))
+           (is (spell-card? "Frostbolt"))
+           (is (-> (create-game [{:hand [(create-card "Frostbolt" :id "f")]}])
+                   (spell-card? "f")))
+           (is-not (-> (create-game [{:hand [(create-card "Imp" :id "i")]}])
+                       (spell-card? "i"))))}
+  ([card]
+   (= (:type (get-definition card)) :spell))
+  ([state id]
+   (let [card (get-card-from-hand state id)]
+     (if (nil? card)
+       false
+       (spell-card? card)))))
+
 (defn secret-card?
   "Checks if the card or the card with the given id is a secret card."
   {:test (fn []
@@ -313,6 +330,16 @@
      (if (nil? card)
        false
        (secret-card? card)))))
+
+(defn get-cannot-attack-function
+  "Get the cannot attack function in the definition of a card."
+  {:test (fn []
+           (is (-> (create-game)
+                   ((get-cannot-attack-function (create-minion "Ancient Watcher"))))))}
+  ([minion]
+   (:cannot-attack (get-definition minion)))
+  ([state minion-id]
+   (get-cannot-attack-function (get-minion state minion-id))))
 
 (defn valid-attack?
   "Checks if the attack is valid."
@@ -352,17 +379,17 @@
                        (valid-attack? "p1" "i" "wg")))
            ; Should not be able to attack if attacker has 0 attack
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack -1}])]}])
-                       (valid-attack? "p1" "i" "h2")))
-           )}
+                       (valid-attack? "p1" "i" "h2"))))}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
-        target (get-board-entity state target-id)]
+        target (get-board-entity state target-id)
+        cannot-attack-function (get-cannot-attack-function attacker)]
     (and (= (get-player-id-in-turn state) player-id)
          (< (:attacks-performed-this-turn attacker) 1)
          (> (get-attack attacker) 0)
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
-         (not (:cannot-attack (get-definition attacker)))
+         (not (if cannot-attack-function (cannot-attack-function state) false))
          (not (frozen? attacker)))))
 
 (defn valid-attacks
@@ -806,7 +833,7 @@
            ;TODO :O this combination should not be possible. Suggest removing player-id from arguments.
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
                                              (create-minion "Imp" :id "i2")]}
-                                  {:hand    [(create-card "Bananas" :id "b1")]}])
+                                  {:hand [(create-card "Bananas" :id "b1")]}])
                     (available-targets "p1" "b1"))
                 []))}
   [state player-id entity-id]
@@ -849,36 +876,36 @@
                                                 (create-card "Big Game Hunter" :id "bgh1")]}
                                      {:minions [(create-minion "Defender" :id "d1")
                                                 (create-minion "Defender" :id "d2")]}])]
-             (is     (valid-play? state "bgh1" "wg1"))      ; Battlecry target targets the right target (tongue twister)
+             (is (valid-play? state "bgh1" "wg1"))          ; Battlecry target targets the right target (tongue twister)
              (is-not (valid-play? state "bgh1" "i1"))       ; Battlecry target targets the wrong target
              (is-not (valid-play? state "bgh1"))            ; Battlecry target required
-             (is     (valid-play? state "b1" "wg1"))        ; Spell target
-             (is     (valid-play? state "mc1" "d2"))        ; Target opposing minion
+             (is (valid-play? state "b1" "wg1"))            ; Spell target
+             (is (valid-play? state "mc1" "d2"))            ; Target opposing minion
              (is-not (valid-play? state "mc1" "i1"))        ; Non-valid target
-             (is     (valid-play? state "i3"))              ; Play a minion card
+             (is (valid-play? state "i3"))                  ; Play a minion card
              (is-not (valid-play? state "i3" "d2"))         ; Imps don't have a battlecry target
              (is-not (valid-play? state "b1"))              ; Banana spell needs a target
              (is-not (valid-play? state "hp1"))             ; Fireblast needs target (hero power)
-             (is     (valid-play? state "hp1" "d1"))        ; Fireblast targets minion
+             (is (valid-play? state "hp1" "d1"))            ; Fireblast targets minion
              (is-not (valid-play? state "hp1" "st"))
              )
            ; Play minion
            (is (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
-                    (valid-play? "wg")))
+                   (valid-play? "wg")))
            ; Play battlecry minion when there is an available target
            (is (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
-                                  {:minions [(create-minion "War Golem" :id "wg")]}])
-                    (valid-play? "bgh" "wg")))
+                                 {:minions [(create-minion "War Golem" :id "wg")]}])
+                   (valid-play? "bgh" "wg")))
            ; Play battlecry minion when there are no available targets
            (let [state (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")
-                                             (create-card "Bananas" :id "b1")]}]) ]
-                 (is (valid-play? state "bgh"))
-                 (is-not (valid-play? state "b1")))
+                                             (create-card "Bananas" :id "b1")]}])]
+             (is (valid-play? state "bgh"))
+             (is-not (valid-play? state "b1")))
            ; Cannot play a secret card if that secret it already in play.
            (is-not (-> (create-game [{:secrets [(create-card "Snake Trap" :id "s1")]
-                                      :hand [(create-card "Snake Trap" :id "s2")]}])
+                                      :hand    [(create-card "Snake Trap" :id "s2")]}])
                        (valid-play? "s2")))
-           )}     ; Cannot target cards
+           )}                                               ; Cannot target cards
   ([state entity-id & [target-id]]
    (let [player-in-turn (get-player-id-in-turn state)
          targets (available-targets state player-in-turn entity-id)]
@@ -886,7 +913,7 @@
        (if target-id
          (if (empty? targets)
            false
-           (some (fn [x] (= target-id x)) targets)) ; Is the target in targets ?
+           (some (fn [x] (= target-id x)) targets))         ; Is the target in targets ?
          (if (spell-with-target? state entity-id)
            false
            (empty? targets)))
@@ -1129,8 +1156,7 @@
                     (deal-spell-damage "wg" 3)
                     (get-health "wg"))
                 (as-> (get-definition "War Golem") $
-                      (- ($ :health) 5)))
-           )}
+                      (- ($ :health) 5))))}
   [state target-id damage]
   (let [total-damage (+ damage (get-player-spell-damage state (get-player-id-in-turn state)))
         target (get-character state target-id)]
