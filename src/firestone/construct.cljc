@@ -258,7 +258,7 @@
                     (get-player-id-in-turn))
                 "p2"))}
   [state]
-  (assoc state :player-id-in-turn (opposing-player-id (get-player-id-in-turn state)) ))
+  (assoc state :player-id-in-turn (opposing-player-id (get-player-id-in-turn state))))
 
 (defn get-players
   "Rrturns the players."
@@ -431,29 +431,31 @@
                                          :id id))))))
 
 (defn add-minion-to-board
-  "Adds a minion with a given position to a player's minions and updates the other minions' positions."
+  "Adds a minion with a given position to a player's minions and updates the other minions' positions. Returns a tuple
+  with the state and the id of the minion added to board."
   {:test (fn []
            ; Adding a minion to an empty board
-           (is= (as-> (create-empty-state) $
-                      (add-minion-to-board $ {:player-id "p1" :minion (create-minion "Imp" :id "i") :position 0})
-                      (get-minions $ "p1")
-                      (map (fn [m] {:id (:id m) :name (:name m)}) $))
-                [{:id "i" :name "Imp"}])
+           (let [[state id] (-> (create-empty-state)
+                                (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i") :position 0}))]
+             (is= (->> (get-minions state)
+                       (map :name))
+                  ["Imp"])
+             (is= id "i"))
            ; Adding a minion and update positions
-           (let [minions (-> (create-empty-state)
-                             (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i1") :position 0})
-                             (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i2") :position 0})
-                             (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp" :id "i3") :position 1})
-                             (get-minions "p1"))]
+           (let [minions (as-> (create-empty-state) $
+                               (first (add-minion-to-board $ {:player-id "p1" :minion (create-minion "Imp" :id "i1") :position 0}))
+                               (first (add-minion-to-board $ {:player-id "p1" :minion (create-minion "Imp" :id "i2") :position 0}))
+                               (first (add-minion-to-board $ {:player-id "p1" :minion (create-minion "Imp" :id "i3") :position 1}))
+                               (get-minions $ "p1"))]
              (is= (map :id minions) ["i1" "i2" "i3"])
              (is= (map :position minions) [2 0 1]))
            ; Generating an id for the new minion
-           (let [state (-> (create-empty-state)
-                           (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp") :position 0}))]
-             (is= (-> (get-minions state "p1")
-                      (first)
-                      (:id))
-                  "m1")
+           (let [[state id] (-> (create-empty-state)
+                                (add-minion-to-board {:player-id "p1" :minion (create-minion "Imp") :position 0}))]
+             (is= (->> (get-minions state)
+                       (map :name))
+                  ["Imp"])
+             (is= id "m1")
              (is= (:counter state) 2)))}
   [state {player-id :player-id minion :minion position :position}]
   {:pre [(map? state) (string? player-id) (map? minion) (number? position)]}
@@ -464,15 +466,15 @@
         ready-minion (assoc minion :position position
                                    :owner-id player-id
                                    :id id)]
-    (-> (assoc-in state [:minion-ids-summoned-this-turn] (conj (:minion-ids-summoned-this-turn state) id))
-        (update-in [:players player-id :minions]
-                   (fn [minions]
-                     (conj (->> minions
-                                (mapv (fn [m]
-                                        (if (< (:position m) position)
-                                          m
-                                          (update m :position inc)))))
-                           ready-minion))))))
+    [(update-in state [:players player-id :minions]
+                (fn [minions]
+                  (conj (->> minions
+                             (mapv (fn [m]
+                                     (if (< (:position m) position)
+                                       m
+                                       (update m :position inc)))))
+                        ready-minion)))
+     id]))
 
 (defn add-secret-to-player
   "Adds a secret to a player."
@@ -650,11 +652,11 @@
                                               data)) $
                      ; Add minions to the state
                      (reduce (fn [state {player-id :player-id minions :minions}]
-                               (reduce (fn [state [index minion]] (add-minion-to-board state {:player-id player-id
-                                                                                              :minion    (if (string? minion)
-                                                                                                           (create-minion minion)
-                                                                                                           minion)
-                                                                                              :position  index}))
+                               (reduce (fn [state [index minion]] (first (add-minion-to-board state {:player-id player-id
+                                                                                                     :minion    (if (string? minion)
+                                                                                                                  (create-minion minion)
+                                                                                                                  minion)
+                                                                                                     :position  index})))
                                        state
                                        ;returns a sequence 0 and the 1st elem. of "minions", 2 and the 2nd elem ... untill minions is exhausted
                                        (map-indexed (fn [index minion] [index minion]) minions)))
@@ -663,9 +665,6 @@
                                             {:player-id (str "p" (inc index))
                                              :minions   (:minions player-data)})
                                           data))
-
-                     ; Remove minions from :minion-ids-summoned-this-turn for testing purposes
-                     (assoc-in $ [:minion-ids-summoned-this-turn] [])
 
                      ; Add cards to hand
                      (reduce (fn [state {player-id :player-id hand :hand}]
@@ -852,12 +851,12 @@
 (defn get-characters
   {:test (fn []
            (is= (->> (create-game [{:hero "Rexxar"}])
-                    (get-characters)
-                    (map :name))
+                     (get-characters)
+                     (map :name))
                 ["Rexxar" "Jaina Proudmoore"])
            (is= (->> (create-game [{:minions ["Imp"]}])
-                    (get-characters)
-                    (map :name))
+                     (get-characters)
+                     (map :name))
                 ["Imp" "Jaina Proudmoore" "Jaina Proudmoore"]))}
   [state]
   (concat (get-minions state)
@@ -957,7 +956,7 @@
   {:test (fn []
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}]
                                  :minion-ids-summoned-this-turn ["i"])
-                    (get-minion-ids-summoned-this-turn ))
+                    (get-minion-ids-summoned-this-turn))
                 ["i"]))}
   [state]
   (:minion-ids-summoned-this-turn state))
@@ -1253,7 +1252,7 @@
   )
 
 (defn get-triggered-effects
-  "Gets all the active triggered effects or the ones with given trigger." ;TODO change this
+  "Gets all the active triggered effects with given trigger."
   {:test (fn []
            (let [state (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]
                                       :minions [(create-minion "Acolyte of Pain" :id "ap")
@@ -1403,11 +1402,11 @@
 (defn get-position
   "Returns the position of a minion."
   {:test (fn []
-           (is= (-> (create-game [{:minions ["Imp" "Imp"]}])
-                    (add-minion-to-board {:player-id "p1" :minion (create-minion "War Golem" :id "wg") :position 1})
-                    (get-position "wg"))
+           (is= (as-> (create-game [{:minions ["Imp" "Imp"]}]) $
+                    (first (add-minion-to-board $ {:player-id "p1" :minion (create-minion "War Golem" :id "wg") :position 1}))
+                    (get-position $ "wg"))
                 1))}
   ([minion]
-    (:position minion))
+   (:position minion))
   ([state id]
-    (get-position (get-minion state id))))
+   (get-position (get-minion state id))))
