@@ -293,7 +293,7 @@
    (get-deck (get-player state player-id))))
 
 (defn get-secrets
-  "Returns the secrets for the given player-id."
+  "Returns all secrets or the secrets for the given player-id."
   {:test (fn []
            (is= (-> (create-empty-state)
                     (get-secrets "p1"))
