@@ -17,8 +17,13 @@
       (construct/get-player-id-in-turn)))
 
 (defn create-game! [game-id]
-  (core-game->client-game (reset! state-atom (create-game [{:deck (keys card-definitions)}
-                                                           {:deck (keys card-definitions)}])) game-id))
+  (core-game->client-game (reset! state-atom (let [cards (keys card-definitions)]
+                                               (create-game [{:deck (drop 5 cards)
+                                                              :hand (take 5 cards)}
+                                                             {:deck (drop 5 (reverse cards))
+                                                              :hand (take 5 (reverse cards))
+                                                              :hero "Rexxar"}])))
+                          game-id))
 
 (defn attack! [game-id player-id attacker-id target-id]
   (core-game->client-game (swap! state-atom attack-with-minion attacker-id target-id) game-id))

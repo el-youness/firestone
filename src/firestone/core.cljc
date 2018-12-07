@@ -598,35 +598,28 @@
   "Plays a minion card-"
   {:test (fn []
            ; Play minion card on empty board
-           (is= (-> (create-game)
-                    (summon-minion "p1" (create-card "Imp" :id "c1")))
-                (create-game [{:minions ["Imp"]}] :minion-ids-summoned-this-turn ["m1"]))
+           (let [state (-> (create-game)
+                           (summon-minion "p1" (create-card "Imp" :id "c1")))]
+             (is= (:minion-ids-summoned-this-turn state) ["m1"])
+             (is= (map :name (get-minions state)) ["Imp"]))
            ; Play a minion card on a board with one minion
-           (is= (-> (create-game [{:minions ["War Golem"]}])
-                    (summon-minion "p1" (create-card "Imp" :id "c1") 1))
-                (create-game [{:minions ["War Golem" "Imp"]}] :minion-ids-summoned-this-turn ["m2"]))
+           (let [state (-> (create-game [{:minions ["War Golem"]}])
+                           (summon-minion "p1" (create-card "Imp" :id "c1") 1))]
+             (is= (:minion-ids-summoned-this-turn state) ["m2"])
+             (is= (map :name (get-minions state)) ["War Golem" "Imp"]))
            ; No state change if board is already full
-           (is= (-> (create-game [{:minions [(create-minion "War Golem")
-                                             (create-minion "War Golem")
-                                             (create-minion "War Golem")
-                                             (create-minion "War Golem")
-                                             (create-minion "War Golem")
-                                             (create-minion "War Golem")
-                                             (create-minion "War Golem")]}])
+           (is= (-> (create-game [{:minions (repeat 7 "War Golem")}])
                     (summon-minion "p1" (create-card "Imp" :id "c1")))
-                (create-game [{:minions [(create-minion "War Golem")
-                                         (create-minion "War Golem")
-                                         (create-minion "War Golem")
-                                         (create-minion "War Golem")
-                                         (create-minion "War Golem")
-                                         (create-minion "War Golem")
-                                         (create-minion "War Golem")]}])))}
+                (create-game [{:minions (repeat 7 "War Golem")}])))}
   ([state player-id card position]
-   (if (not (full-board? state player-id))
+   (if-not (full-board? state player-id)
      (let [minion (create-minion (if (string? card)
                                    card
                                    (:name card)))]
-       (add-minion-to-board state {:player-id player-id :minion minion :position position}))
+       (-> state
+           (add-minion-to-board {:player-id player-id :minion minion :position position})
+           (assoc :event {:name   "minion-summoned"
+                          :minion minion})))
      state))
   ([state player-id card]
    (summon-minion state player-id card 0)))
