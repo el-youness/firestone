@@ -470,7 +470,7 @@
                                               minions (get-minions state owner-id)]
                                           ; If there are no minions on the board the secret doesn't activate
                                           (if (and (= owner-id (get-player-id-in-turn state))
-                                                   (> (count minions) 1))
+                                                   (> (count minions) 0))
                                             (as-> (remove-secret state owner-id competitive-spirit-id) $
                                                   (reduce (fn [state minion]
                                                             (add-buff state (minion :id) {:extra-health 1
