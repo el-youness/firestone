@@ -52,9 +52,6 @@
                                     unfreeze-characters
                                     handle-triggers]]))
 
-(defn clear-events [state]
-  (dissoc state :event))
-
 (defn end-turn
   "Ends the turn of the playing hero"
   {:test (fn []
@@ -98,9 +95,6 @@
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
           (reset-minion-attack-this-turn new-pid)))))
-
-(defn clear-events [state]
-  (dissoc state :event))
 
 (defn attack-with-minion
   "Executes minion to minion attack if it is valid."
