@@ -466,7 +466,7 @@
                (do (is= (->> (get-minions $ "p1")
                              (map (fn [m] (get-character-buffs m))))
                         '(({:extra-health 1 :extra-attack 1})
-                          ({:extra-health 1 :extra-attack 1})))
+                           ({:extra-health 1 :extra-attack 1})))
                    (is= (count (get-secrets $ "p1"))
                         0)
                    $))
@@ -531,3 +531,13 @@
                    (is= (-> (get-hand $ "p1")
                             (count))
                         1))))
+
+(deftest blood-imp
+         (as-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi") (create-minion "Imp" :id "i")]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (end-turn $)
+               (do (is= (get-health $ "i")
+                        (+ ((get-definition "Imp") :health) 1))
+                   (is (stealthed? $ "bi"))
+                   (error? (attack-with-minion $ "wg" "bi"))
+                   $)))
