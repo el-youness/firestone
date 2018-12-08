@@ -513,3 +513,38 @@
                    (is (stealthed? $ "bi"))
                    (error? (attack-with-minion $ "wg" "bi"))
                    $)))
+
+(deftest moroes
+         ; At the end-turn of the player owning Moroes, one Steward is summoned on the board
+         (as-> (create-game [{:minions [(create-minion "Moroes")]}]) $
+               (do (is= (count (get-minions $ "p1"))
+                        1)
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $)
+               (end-turn $)
+               (do (is= (->> (get-minions $ "p1")
+                             (second)
+                             (:name))
+                        "Steward")
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $)
+               (end-turn $)
+               (do (is= (count (get-minions $ "p1"))
+                        2)
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $)
+               (end-turn $)
+               (do (is= (count (get-minions $ "p1"))
+                        3)
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $))
+         ; Test Stealth of Moroes
+         (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}
+                             {:minions [(create-minion "Moroes" :id "m")]}]) $
+               (do (is (stealthed? $ "m"))
+                   (error? (attack-with-minion $ "wg" "m"))
+                   $)))

@@ -520,7 +520,7 @@
     :rarity           :legendary
     :description      "Stealth. At the end of your turn, summon a 1/1 Steward."
     :stealth          true
-    :triggered-effect {:on-end-turn (fn [state moroes-id]
+    :triggered-effect {:on-end-turn (fn [state moroes-id _]
                                       (let [owner-id (get-owner state moroes-id)]
                                         (if (= owner-id (get-player-id-in-turn state))
                                           (summon-minion state owner-id (create-card "Steward"))
