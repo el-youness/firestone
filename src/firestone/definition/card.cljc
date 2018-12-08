@@ -500,7 +500,7 @@
     :set              :basic
     :rarity           :common
     :description      "Stealth. At the end of your turn, give another random friendly minion +1 Health."
-    ;TODO add stealth
+    :stealth          true
     :triggered-effect {:on-end-turn (fn [state blood-imp-id _]
                                       (let [owner-id (get-owner state blood-imp-id)
                                             friendly-minions (remove (fn [minion] (= (:id minion) blood-imp-id))
