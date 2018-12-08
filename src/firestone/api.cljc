@@ -27,6 +27,7 @@
                                          add-to-cards-played-this-turn
                                          reset-cards-played-this-turn
                                          hero?
+                                         get-position
                                          reset-extra-mana
                                          remove-buffs]]
             [firestone.core :refer [valid-attack?
@@ -193,12 +194,20 @@
   "Play a minion card from the hand if possible."
   {:test (fn []
            ; Play minion
-           (let [state (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
+           (let [state (-> (create-game [{:hand [(create-card "War Golem" :id "wg")
+                                                 (create-card "Imp" :id "imp")
+                                                 (create-card "Loot Hoarder" :id "lh")]}])
                            (play-minion-card "p1" "wg" {:position 0}))]
              (is= (map :name (get-minions state "p1")) ["War Golem"])
              (is= (:minion-ids-summoned-this-turn state) ["m1"])
              (is= (:cards-played-this-turn state) [(create-card "War Golem" :id "wg" :owner-id "p1")])
-             (is= (get-mana state "p1") (- 10 (:mana-cost (get-definition "War Golem")))))
+             (is= (get-mana state "p1") (- 10 (:mana-cost (get-definition "War Golem"))))
+             ; Test that positions work
+             (as-> (play-minion-card state "p1" "imp" {:position 1}) $
+                   (play-minion-card $ "p1" "lh" {:position 1})
+                   (do (is= (get-position $ "m1") 0)
+                       (is= (get-position $ "m2") 2)
+                       (is= (get-position $ "m3") 1))))
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-minion "War Golem" :id "wg")]}])
