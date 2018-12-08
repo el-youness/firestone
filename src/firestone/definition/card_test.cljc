@@ -505,21 +505,17 @@
                         8) $)))
 
 (deftest doomsayer
-         (is= (-> (create-game [{:minions [(create-minion "Doomsayer" :id "s")]}
-                                {:minions [(create-minion "War Golem" :id "wg")]}])
-                  (end-turn)
-                  (get-minions)
-                  (count))
-              2)
-         (is= (-> (create-game [{:minions [(create-minion "Doomsayer" :id "s")]}
-                                {:minions [(create-minion "War Golem" :id "wg")]}])
-                  (end-turn)
-                  (end-turn)
-                  (handle-triggers :on-start-of-turn)
-                  (get-owner "s")
-                  (get-minions)
-                  (count))
-              0))
+         (as-> (create-game [{:minions [(create-minion "Doomsayer" :id "s" )]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (end-turn $)
+               (do (is= (->> (get-minions $)
+                             (map :name))
+                        ["Doomsayer" "War Golem"])
+                   $)
+               (end-turn $)
+               (is= (-> (get-minions $)
+                        (count))
+                    0)))
 
 (deftest rampage
          (is= (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
@@ -534,9 +530,9 @@
          )
 
 (deftest archmage-antonidas
-         (is= (-> (create-game [{:hand [(create-card "Frostbolt" :id "f")]
-                                 :minions [(create-card "Archmage Antonidas" :id "aa")]}])
-                  (play-spell-card "p1" "f" {:target-id "h2"})
+         (is= (-> (create-game [{:hand [(create-card "The Coin" :id "c")]
+                                 :minions [(create-minion "Archmage Antonidas" :id "aa")]}])
+                  (play-spell-card "p1" "c" {})
                   (get-hand "p1")
                   (first)
                   :name)

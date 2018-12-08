@@ -416,8 +416,7 @@
     :set              :classic
     :rarity           :legendary
     :description      "Whenever you cast a spell, add a 'Fireball' spell to your hand."
-    :triggered-effect {:on-play-card (fn [state archmage-id & [card-id]]
-                                       (println "hey\n")
+    :triggered-effect {:on-play-card (fn [state archmage-id [card-id]]
                                        (if (and (not (minion? state card-id))
                                                 (= (get-owner state card-id)
                                                    (get-owner state archmage-id)))
@@ -443,9 +442,9 @@
     :set              :classic
     :rarity           :epic
     :description      "At the start of your turn destroy ALL minions."
-    :triggered-effect {:on-start-of-turn (fn [state doomsayer-id & _]
+    :triggered-effect {:on-start-turn (fn [state doomsayer-id & _]
                                            (if (= (get-player-id-in-turn state)
-                                                  (get-owner state (get-minion state doomsayer-id)))
+                                                  (get-owner state doomsayer-id))
                                              (reduce destroy-minion state (map :id (get-minions state)))
                                              state))}}
 
