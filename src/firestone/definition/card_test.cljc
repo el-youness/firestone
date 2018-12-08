@@ -484,3 +484,22 @@
                             :name)
                         "Competitive Spirit") $)))
 
+(deftest the-coin
+         (as-> (create-game [{:max-mana 7 :hand [(create-card "The Coin" :id "tc") (create-card "War Golem" :id "wg") (create-card "Imp" :id "i")]}]) $
+               (play-minion-card $ "p1" "wg" {:position 0})
+               (do (is= (get-extra-mana $ "p1")
+                        0)
+                   (is= (get-mana $ "p1")
+                        0) $)
+               (play-spell-card $ "p1" "tc" {})
+               (do (is= (get-extra-mana $ "p1")
+                        1)
+                   (is= (get-mana $ "p1")
+                        1) $)
+               (play-minion-card $ "p1" "i" {:position 1})
+               (end-turn $)
+               (end-turn $)
+               (do (is= (get-extra-mana $ "p1")
+                        0)
+                   (is= (get-mana $ "p1")
+                        8) $)))

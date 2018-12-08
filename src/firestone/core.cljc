@@ -513,10 +513,10 @@
                        "p1")]
     (if (full-board? state new-owner-id)
       (destroy-minion state id)
-      (-> (remove-minion state id)
-          (add-minion-to-board {:player-id new-owner-id
-                                :minion    minion
-                                :position  0})))))
+      (as-> (remove-minion state id) $
+          (first (add-minion-to-board $ {:player-id new-owner-id
+                                       :minion    minion
+                                       :position  0}))))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."
@@ -639,9 +639,10 @@
    (if-not (full-board? state player-id)
      (let [minion (create-minion (if (string? card)
                                    card
-                                   (:name card)))]
+                                   (:name card)))
+           [state id] (add-minion-to-board state {:player-id player-id :minion minion :position position})]
        (-> state
-           (add-minion-to-board {:player-id player-id :minion minion :position position})
+           (assoc-in [:minion-ids-summoned-this-turn] (conj (:minion-ids-summoned-this-turn state) id))
            (add-event {:name   "minion-summoned"
                        :minion minion})))
      state))
