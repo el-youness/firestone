@@ -514,9 +514,7 @@
                                              state
                                              (let [owner-id (get-owner state trade-prince-id)
                                                    opponent-id (if (= owner-id "p1") "p2" "p1")]
-                                               (give-card state owner-id (create-card spell-name))
-                                               (give-card state opponent-id (create-card "Gallywix's Coin"))
-                                               ))
-                                           )}}})
+                                               (->  (give-card state owner-id (create-card spell-name))
+                                                    (give-card opponent-id (create-card "Gallywix's Coin"))))))}}})
 
 (definitions/add-definitions! card-definitions)

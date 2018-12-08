@@ -503,3 +503,37 @@
                         0)
                    (is= (get-mana $ "p1")
                         8) $)))
+
+(deftest trade-prince-gallywix
+         ; Normal play
+         (as-> (create-game [{:hand [(create-card "Trade Prince Gallywix" :id "tpg")] :minions [(create-minion "War Golem" :id "wg")]}
+                             {:hand [(create-card "Frostbolt" :id "f")]}]) $
+               (play-minion-card $ "p1" "tpg" {:position 0})
+               (end-turn $)
+               (play-spell-card $ "p2" "f" {:target-id "wg"})
+               (do (is (frozen? $ "wg"))
+                   (is= (-> (get-hand $ "p1")
+                            (first)
+                            :name)
+                        "Frostbolt")
+                   (is= (-> (get-hand $ "p2")
+                            (first)
+                            :name)
+                        "Gallywix's Coin")
+                   (is= (get-mana $ "p2")
+                        8) $)
+               (play-spell-card $ "p2" "c3" {})
+               ; Check that when the "Gallywix's Coin" is player it adds mana and doesn't get duplicated
+               (do (is= (get-mana $ "p2")
+                        9)
+                   (is= (-> (get-hand $ "p2")
+                            (count))
+                        0)
+                   (is= (-> (get-hand $ "p1")
+                            (count))
+                        1))
+               (do))
+         ;Full hand
+         ;spell player is Galliwx's coin
+
+         )
