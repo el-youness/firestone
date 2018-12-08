@@ -766,22 +766,9 @@
   {:test (fn []
            (is= (-> (create-game)
                     (get-max-mana "p1"))
-                10)
-           (is= (-> (create-game [{:extra-mana 2}])
-                    (get-max-mana "p1"))
-                10)
-           (is= (-> (create-game [{:max-mana 7 :extra-mana 5}])
-                    (get-max-mana "p1"))
-                10)
-           (is= (-> (create-game [{:max-mana 7 :extra-mana 2}])
-                    (get-max-mana "p1"))
-                9))}
+                10))}
   ([player]
-   (let [extra-mana (:extra-mana player)
-         max-mana (:max-mana player)]
-     (if (> (+ max-mana extra-mana) 10)
-       10
-       (+ max-mana extra-mana)))
+   (player :max-mana)
     )
   ([state player-id]
    (get-max-mana (get-player state player-id))))
@@ -827,15 +814,28 @@
            (is= (-> (create-game [{:max-mana 5}])
                     (get-mana "p1"))
                 5)
-           (is= (-> (create-game [{:max-mana 10 :used-mana 4}])
+           (is= (-> (create-game [{:used-mana 4}])
                     (get-mana "p1"))
                 6)
+           (is= (-> (create-game [{:extra-mana 2}])
+                    (get-mana "p1"))
+                10)
+           (is= (-> (create-game [{:max-mana 7 :extra-mana 5}])
+                    (get-mana "p1"))
+                10)
+           (is= (-> (create-game [{:max-mana 7 :extra-mana 2}])
+                    (get-mana "p1"))
+                9)
+           (is= (-> (create-game [{:extra-mana 2 :used-mana 4}])
+                    (get-mana "p1"))
+                8)
            )}
   [state player-id]
   (let [player-data (get-player state player-id)
-        avaliable-mana (get-max-mana state player-id)
+        max-mana (get-max-mana state player-id)
+        extra-mana (get-extra-mana state player-id)
         used-mana (:used-mana player-data)]
-    (- avaliable-mana used-mana)))
+    (min (- (+ max-mana extra-mana) used-mana) 10)))
 
 (defn get-minion
   "Returns the minion with the given id."

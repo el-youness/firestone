@@ -186,7 +186,8 @@
         (cast-spell card target-id)
         (consume-mana player-id (get-cost card))
         (remove-card-from-hand player-id card-id)
-        (add-to-cards-played-this-turn card))))
+        (add-to-cards-played-this-turn card)
+        (handle-triggers :on-spell-cast (:name card)))))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
