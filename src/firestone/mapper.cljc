@@ -33,6 +33,9 @@
 (defn get-states
   "Returns the states of the character."
   {:test (fn []
+           (is= (-> (create-minion "Acolyte of Pain")
+                    (get-states))
+                #{"EFFECT"})
            (is= (-> (create-minion "Loot Hoarder")
                     (get-states))
                 #{"DEATHRATTLE"})
@@ -44,6 +47,9 @@
                 #{"DEATHRATTLE" "FROZEN"}))}
   [character]
   (as-> #{} $
+        (if (:triggered-effect (get-definition character))
+          (conj $ "EFFECT")
+          $)
         (if (frozen? character)
           (conj $ "FROZEN")
           $)
