@@ -36,7 +36,8 @@
                                          get-cards-played-this-turn
                                          get-player-id-in-turn
                                          remove-card-from-hand
-                                         add-extra-mana]]
+                                         add-extra-mana
+                                         get-card-duplicate]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -76,7 +77,7 @@
                                               minion-cards-in-hand (->> (get-hand state owner-id)
                                                                         (filter (fn [c] (minion-card? c))))]
                                           (if (and (= owner-id (get-player-id-in-turn state))
-                                                (> (count minion-cards-in-hand) 0))
+                                                   (> (count minion-cards-in-hand) 0))
                                             (let [[seed random-minion-card] (random-nth (get-seed state) minion-cards-in-hand)
                                                   position (get-position state this)]
                                               (-> (set-seed state seed)
@@ -250,18 +251,18 @@
                          (set-seed seed))))}
 
    "King Mukla"
-   {:name            "King Mukla"
-    :attack          5
-    :health          5
-    :mana-cost       3
-    :type            :minion
-    :set             :classic
-    :rarity          :legendary
-    :description     "Battlecry: Give your opponent 2 Bananas."
-    :battlecry       (fn [state minion-id]
-                       (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
-                         (-> (give-card state opponent-player-id (create-card "Bananas"))
-                             (give-card opponent-player-id (create-card "Bananas")))))}
+   {:name        "King Mukla"
+    :attack      5
+    :health      5
+    :mana-cost   3
+    :type        :minion
+    :set         :classic
+    :rarity      :legendary
+    :description "Battlecry: Give your opponent 2 Bananas."
+    :battlecry   (fn [state minion-id]
+                   (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
+                     (-> (give-card state opponent-player-id (create-card "Bananas"))
+                         (give-card opponent-player-id (create-card "Bananas")))))}
 
    "Frostbolt"
    {:name        "Frostbolt"
@@ -424,14 +425,22 @@
                                          state))}}
 
    "Lorewalker Cho"
-   {:name        "Lorewalker Cho"
-    :attack      0
-    :health      4
-    :type        :minion
-    :mana-cost   2
-    :set         :classic
-    :rarity      :legendary
-    :description "Whenever a player casts a spell, put a copy into the other player's hand."}
+   {:name             "Lorewalker Cho"
+    :attack           0
+    :health           4
+    :type             :minion
+    :mana-cost        2
+    :set              :classic
+    :rarity           :legendary
+    :description      "Whenever a player casts a spell, put a copy into the other player's hand."
+    :triggered-effect {:on-play-card (fn [state _ [card-id]]
+                                       ;state
+                                       ;(print "eeeeeeeeeeeeeeee" (get-card-duplicate  card-id) "\n")
+                                       (if (spell-card? state card-id)
+                                         (let [src_player (get-owner state card-id)]
+                                           (give-card state (opposing-player-id src_player) (get-card-duplicate state card-id)))
+                                         state)
+                                       )}}
 
    "Doomsayer"
    {:name             "Doomsayer"
@@ -443,10 +452,10 @@
     :rarity           :epic
     :description      "At the start of your turn destroy ALL minions."
     :triggered-effect {:on-start-turn (fn [state doomsayer-id & _]
-                                           (if (= (get-player-id-in-turn state)
-                                                  (get-owner state doomsayer-id))
-                                             (reduce destroy-minion state (map :id (get-minions state)))
-                                             state))}}
+                                        (if (= (get-player-id-in-turn state)
+                                               (get-owner state doomsayer-id))
+                                          (reduce destroy-minion state (map :id (get-minions state)))
+                                          state))}}
 
    "Rampage"
    {:name             "Rampage"
@@ -554,14 +563,14 @@
                                                           (get-minions $ owner-id)))
                                             state)))}}
    "The Coin"
-   {:name             "The Coin"
-    :mana-cost        0
-    :type             :spell
-    :set              :basic
-    :rarity           :none
-    :description      "Gain 1 Mana Crystal this turn only."
-    :spell            (fn [state]
-                        (add-extra-mana state (get state :player-id-in-turn) 1))}
+   {:name        "The Coin"
+    :mana-cost   0
+    :type        :spell
+    :set         :basic
+    :rarity      :none
+    :description "Gain 1 Mana Crystal this turn only."
+    :spell       (fn [state]
+                   (add-extra-mana state (get state :player-id-in-turn) 1))}
    })
 
 (definitions/add-definitions! card-definitions)

@@ -41,6 +41,7 @@
                                          opposing-player-id
                                          remove-buffs
                                          get-triggered-effects
+                                         minion?
                                          hero?
                                          opposing-player-id]]))
 
@@ -833,7 +834,7 @@
                 []))}
   [state player-id entity-id]
   (let [opp-player-id (opposing-player-id player-id)]
-    (if (nil? (get-minion state entity-id))
+    (if-not (minion? state entity-id)
       (let [target-type (get-target-type state entity-id)
             targets (cond
                       (= target-type :all)

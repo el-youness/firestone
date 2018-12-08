@@ -526,8 +526,7 @@
          ; uncomment when merging with error thrower
          (is (error? (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
                                        {:minions [(create-minion "War Golem" :id "wg")]}])
-                         (play-spell-card "p1" "r" {:target-id "wg"}))))
-         )
+                         (play-spell-card "p1" "r" {:target-id "wg"})))))
 
 (deftest archmage-antonidas
          (is= (-> (create-game [{:hand [(create-card "The Coin" :id "c")]
@@ -537,3 +536,21 @@
                   (first)
                   :name)
               "Fireball"))
+
+(deftest lorewalker-cho
+         (as-> (create-game [{:hand [(create-card "The Coin" :id "c")]
+                              :minions [(create-minion "Lorewalker Cho")]}]) state
+               (play-spell-card state "p1" "c" {})
+               (do (is= (->> (get-hand state "p2")
+                             (map :name))
+                        ["The Coin"])
+                   state)
+               (end-turn state)
+               (play-spell-card state
+                                (->> (get-player-id-in-turn state)
+                                     (get-hand state )
+                                     (first))
+                                {})
+               (do (is= (->> (get-hand state "p1")
+                             (map :name))
+                        ["The Coin"]))))

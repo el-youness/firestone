@@ -178,17 +178,19 @@
              (error? (-> state
                          (play-spell-card "p1" "snakes" {})
                          (play-spell-card "p1" "snakes2" {})))))}
-  [state player-id card-id {target-id :target-id}]
-  (when-not (valid-play? state card-id target-id)
-    (error "You cannot play the spell like this you fool.\n"))
-  (let [card (get-card-from-hand state card-id)]
-    (-> (if-not target-id
-          ((get-spell-function card) state)
-          ((get-spell-function card) state target-id))
-        (consume-mana player-id (get-cost card))
-        (handle-triggers :on-play-card card-id)
-        (remove-card-from-hand player-id card-id)
-        (add-to-cards-played-this-turn card))))
+  ([state player-id card-id {target-id :target-id}]
+   (when-not (valid-play? state card-id target-id)
+     (error "You cannot play the spell like this you fool.\n"))
+   (let [card (get-card-from-hand state card-id)]
+     (-> (if-not target-id
+           ((get-spell-function card) state)
+           ((get-spell-function card) state target-id))
+         (consume-mana player-id (get-cost card))
+         (handle-triggers :on-play-card card-id)
+         (remove-card-from-hand player-id card-id)
+         (add-to-cards-played-this-turn card))))
+  ([state card {target-id :target-id}]
+    (play-spell-card state (get-owner card) (:id card) {})))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."

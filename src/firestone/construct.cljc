@@ -971,6 +971,66 @@
        (filter (fn [c] (= (:id c) id)))
        (first)))
 
+(defn get-cards-from-deck
+  "Returns a given number of cards from the deck of the player id."
+  {:test (fn []
+           ; Test getting a card from a player's deck
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
+                    (get-cards-from-deck "p1" 1))
+                [(create-card "Imp" :id "i" :owner-id "p1")])
+           ; Test getting cards from a empty deck
+           (is= (-> (create-game)
+                    (get-cards-from-deck "p1" 2))
+                [])
+           ; Test getting two cards from a player's deck
+           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i1") (create-card "Imp" :id "i2") (create-card "Imp" :id "i3")]}])
+                    (get-cards-from-deck "p1" 2))
+                [(create-card "Imp" :id "i1" :owner-id "p1") (create-card "Imp" :id "i2" :owner-id "p1")]))}
+
+  [state player-id amount]
+  {:pre [(map? state) (string? player-id) (number? amount)]}
+  (let [deck (get-deck state player-id)]
+    (let [size (count deck)]
+      (cond
+        (= size 0)
+        []
+
+        (<= size amount)
+        (take size deck)
+
+        :else
+        (take amount deck)))))
+
+
+(defn get-all
+  "Returns the heroes, minions, secrets and all card (both in hand and deck) from the state."
+  {:test (fn []
+           (is= (->> (create-game)
+                     (get-all)
+                     (map :name))
+                ["Jaina Proudmoore" "Jaina Proudmoore"])
+           (is= (->> (create-game [{:minions [(create-minion "Imp")]
+                                   :secrets [(create-secret "Snake Trap")]}
+                                   {:hand [(create-card "Imp")]}])
+                    (get-all)
+                    (map :name))
+                ["Imp" "Jaina Proudmoore" "Jaina Proudmoore" "Snake Trap" "Imp"]))}
+  [state]
+  (concat (get-minions state)
+          (get-heroes state)
+          (get-secrets state)
+          (concat (get-deck state "p1")
+                  (get-deck state "p2"))
+          (concat (get-hand state "p1")
+                  (get-hand state "p2"))))
+
+(defn get-entity
+  "Returns any entity from the state, given the right id."
+  [state id]
+  (->> (get-all state)
+       (filter (fn [c] (= (:id c) id)))
+       (first)))
+
 (defn hero?
   "Checks if the character with given id is a hero."
   {:test (fn []
@@ -989,10 +1049,20 @@
            (is-not (-> (create-game [{:minion (create-hero "Rexxar" :id "h1")}])
                        (minion? "h1")))
            (is (minion? (create-minion "Imp"))))}
-  ([entiy]
-   (= (get entiy :entity-type) :minion))
+  ([entity]
+   (= (get entity :entity-type) :minion))
   ([state id]
    (minion? (get-board-entity state id))))
+
+(defn card?
+  "Checks if the entity with given id is a card."
+  {:test (fn []
+           (is (-> (create-game [{:hand [(create-card "Imp" :id "i")] }])
+                   (card? "i"))))}
+  ([entity]
+   (= (get entity :entity-type) :card))
+  ([state id]
+   (card? (get-entity state id))))
 
 (defn secret?
   "Checks if the character with given id is a hero."
@@ -1380,36 +1450,6 @@
   [state & ids]
   (reduce remove-minion state ids))
 
-(defn get-cards-from-deck
-  "Returns a given number of cards from the deck of the player id."
-  {:test (fn []
-           ; Test getting a card from a player's deck
-           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i")]}])
-                    (get-cards-from-deck "p1" 1))
-                [(create-card "Imp" :id "i" :owner-id "p1")])
-           ; Test getting cards from a empty deck
-           (is= (-> (create-game)
-                    (get-cards-from-deck "p1" 2))
-                [])
-           ; Test getting two cards from a player's deck
-           (is= (-> (create-game [{:deck [(create-card "Imp" :id "i1") (create-card "Imp" :id "i2") (create-card "Imp" :id "i3")]}])
-                    (get-cards-from-deck "p1" 2))
-                [(create-card "Imp" :id "i1" :owner-id "p1") (create-card "Imp" :id "i2" :owner-id "p1")]))}
-
-  [state player-id amount]
-  {:pre [(map? state) (string? player-id) (number? amount)]}
-  (let [deck (get-deck state player-id)]
-    (let [size (count deck)]
-      (cond
-        (= size 0)
-        []
-
-        (<= size amount)
-        (take size deck)
-
-        :else
-        (take amount deck)))))
-
 (defn remove-card-from-deck
   "Removes a card with the given id from the given player's deck."
   {:test (fn []
@@ -1486,3 +1526,22 @@
     (:position minion))
   ([state id]
     (get-position (get-minion state id))))
+
+
+(defn get-card-duplicate
+  "Creates a card duplicate from the given id."
+  {:test (fn []
+           (let [state (create-game [{:secrets [(create-secret "Snake Trap" :id "s")]
+                                      :minions [(create-minion "Acolyte of Pain" :id "ap")
+                                                (create-minion "Frothing Berserker" :id "fb")]
+                                      :deck    [(create-card "Imp" :id "i")]}])]
+             (is (card? (get-card-duplicate state "s")))
+             (is-not (= (get-entity state "i")
+                        (get-card-duplicate state "i")))
+             (is= (:name (get-entity state "ap"))
+                  (:name (get-card-duplicate state "ap")))))}
+  ([entity]
+   {:pre (map? entity)}
+   (create-card (:name entity)))
+  ([state id]
+   (get-card-duplicate (get-entity state id))))
