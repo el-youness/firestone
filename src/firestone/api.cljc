@@ -187,7 +187,7 @@
         (consume-mana player-id (get-cost card))
         (remove-card-from-hand player-id card-id)
         (add-to-cards-played-this-turn card)
-        (handle-triggers :on-spell-casted (:name card)))))
+        (handle-triggers :on-spell-cast (:name card)))))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
@@ -273,6 +273,6 @@
             (if-not target-id
               ((get-hero-power-function hero-power) $)
               ((get-hero-power-function hero-power) $ target-id))
-          (consume-mana $ player-id (get-cost hero-power))
-          (update-hero-power $ player-id :used true))
+            (consume-mana $ player-id (get-cost hero-power))
+            (update-hero-power $ player-id :used true))
       (error "You cannot play your hero power like that.\n"))))

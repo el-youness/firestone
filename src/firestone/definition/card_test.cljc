@@ -522,7 +522,7 @@
                    (is= (get-mana $ "p2")
                         8) $)
                (play-spell-card $ "p2" "c3" {})
-               ; Check that when the "Gallywix's Coin" is player it adds mana and doesn't get duplicated
+               ; When the "Gallywix's Coin" is played it adds 1 mana and doesn't get duplicated
                (do (is= (get-mana $ "p2")
                         9)
                    (is= (-> (get-hand $ "p2")

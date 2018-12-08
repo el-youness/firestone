@@ -825,9 +825,7 @@
         max-mana (get-max-mana state player-id)
         extra-mana (get-extra-mana state player-id)
         used-mana (:used-mana player-data)]
-    (if (> (- (+ max-mana extra-mana) used-mana) 10)
-      10
-      (- (+ max-mana extra-mana) used-mana))))
+    (min (- (+ max-mana extra-mana) used-mana) 10)))
 
 (defn get-minion
   "Returns the minion with the given id."
@@ -920,12 +918,12 @@
 (defn get-characters
   {:test (fn []
            (is= (->> (create-game [{:hero "Rexxar"}])
-                    (get-characters)
-                    (map :name))
+                     (get-characters)
+                     (map :name))
                 ["Rexxar" "Jaina Proudmoore"])
            (is= (->> (create-game [{:minions ["Imp"]}])
-                    (get-characters)
-                    (map :name))
+                     (get-characters)
+                     (map :name))
                 ["Imp" "Jaina Proudmoore" "Jaina Proudmoore"]))}
   [state]
   (concat (get-minions state)
@@ -1476,6 +1474,6 @@
                     (get-position "wg"))
                 1))}
   ([minion]
-    (:position minion))
+   (:position minion))
   ([state id]
-    (get-position (get-minion state id))))
+   (get-position (get-minion state id))))
