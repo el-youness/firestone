@@ -947,7 +947,7 @@
        (if target-id
          (if (empty? targets)
            false
-           (seq-contains? targets target-id)
+           (seq-contains? targets target-id))
            (if (spell-with-target? state entity-id)
              false
              (empty? targets)))
