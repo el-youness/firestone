@@ -120,15 +120,26 @@
                  :name                        "Acolyte of Pain"
                  :id                          "i"
                  :silenced                    false
-                 :buffs                       []}))}
+                 :buffs                       []})
+           (is= (create-minion "Blood Imp" :id "i")
+                {:attacks-performed-this-turn 0
+                 :damage-taken                0
+                 :entity-type                 :minion
+                 :name                        "Blood Imp"
+                 :id                          "i"
+                 :silenced                    false
+                 :buffs                       [{:stealth true}]}))}
   [name & kvs]
-  (let [definition (get-definition name)                    ; Will be used later
+  (let [definition (get-definition name)
+        definition-buffs (select-keys definition [:stealth])
         minion {:damage-taken                0
                 :entity-type                 :minion
                 :name                        name
                 :attacks-performed-this-turn 0
                 :silenced                    false
-                :buffs                       []}]
+                :buffs                       (if (empty? definition-buffs)
+                                               []
+                                               [definition-buffs])}]
     (if (empty? kvs)
       minion
       (apply assoc minion kvs))))

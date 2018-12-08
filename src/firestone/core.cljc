@@ -254,6 +254,21 @@
   ([state id]
    (frozen? (get-board-entity state id))))
 
+(defn stealthed?
+  "Checks if the character is stealth"
+  {:test (fn []
+           (is (-> (create-minion "Blood Imp")
+                   (stealthed?)))
+           (is-not (-> (create-minion "Imp")
+                       (stealthed?))))}
+  ([minion]
+   (> (->> (get-character-buffs minion)
+           (filter (fn [b] (:stealth b)))
+           (count))
+      0))
+  ([state id]
+   (stealthed? (get-minion state id))))
+
 (defn deathrattle-minion?
   "Checks if the minion has a deathrattle."
   {:test (fn []
@@ -379,7 +394,11 @@
                        (valid-attack? "p1" "i" "wg")))
            ; Should not be able to attack if attacker has 0 attack
            (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i" :buffs [{:extra-attack -1}])]}])
-                       (valid-attack? "p1" "i" "h2"))))}
+                       (valid-attack? "p1" "i" "h2")))
+           ; Should not be able to attack if target is stealth
+           (is-not (-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi")]}
+                                     {:minions [(create-minion "War Golem" :id "wg")]}])
+                       (valid-attack? "p1" "wg" "bi"))))}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-board-entity state target-id)
@@ -390,7 +409,8 @@
          (not (sleepy? state attacker-id))
          (not= (:owner-id attacker) (:owner-id target))
          (not (if cannot-attack-function (cannot-attack-function state) false))
-         (not (frozen? attacker)))))
+         (not (frozen? attacker))
+         (not (stealthed? target)))))
 
 (defn valid-attacks
   "Get all valid attackers and their valid targets."

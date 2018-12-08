@@ -487,6 +487,28 @@
     :rarity           :none
     :description      "Gain 1 Mana Crystal this turn only."
     :spell            (fn [state]
-                        (add-extra-mana state (get state :player-id-in-turn) 1))}})
+                        (add-extra-mana state (get state :player-id-in-turn) 1))}
+
+   "Blood Imp"
+   {:name             "Blood Imp"
+    :mana-cost        1
+    :health           1
+    :attack           0
+    :type             :minion
+    :subtype          :demon
+    :class            :warlock
+    :set              :basic
+    :rarity           :common
+    :description      "Stealth. At the end of your turn, give another random friendly minion +1 Health."
+    :stealth          true
+    :triggered-effect {:on-end-turn (fn [state blood-imp-id _]
+                                      (let [owner-id (get-owner state blood-imp-id)
+                                            friendly-minions (remove (fn [minion] (= (:id minion) blood-imp-id))
+                                                                     (get-minions state owner-id))]
+                                        (if (= owner-id (get-player-id-in-turn state))
+                                          (let [[seed random-minion-card] (random-nth (get-seed state) friendly-minions)]
+                                            (-> (set-seed state seed)
+                                                (add-buff (:id random-minion-card) {:extra-health 1})))
+                                          state)))}}})
 
 (definitions/add-definitions! card-definitions)

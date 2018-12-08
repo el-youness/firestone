@@ -27,7 +27,8 @@
                                          add-to-cards-played-this-turn
                                          reset-cards-played-this-turn
                                          hero?
-                                         reset-extra-mana]]
+                                         reset-extra-mana
+                                         remove-buffs]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -83,6 +84,8 @@
           (decrement-buff-counters)
           (unfreeze-characters)
           (reset-extra-mana old-pid)
+          (handle-triggers :on-end-turn)
+
           ; Change the player-in-turn
           (switch-player-in-turn)
           (reset-cards-played-this-turn)
@@ -134,7 +137,8 @@
   (if (valid-attack? state (get-player-id-in-turn state) attacker-id target-id)
     (let [state (-> (clear-events state)
                     (update-minion attacker-id :attacks-performed-this-turn 1)
-                    (handle-triggers :on-attack target-id))
+                    (handle-triggers :on-attack target-id)
+                    (remove-buffs attacker-id :stealth))
           attacker-attack (get-attack state attacker-id)]
       (if (hero? state target-id)
         (damage-hero state target-id attacker-attack)
