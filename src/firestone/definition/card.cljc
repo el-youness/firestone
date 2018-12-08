@@ -418,7 +418,7 @@
     :rarity           :legendary
     :description      "Whenever you cast a spell, add a 'Fireball' spell to your hand."
     :triggered-effect {:on-play-card (fn [state archmage-id [card-id]]
-                                       (if (and (not (minion? state card-id))
+                                       (if (and (spell-card? state card-id)
                                                 (= (get-owner state card-id)
                                                    (get-owner state archmage-id)))
                                          (give-card state (get-owner state archmage-id) (create-card "Fireball"))
@@ -434,8 +434,6 @@
     :rarity           :legendary
     :description      "Whenever a player casts a spell, put a copy into the other player's hand."
     :triggered-effect {:on-play-card (fn [state _ [card-id]]
-                                       ;state
-                                       ;(print "eeeeeeeeeeeeeeee" (get-card-duplicate  card-id) "\n")
                                        (if (spell-card? state card-id)
                                          (let [src_player (get-owner state card-id)]
                                            (give-card state (opposing-player-id src_player) (get-card-duplicate state card-id)))
