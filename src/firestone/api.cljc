@@ -83,6 +83,8 @@
           (decrement-buff-counters)
           (unfreeze-characters)
           (reset-extra-mana old-pid)
+          (handle-triggers :on-end-turn)
+
           ; Change the player-in-turn
           (switch-player-in-turn)
           (reset-cards-played-this-turn)

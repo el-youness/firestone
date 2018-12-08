@@ -503,3 +503,9 @@
                         0)
                    (is= (get-mana $ "p1")
                         8) $)))
+
+(deftest blood-imp
+         (as-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi") (create-minion "Imp" :id "i")]}]) $
+               (end-turn $)
+               (do (is= (get-health $ "i")
+                        (+ ((get-definition "Imp") :health) 1)) $)))
