@@ -26,7 +26,8 @@
                                          add-to-cards-played-this-turn
                                          reset-cards-played-this-turn
                                          hero?
-                                         reset-extra-mana]]
+                                         reset-extra-mana
+                                         remove-buffs]]
             [firestone.core :refer [valid-attack?
                                     get-health
                                     get-attack
@@ -139,7 +140,8 @@
   (if (valid-attack? state (get-player-id-in-turn state) attacker-id target-id)
     (let [state (-> (clear-events state)
                     (update-minion attacker-id :attacks-performed-this-turn 1)
-                    (handle-triggers :on-attack target-id))
+                    (handle-triggers :on-attack target-id)
+                    (remove-buffs attacker-id :stealth))
           attacker-attack (get-attack state attacker-id)]
       (if (hero? state target-id)
         (damage-hero state target-id attacker-attack)
@@ -274,6 +276,6 @@
             (if-not target-id
               ((get-hero-power-function hero-power) $)
               ((get-hero-power-function hero-power) $ target-id))
-          (consume-mana $ player-id (get-cost hero-power))
-          (update-hero-power $ player-id :used true))
+            (consume-mana $ player-id (get-cost hero-power))
+            (update-hero-power $ player-id :used true))
       (error "You cannot play your hero power like that.\n"))))

@@ -929,12 +929,12 @@
 (defn get-characters
   {:test (fn []
            (is= (->> (create-game [{:hero "Rexxar"}])
-                    (get-characters)
-                    (map :name))
+                     (get-characters)
+                     (map :name))
                 ["Rexxar" "Jaina Proudmoore"])
            (is= (->> (create-game [{:minions ["Imp"]}])
-                    (get-characters)
-                    (map :name))
+                     (get-characters)
+                     (map :name))
                 ["Imp" "Jaina Proudmoore" "Jaina Proudmoore"]))}
   [state]
   (concat (get-minions state)
@@ -1485,6 +1485,6 @@
                     (get-position "wg"))
                 1))}
   ([minion]
-    (:position minion))
+   (:position minion))
   ([state id]
-    (get-position (get-minion state id))))
+   (get-position (get-minion state id))))

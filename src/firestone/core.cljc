@@ -254,20 +254,20 @@
   ([state id]
    (frozen? (get-board-entity state id))))
 
-(defn stealth?
+(defn stealthed?
   "Checks if the character is stealth"
   {:test (fn []
            (is (-> (create-minion "Blood Imp")
-                    (stealth?)))
+                   (stealthed?)))
            (is-not (-> (create-minion "Imp")
-                   (stealth?))))}
+                       (stealthed?))))}
   ([minion]
    (> (->> (get-character-buffs minion)
            (filter (fn [b] (:stealth b)))
            (count))
       0))
   ([state id]
-   (stealth? (get-minion state id))))
+   (stealthed? (get-minion state id))))
 
 (defn deathrattle-minion?
   "Checks if the minion has a deathrattle."
@@ -410,7 +410,7 @@
          (not= (:owner-id attacker) (:owner-id target))
          (not (if cannot-attack-function (cannot-attack-function state) false))
          (not (frozen? attacker))
-         (not (stealth? target)))))
+         (not (stealthed? target)))))
 
 (defn valid-attacks
   "Get all valid attackers and their valid targets."

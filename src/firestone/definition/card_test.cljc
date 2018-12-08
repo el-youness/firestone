@@ -505,7 +505,11 @@
                         8) $)))
 
 (deftest blood-imp
-         (as-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi") (create-minion "Imp" :id "i")]}]) $
+         (as-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi") (create-minion "Imp" :id "i")]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (do (is (stealthed? $ "bi"))
+                   (error? (attack-with-minion $ "wg" "bi"))
+                   $)
                (end-turn $)
                (do (is= (get-health $ "i")
                         (+ ((get-definition "Imp") :health) 1)) $)))
