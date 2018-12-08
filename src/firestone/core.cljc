@@ -535,9 +535,10 @@
     (if (full-board? state new-owner-id)
       (destroy-minion state id)
       (as-> (remove-minion state id) $
-          (first (add-minion-to-board $ {:player-id new-owner-id
-                                       :minion    minion
-                                       :position  0}))))))
+            (first (add-minion-to-board $ {:player-id new-owner-id
+                                           :minion    minion
+                                           :position  0}))
+            (assoc-in $ [:minion-ids-summoned-this-turn] (conj (:minion-ids-summoned-this-turn state) id))))))
 
 (defn damage-minion
   "Deals damage to the minion with the given id."
@@ -948,12 +949,12 @@
          (if (empty? targets)
            false
            (seq-contains? targets target-id))
-           (if (spell-with-target? state entity-id)
-             false
-             (empty? targets)))
-         false)))
-   ([state entity-id]
-     (valid-play? state entity-id nil)))
+         (if (spell-with-target? state entity-id)
+           false
+           (empty? targets)))
+       false)))
+  ([state entity-id]
+   (valid-play? state entity-id nil)))
 
 (defn valid-plays
   "Get all playable cards and hero powers and their valid targets."
@@ -1008,7 +1009,7 @@
            (let [state (-> (create-game)
                            (play-secret "p1" (create-secret "Snake Trap")))]
              (is= (->> (get-secrets state)
-                      (map :name))
+                       (map :name))
                   ["Snake Trap"])
              (is= (:name (:event state)) "secret-added"))
            ; Cannot have more than 5 secrets in play (need more secrets for better test)
@@ -1027,7 +1028,7 @@
   (if (and (not (secret-active? state player-id secret))
            (< (count (get-secrets state player-id)) 5))
     (-> (add-secret-to-player state player-id secret)
-        (add-event {:name "secret-added"
+        (add-event {:name   "secret-added"
                     :secret secret}))
     state))
 
@@ -1067,7 +1068,7 @@
      ((get-spell-function card) state target-id)
      ((get-spell-function card) state)))
   ([state card]
-    (cast-spell state card nil)))
+   (cast-spell state card nil)))
 
 (defn get-hero-power-function
   "Get the hero power function in the definition of the hero power."
