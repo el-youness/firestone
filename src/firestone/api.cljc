@@ -90,12 +90,11 @@
           (reset-minion-ids-summoned-this-turn)
 
           ; Start of turn events for the new player
-          (handle-triggers :on-start-turn)
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
-          (handle-triggers :on-start-of-turn)
+          (handle-triggers :on-start-turn)
           (reset-minion-attack-this-turn new-pid)))))
 
 (defn clear-events [state]
