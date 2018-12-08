@@ -378,7 +378,7 @@
                   (get-minions "p1")
                   (count))
               0)
-         ; Steam minion on opponents turn
+         ; Steal minion on opponents turn
          (as-> (create-game [{:minions [(create-minion "King Mukla" :id "km") "Imp"]}
                              {:minions [(create-minion "Sylvanas Windrunner" :id "s")]}]) $
                (attack-with-minion $ "km" "s")

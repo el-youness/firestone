@@ -34,6 +34,7 @@
                                     get-attack
                                     damage-minion
                                     damage-hero
+                                    destroy-dead-minions
                                     valid-play?
                                     valid-plays
                                     valid-attacks
@@ -144,7 +145,8 @@
         (damage-hero state target-id attacker-attack)
         (let [target-attack (get-attack state target-id)]
           (-> (damage-minion state target-id attacker-attack)
-              (damage-minion attacker-id target-attack)))))
+              (damage-minion attacker-id target-attack)
+              (destroy-dead-minions)))))
     (error "Not valid attack-with-minion")))
 
 (defn play-spell-card
@@ -187,7 +189,8 @@
         (consume-mana player-id (get-cost card))
         (remove-card-from-hand player-id card-id)
         (add-to-cards-played-this-turn card)
-        (handle-triggers :on-spell-cast (:name card)))))
+        (handle-triggers :on-spell-cast (:name card))
+        (destroy-dead-minions))))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
@@ -231,13 +234,14 @@
                     (add-to-cards-played-this-turn card))
           minion-id (-> (get-minion-ids-summoned-this-turn state)
                         (last))]
-      (if battlecry-function
-        (if target-id
-          (battlecry-function state minion-id target-id)
-          (if (battlecry-minion-with-target? card)
-            state
-            (battlecry-function state minion-id)))
-        state))
+      (-> (if battlecry-function
+            (if target-id
+              (battlecry-function state minion-id target-id)
+              (if (battlecry-minion-with-target? card)
+                state
+                (battlecry-function state minion-id)))
+            state)
+          (destroy-dead-minions)))
     (error "Sorry, you cannot play this card.\n")))
 
 (defn use-hero-power
@@ -274,5 +278,6 @@
               ((get-hero-power-function hero-power) $)
               ((get-hero-power-function hero-power) $ target-id))
             (consume-mana $ player-id (get-cost hero-power))
-            (update-hero-power $ player-id :used true))
+            (update-hero-power $ player-id :used true)
+            (destroy-dead-minions $))
       (error "You cannot play your hero power like that.\n"))))

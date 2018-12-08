@@ -511,6 +511,38 @@
           (deathrattle owner-id))
       (remove-minion state id))))
 
+(defn destroy-dead-minions
+  "Removes all minions with 0 or less health from the board and triggers their deathrattles (if any)."
+  {:test (fn []
+           (as-> (create-game [{:minions ["Imp"
+                                          (create-minion "Imp" :damage-taken 1)
+                                          (create-minion "Loot Hoarder" :damage-taken 2)]
+                                :deck    ["Imp"]}]) $
+                 (destroy-dead-minions $)
+                 (do (is= (-> (get-minions $)
+                              (count))
+                          1)
+                     (is= (-> (get-hand $ "p1")
+                              (count))
+                          1))))}
+  [state]
+  (let [dead-minions (->> (get-minions state)
+                          (filter (fn [m] (<= (get-health m) 0))))
+        deathrattles-and-owner (map (fn [m]
+                                      [(:deathrattle (get-definition m))
+                                       (get-owner m)])
+                                    dead-minions)]
+    (as-> (map :id dead-minions) $
+          ; Remove dead minions
+          (reduce remove-minion state $)
+          ; Execute deathrattles of dead minions
+          (reduce (fn [state [deathrattle owner-id]]
+                    (if deathrattle
+                      (deathrattle state owner-id)
+                      state))
+                  $
+                  deathrattles-and-owner))))
+
 (defn change-minion-board-side
   "Causes a minion on the board to switch board side and owner."
   {:test (fn []
@@ -552,18 +584,10 @@
                     (damage-minion "i" 1)
                     (get-health "i"))
                 (as-> (get-definition "War Golem") $
-                      (- ($ :health) 2)))
-           ; Remove minion if dead
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (damage-minion "i" 1)
-                    (get-minions))
-                []))}
+                      (- ($ :health) 2))))}
   [state id damage]
-  (let [state (update-minion state id :damage-taken (partial + damage))]
-    (let [state (handle-triggers state :on-damage id)]
-      (if (> (get-health state id) 0)
-        state
-        (destroy-minion state id)))))
+  (-> (update-minion state id :damage-taken (partial + damage))
+      (handle-triggers :on-damage id)))
 
 (defn heal-minion
   "Reduces damage taken of a minion by the given amount."
@@ -1073,11 +1097,12 @@
 (defn get-hero-power-function
   "Get the hero power function in the definition of the hero power."
   {:test (fn []
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
+           (is= (-> (create-game [{:minions [(create-minion "War Golem" :id "i1")]}])
                     ((get-hero-power-function (create-hero-power "Fireblast")) "i1")
                     (get-minions)
-                    (count))
-                0)
+                    (first)
+                    (get-health))
+                6)
            (is= (-> (create-game)
                     ((get-hero-power-function (create-hero-power "Reinforce")))
                     (get-minions)
