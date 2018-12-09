@@ -564,12 +564,14 @@
     :rarity           :rare
     :description      "All minions lose Stealth. Destroy all enemy Secrets. Draw a card."
     :spell            (fn [state]
-                        (let [opponent (opposing-player-id (get-player-id-in-turn state))
+                        (let [owner (get-player-id-in-turn state)
+                              opponent (opposing-player-id owner)
                               all-minions (get-minions state)]
                           (-> (reduce (fn [state minion]
                                         (remove-buffs state (:id minion) :stealth))
                                       state
                                       all-minions)
-                              (remove-secrets opponent))))}})
+                              (remove-secrets opponent)
+                              (draw-card owner))))}})
 
 (definitions/add-definitions! card-definitions)

@@ -588,7 +588,8 @@
                    $)))
 
 (deftest flare
-         (as-> (create-game [{:hand [(create-card "Flare" :id "f")]
+         (as-> (create-game [{:deck [(create-card "Imp")]
+                              :hand [(create-card "Flare" :id "f")]
                               :minions [(create-minion "Moroes" :id "m")]
                               :secrets ["Snake Trap"]}
                              {:minions [(create-minion "Blood Imp" :id "bi")]
@@ -599,4 +600,6 @@
                    (is= (count (get-secrets $ "p1"))
                         1)
                    (is= (count (get-secrets $ "p2"))
-                        0))))
+                        0)
+                   (is= (count (get-hand $ "p1"))
+                        1))))
