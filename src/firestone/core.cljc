@@ -910,7 +910,8 @@
                                                 (create-card "Imp" :id "i3")
                                                 (create-card "Big Game Hunter" :id "bgh1")]}
                                      {:minions [(create-minion "Defender" :id "d1")
-                                                (create-minion "Defender" :id "d2")]}])]
+                                                (create-minion "Defender" :id "d2")
+                                                (create-minion "Moroes" :id "mr")]}])]
              (is (valid-play? state "bgh1" "wg1"))          ; Battlecry target targets the right target (tongue twister)
              (is-not (valid-play? state "bgh1" "i1"))       ; Battlecry target targets the wrong target
              (is-not (valid-play? state "bgh1"))            ; Battlecry target required
@@ -923,6 +924,8 @@
              (is-not (valid-play? state "hp1"))             ; Fireblast needs target (hero power)
              (is (valid-play? state "hp1" "d1"))            ; Fireblast targets minion
              (is-not (valid-play? state "hp1" "st"))
+             (is-not (valid-play? state "hp1" "mr"))        ; Stealthed minion can't be targeted by hero power
+             (is-not (valid-play? state "mc1" "mr"))        ; Stealthed minion can't be targeted by spell
              )
            ; Play minion
            (is (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
@@ -946,9 +949,9 @@
          targets (available-targets state entity-id)]
      (if (playable? state player-in-turn entity-id)
        (if target-id
-         (if (empty? targets)
-           false
-           (seq-contains? targets target-id))
+         ; we have a target
+         (and (seq-contains? targets target-id)
+              (not (stealthed? state target-id)))
          (if (spell-with-target? state entity-id)
            false
            (empty? targets)))
