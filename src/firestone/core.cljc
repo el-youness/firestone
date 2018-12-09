@@ -1098,10 +1098,9 @@
                       (count $))
                 1))}
   ([state card target-id]
-   (as-> (handle-triggers state :on-spell-cast (:id card)) $
-         (if target-id
-           ((get-spell-function card) $ target-id)
-           ((get-spell-function card) $))))
+   (if target-id
+     ((get-spell-function card) state target-id)
+     ((get-spell-function card) state)))
   ([state card]
    (cast-spell state card nil)))
 

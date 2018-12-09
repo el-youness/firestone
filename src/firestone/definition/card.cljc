@@ -419,7 +419,7 @@
     :set              :classic
     :rarity           :legendary
     :description      "Whenever you cast a spell, add a 'Fireball' spell to your hand."
-    :triggered-effect {:on-spell-cast (fn [state archmage-id [card-id]]
+    :triggered-effect {:on-play-spell-card (fn [state archmage-id [card-id]]
                                        (if (= (get-owner state card-id)
                                               (get-owner state archmage-id))
                                          (give-card state (get-owner state archmage-id) (create-card "Fireball"))
@@ -591,7 +591,7 @@
     :set              :goblins-vs-gnomes
     :rarity           :legendary
     :description      "Whenever your opponent casts a spell, gain a copy of it and give them a Coin."
-    :triggered-effect  {:on-spell-cast (fn [state trade-prince-id [spell-id]]
+    :triggered-effect  {:on-play-spell-card (fn [state trade-prince-id [spell-id]]
                                          (let [spell-card (get-card-from-hand state spell-id)
                                                spell-caster-id (get-owner spell-card)
                                                spell-name (:name spell-card)

@@ -193,7 +193,7 @@
         (remove-card-from-hand player-id card-id)(add-to-cards-played-this-turn card)
         (destroy-dead-minions))))
   ([state card {target-id :target-id}]
-    (play-spell-card state (get-owner card) (:id card) {})))
+    (play-spell-card state (get-owner card) (:id card) {target-id :target-id})))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."
