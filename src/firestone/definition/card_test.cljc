@@ -586,3 +586,17 @@
                (do (is (stealthed? $ "m"))
                    (error? (attack-with-minion $ "wg" "m"))
                    $)))
+
+(deftest flare
+         (as-> (create-game [{:hand [(create-card "Flare" :id "f")]
+                              :minions [(create-minion "Moroes" :id "m")]
+                              :secrets ["Snake Trap"]}
+                             {:minions [(create-minion "Blood Imp" :id "bi")]
+                              :secrets ["Snake Trap"]}]) $
+               (play-spell-card $ "p1" "f" {})
+               (do (is-not (stealthed? $ "m"))
+                   (is-not (stealthed? $ "bi"))
+                   (is= (count (get-secrets $ "p1"))
+                        1)
+                   (is= (count (get-secrets $ "p2"))
+                        0))))
