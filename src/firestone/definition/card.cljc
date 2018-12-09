@@ -33,7 +33,8 @@
                                          get-cards-played-this-turn
                                          get-player-id-in-turn
                                          remove-card-from-hand
-                                         add-extra-mana]]
+                                         add-extra-mana
+                                         remove-buffs]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -552,6 +553,25 @@
                                       (let [owner-id (get-owner state moroes-id)]
                                         (if (= owner-id (get-player-id-in-turn state))
                                           (summon-minion state owner-id (create-card "Steward"))
-                                          state)))}}})
+                                          state)))}}
+
+   "Flare"
+   {:name             "Flare"
+    :mana-cost        2
+    :type             :spell
+    :class            :hunter
+    :set              :classic
+    :rarity           :rare
+    :description      "All minions lose Stealth. Destroy all enemy Secrets. Draw a card."
+    :spell            (fn [state]
+                        (let [owner (get-player-id-in-turn state)
+                              opponent (opposing-player-id owner)
+                              all-minions (get-minions state)]
+                          (-> (reduce (fn [state minion]
+                                        (remove-buffs state (:id minion) :stealth))
+                                      state
+                                      all-minions)
+                              (remove-secrets opponent)
+                              (draw-card owner))))}})
 
 (definitions/add-definitions! card-definitions)
