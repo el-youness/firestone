@@ -33,6 +33,9 @@
 (defn get-states
   "Returns the states of the character."
   {:test (fn []
+           (is= (-> (create-minion "Acolyte of Pain")
+                    (get-states))
+                #{"EFFECT"})
            (is= (-> (create-minion "Loot Hoarder")
                     (get-states))
                 #{"DEATHRATTLE"})
@@ -44,6 +47,9 @@
                 #{"DEATHRATTLE" "FROZEN"}))}
   [character]
   (as-> #{} $
+        (if (:triggered-effect (get-definition character))
+          (conj $ "EFFECT")
+          $)
         (if (frozen? character)
           (conj $ "FROZEN")
           $)
@@ -207,7 +213,7 @@
                         (get-minions player))
    :active-secrets (map (fn [s]
                           (core-secret->client-secret state s))
-                        (get-secrets player))
+                        (get-secrets state (:id player)))
    :deck-size      (count (get-deck player))
    :hand           (map (fn [c]
                           (core-card->client-card state c))

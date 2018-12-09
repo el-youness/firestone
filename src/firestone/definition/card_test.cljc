@@ -466,7 +466,7 @@
                (do (is= (->> (get-minions $ "p1")
                              (map (fn [m] (get-character-buffs m))))
                         '(({:extra-health 1 :extra-attack 1})
-                          ({:extra-health 1 :extra-attack 1})))
+                           ({:extra-health 1 :extra-attack 1})))
                    (is= (count (get-secrets $ "p1"))
                         0)
                    $))
@@ -553,3 +553,14 @@
                (do (is= (->> (get-hand state "p1")
                              (map :name))
                         ["The Coin"]))))
+
+
+(deftest trade-prince-gallywix
+         (as-> (create-game [{:hand [(create-card "Trade Prince Gallywix" :id "tpg")] :minions [(create-minion "War Golem" :id "wg")]}
+                             {:hand [(create-card "Frostbolt" :id "f")]}]) $
+               (play-minion-card $ "p1" "tpg" {:position 0})
+               (end-turn $)
+               (play-spell-card $ "p2" "f" {:target-id "wg"})
+               (do (is (frozen? $ "wg"))
+                   (is= (-> (get-hand $ "p1")
+                            (first))))))
