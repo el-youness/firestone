@@ -866,6 +866,11 @@
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "hp1"))
                 ["i1" "i2" "h1" "h2"])
+           ; Stealthed minions should not be targeted
+           (is= (-> (create-game [{:minions [(create-minion "Moroes" :id "m")]}
+                                  {:minions [(create-minion "Imp" :id "i1")]}])
+                    (available-targets "hp1"))
+                ["i1" "h1" "h2"])
            ; Not checking targets for a card or hero power
            (error? (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
                        (available-targets "i1"))))}
@@ -876,23 +881,24 @@
   (let [player-id (get-owner state entity-id)
         opp-player-id (opposing-player-id player-id)
         target-type (get-target-type state entity-id)
-        targets (cond
-                  (= target-type :all)
-                  (concat (get-minions state)
-                          (get-heroes state))
+        targets (->> (cond
+                      (= target-type :all)
+                      (concat (get-minions state)
+                              (get-heroes state))
 
-                  (= target-type :all-minions)
-                  (get-minions state)
+                      (= target-type :all-minions)
+                      (get-minions state)
 
-                  (= target-type :enemy-minions)
-                  (get-minions state opp-player-id)
+                      (= target-type :enemy-minions)
+                      (get-minions state opp-player-id)
 
-                  (= target-type :friendly-minions)
-                  (get-minions state player-id)
+                      (= target-type :friendly-minions)
+                      (get-minions state player-id)
 
-                  ; TODO: Might need checks for other target-type.
-                  :else
-                  [])
+                      ; TODO: Might need checks for other target-type.
+                      :else
+                      [])
+                    (filter (fn [c] (not (stealthed? c)))))
         targets-ids (map :id targets)]
     (let [target-cond-func (get-target-condition-function state entity-id)]
       (if (nil? target-cond-func)
@@ -949,8 +955,7 @@
          targets (available-targets state entity-id)]
      (if (playable? state player-in-turn entity-id)
        (if target-id
-         (and (seq-contains? targets target-id)
-              (not (stealthed? state target-id)))
+         (seq-contains? targets target-id)
          (if (spell-with-target? state entity-id)
            false
            (empty? targets)))
