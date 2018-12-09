@@ -377,7 +377,17 @@
                   (destroy-minion "s")
                   (get-minions "p1")
                   (count))
-              0))
+              0)
+         ; Steal minion on opponents turn
+         (as-> (create-game [{:minions [(create-minion "King Mukla" :id "km") "Imp"]}
+                             {:minions [(create-minion "Sylvanas Windrunner" :id "s")]}]) $
+               (attack-with-minion $ "km" "s")
+               (do (is= (-> (get-minions $ "p1")
+                            (count))
+                        0)
+                   (is= (->> (get-minions $ "p2")
+                             (map :name))
+                        ["Imp"]))))
 
 (deftest abusive-sergeant
          (is (as-> (create-game [{:hand    [(create-card "Abusive Sergeant" :id "as1")
