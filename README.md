@@ -17,3 +17,17 @@ All commit messages must follow the following four rules from [the seven rules o
 * Use the imperative mood in the subject line
 
 For example: "Remove deprecated methods Fix #15"
+
+## Instructions
+
+### Important before running a REPL
+remove `:jvm-opts ["--add-modules" "java.xml.bind"]` in **project.clj** if you don't have Java 10.
+
+### Structure of the code
+This is the basic structure explained in the lectures:
+
+* **construct.clj** has all the functions that will directly modify the attributes in the state without any verification.
+* **core.clj** has all the functions that verify and take care of processes of the game behind the view.
+* **api.clj** has all the functions that the player will concretely use.
+
+In the **definition** package, there are all the files related to the heroes and minions definitions as well as the tests related to each one. 

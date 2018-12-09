@@ -26,6 +26,7 @@
                                     valid-plays
                                     valid-attacks
                                     frozen?
+                                    stealthed?
                                     deathrattle-minion?
                                     available-targets
                                     sleepy?]]))
@@ -36,6 +37,9 @@
            (is= (-> (create-minion "Acolyte of Pain")
                     (get-states))
                 #{"EFFECT"})
+           (is= (-> (create-minion "Blood Imp")
+                    (get-states))
+                #{"STEALTH" "EFFECT"})
            (is= (-> (create-minion "Loot Hoarder")
                     (get-states))
                 #{"DEATHRATTLE"})
@@ -49,6 +53,9 @@
   (as-> #{} $
         (if (:triggered-effect (get-definition character))
           (conj $ "EFFECT")
+          $)
+        (if (stealthed? character)
+          (conj $ "STEALTH")
           $)
         (if (frozen? character)
           (conj $ "FROZEN")
@@ -66,17 +73,16 @@
                               (core-hero-power->client-hero-power state hero-power)))))}
   [state hero-power]
   (let [definition (get-definition hero-power)
-        id (:id hero-power)
-        owner-id (get-owner hero-power)]
+        id (:id hero-power)]
     {:can-use            (contains? (valid-plays state) id)
-     :owner-id           owner-id
+     :owner-id           (get-owner hero-power)
      :entity-type        "hero-power"
      :has-used-your-turn (:used hero-power)
      :name               (:name definition)
      :description        (:description definition)
      :mana-cost          (get-cost hero-power)
      :original-mana-cost (:mana-cost definition)
-     :valid-target-ids   (available-targets state owner-id id)}))
+     :valid-target-ids   (available-targets state id)}))
 
 (defn core-hero->client-hero
   {:test (fn []
@@ -115,14 +121,13 @@
                               (core-card->client-card state card)))))}
   [state card]
   (let [definition (get-definition card)
-        id (:id card)
-        owner-id (get-owner card)]
+        id (:id card)]
     (merge
       {:entity-type      "card"
-       :owner-id         owner-id
+       :owner-id         (get-owner card)
        :id               id
        :playable         (contains? (valid-plays state) id)
-       :valid-target-ids (available-targets state owner-id id)}
+       :valid-target-ids (available-targets state id)}
 
       ; Values from definition
       (reduce-kv (fn [m k v]

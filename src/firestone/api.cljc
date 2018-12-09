@@ -28,6 +28,7 @@
                                          reset-cards-played-this-turn
                                          get-player
                                          hero?
+                                         get-position
                                          reset-extra-mana
                                          remove-buffs]]
             [firestone.core :refer [valid-attack?
@@ -35,6 +36,7 @@
                                     get-attack
                                     damage-minion
                                     damage-hero
+                                    destroy-dead-minions
                                     valid-play?
                                     valid-plays
                                     valid-attacks
@@ -145,7 +147,8 @@
         (damage-hero state target-id attacker-attack)
         (let [target-attack (get-attack state target-id)]
           (-> (damage-minion state target-id attacker-attack)
-              (damage-minion attacker-id target-attack)))))
+              (damage-minion attacker-id target-attack)
+              (destroy-dead-minions)))))
     (error "Not valid attack-with-minion")))
 
 (defn play-spell-card
@@ -185,10 +188,10 @@
    (let [card (get-card-from-hand state card-id)]
     (-> (clear-events state)
         (cast-spell card target-id)
-         (consume-mana player-id (get-cost card))
-         (handle-triggers :on-play-card card-id)
-        (remove-card-from-hand player-id card-id)
-         (add-to-cards-played-this-turn card))))
+        (consume-mana player-id (get-cost card))
+        (handle-triggers :on-play-spell-card card-id)
+        (remove-card-from-hand player-id card-id)(add-to-cards-played-this-turn card)
+        (destroy-dead-minions))))
   ([state card {target-id :target-id}]
     (play-spell-card state (get-owner card) (:id card) {})))
 
@@ -196,12 +199,20 @@
   "Play a minion card from the hand if possible."
   {:test (fn []
            ; Play minion
-           (let [state (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
+           (let [state (-> (create-game [{:hand [(create-card "War Golem" :id "wg")
+                                                 (create-card "Imp" :id "imp")
+                                                 (create-card "Loot Hoarder" :id "lh")]}])
                            (play-minion-card "p1" "wg" {:position 0}))]
              (is= (map :name (get-minions state "p1")) ["War Golem"])
              (is= (:minion-ids-summoned-this-turn state) ["m1"])
              (is= (:cards-played-this-turn state) [(create-card "War Golem" :id "wg" :owner-id "p1")])
-             (is= (get-mana state "p1") (- 10 (:mana-cost (get-definition "War Golem")))))
+             (is= (get-mana state "p1") (- 10 (:mana-cost (get-definition "War Golem"))))
+             ; Test that positions work
+             (as-> (play-minion-card state "p1" "imp" {:position 1}) $
+                   (play-minion-card $ "p1" "lh" {:position 1})
+                   (do (is= (get-position $ "m1") 0)
+                       (is= (get-position $ "m2") 2)
+                       (is= (get-position $ "m3") 1))))
            ; Play battlecry minion when there is an available target
            (is= (-> (create-game [{:hand [(create-card "Big Game Hunter" :id "bgh")]}
                                   {:minions [(create-minion "War Golem" :id "wg")]}])
@@ -234,13 +245,14 @@
                     (add-to-cards-played-this-turn card))
           minion-id (-> (get-minion-ids-summoned-this-turn state)
                         (last))]
-      (if battlecry-function
-        (if target-id
-          (battlecry-function state minion-id target-id)
-          (if (battlecry-minion-with-target? card)
-            state
-            (battlecry-function state minion-id)))
-        state))
+      (-> (if battlecry-function
+            (if target-id
+              (battlecry-function state minion-id target-id)
+              (if (battlecry-minion-with-target? card)
+                state
+                (battlecry-function state minion-id)))
+            state)
+          (destroy-dead-minions)))
     (error "Sorry, you cannot play this card.\n")))
 
 (defn use-hero-power
@@ -277,5 +289,6 @@
               ((get-hero-power-function hero-power) $)
               ((get-hero-power-function hero-power) $ target-id))
             (consume-mana $ player-id (get-cost hero-power))
-            (update-hero-power $ player-id :used true))
+            (update-hero-power $ player-id :used true)
+            (destroy-dead-minions $))
       (error "You cannot play your hero power like that.\n"))))

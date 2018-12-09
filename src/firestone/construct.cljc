@@ -725,12 +725,12 @@
                                           data))
 
                      ; Add mana and fatigue to the players
-                     (reduce (fn [state {player-id :player-id
-                                         max-mana :max-mana
-                                         used-mana :used-mana
+                     (reduce (fn [state {player-id  :player-id
+                                         max-mana   :max-mana
+                                         used-mana  :used-mana
                                          extra-mana :extra-mana
-                                         fatigue :fatigue
-                                         aptt :attacks-performed-this-turn}]
+                                         fatigue    :fatigue
+                                         aptt       :attacks-performed-this-turn}]
                                (-> (assoc-in state [:players player-id :max-mana] max-mana)
                                    (assoc-in [:players player-id :used-mana] used-mana)
                                    (assoc-in [:players player-id :extra-mana] extra-mana)
@@ -1435,16 +1435,31 @@
 (defn remove-minion
   "Removes a minion with the given id from the state."
   {:test (fn []
-           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}])
-                    (remove-minion "i")
-                    (get-minions))
-                []))}
+           (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg" :position 0)
+                                          (create-minion "Imp" :id "imp" :position 1)]}]) $
+                 (remove-minion $ "wg")
+                 (do (is= (->> (get-minions $)
+                               (map :name))
+                          ["Imp"])
+                     (is= (->> (get-minions $)
+                               (map :position))
+                          [0]))))}
   [state id]
-  (let [owner-id (:owner-id (get-minion state id))]
-    (update-in state
-               [:players owner-id :minions]
-               (fn [minions]
-                 (remove (fn [m] (= (:id m) id)) minions)))))
+  (let [minion (get-minion state id)
+        owner-id (:owner-id minion)
+        position (:position minion)
+        state (-> (update-in state
+                             [:players owner-id :minions]
+                             (fn [minions]
+                               (remove (fn [m] (= (:id m) id)) minions))))]
+    (->> (get-minions state owner-id)
+         (map :id)
+         (reduce (fn [state id]
+                   (update-minion state id :position (fn [p]
+                                                       (if (> p position)
+                                                         (dec p)
+                                                         p))))
+                 state))))
 
 (defn remove-minions
   "Removes the minions with the given ids from the state."
@@ -1529,8 +1544,8 @@
   "Returns the position of a minion."
   {:test (fn []
            (is= (as-> (create-game [{:minions ["Imp" "Imp"]}]) $
-                    (first (add-minion-to-board $ {:player-id "p1" :minion (create-minion "War Golem" :id "wg") :position 1}))
-                    (get-position $ "wg"))
+                      (first (add-minion-to-board $ {:player-id "p1" :minion (create-minion "War Golem" :id "wg") :position 1}))
+                      (get-position $ "wg"))
                 1))}
   ([minion]
    (:position minion))
@@ -1546,8 +1561,8 @@
                                                 (create-minion "Frothing Berserker" :id "fb")]
                                       :deck    [(create-card "Imp" :id "i")]}])]
              (is (card? (get-card-duplicate state "s")))
-             (is-not (= (get-entity state "i")
-                        (get-card-duplicate state "i")))
+             (is-not (= (:id (get-entity state "i"))
+                        (:id (get-card-duplicate state "i"))))
              (is= (:name (get-entity state "ap"))
                   (:name (get-card-duplicate state "ap")))))}
   ([entity]

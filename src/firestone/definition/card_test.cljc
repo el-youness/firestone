@@ -377,7 +377,17 @@
                   (destroy-minion "s")
                   (get-minions "p1")
                   (count))
-              0))
+              0)
+         ; Steal minion on opponents turn
+         (as-> (create-game [{:minions [(create-minion "King Mukla" :id "km") "Imp"]}
+                             {:minions [(create-minion "Sylvanas Windrunner" :id "s")]}]) $
+               (attack-with-minion $ "km" "s")
+               (do (is= (-> (get-minions $ "p1")
+                            (count))
+                        0)
+                   (is= (->> (get-minions $ "p2")
+                             (map :name))
+                        ["Imp"]))))
 
 (deftest abusive-sergeant
          (is (as-> (create-game [{:hand    [(create-card "Abusive Sergeant" :id "as1")
@@ -563,4 +573,84 @@
                (play-spell-card $ "p2" "f" {:target-id "wg"})
                (do (is (frozen? $ "wg"))
                    (is= (-> (get-hand $ "p1")
-                            (first))))))
+                            (first)
+                            :name)
+                        "Frostbolt")
+                   (is= (-> (get-hand $ "p2")
+                            (first)
+                            :name)
+                        "Gallywix's Coin")
+                   (is= (get-mana $ "p2")
+                        8) $)
+               (play-spell-card $ "p2" "c3" {})
+               ; When the "Gallywix's Coin" is played it adds 1 mana and doesn't get duplicated
+               (do (is= (get-mana $ "p2")
+                        9)
+                   (is= (-> (get-hand $ "p2")
+                            (count))
+                        0)
+                   (is= (-> (get-hand $ "p1")
+                            (count))
+                        1))))
+
+(deftest blood-imp
+         (as-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi") (create-minion "Imp" :id "i")]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (end-turn $)
+               (do (is= (get-health $ "i")
+                        (+ ((get-definition "Imp") :health) 1))
+                   (is (stealthed? $ "bi"))
+                   (error? (attack-with-minion $ "wg" "bi"))
+                   $)))
+
+(deftest moroes
+         ; At the end-turn of the player owning Moroes, one Steward is summoned on the board
+         (as-> (create-game [{:minions [(create-minion "Moroes")]}]) $
+               (do (is= (count (get-minions $ "p1"))
+                        1)
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $)
+               (end-turn $)
+               (do (is= (->> (get-minions $ "p1")
+                             (second)
+                             (:name))
+                        "Steward")
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $)
+               (end-turn $)
+               (do (is= (count (get-minions $ "p1"))
+                        2)
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $)
+               (end-turn $)
+               (do (is= (count (get-minions $ "p1"))
+                        3)
+                   (is= (count (get-minions $ "p2"))
+                        0)
+                   $))
+         ; Test Stealth of Moroes
+         (as-> (create-game [{:minions [(create-minion "War Golem" :id "wg")]}
+                             {:minions [(create-minion "Moroes" :id "m")]}]) $
+               (do (is (stealthed? $ "m"))
+                   (error? (attack-with-minion $ "wg" "m"))
+                   $)))
+
+(deftest flare
+         (as-> (create-game [{:deck [(create-card "Imp")]
+                              :hand [(create-card "Flare" :id "f")]
+                              :minions [(create-minion "Moroes" :id "m")]
+                              :secrets ["Snake Trap"]}
+                             {:minions [(create-minion "Blood Imp" :id "bi")]
+                              :secrets ["Snake Trap"]}]) $
+               (play-spell-card $ "p1" "f" {})
+               (do (is-not (stealthed? $ "m"))
+                   (is-not (stealthed? $ "bi"))
+                   (is= (count (get-secrets $ "p1"))
+                        1)
+                   (is= (count (get-secrets $ "p2"))
+                        0)
+                   (is= (count (get-hand $ "p1"))
+                        1))))

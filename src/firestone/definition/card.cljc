@@ -23,6 +23,7 @@
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
+                                         get-card-from-hand
                                          get-mana
                                          get-board-entity
                                          get-hero-id
@@ -37,7 +38,8 @@
                                          get-player-id-in-turn
                                          remove-card-from-hand
                                          add-extra-mana
-                                         get-card-duplicate]]
+                                         get-card-duplicate
+                                         remove-buffs]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
                                     get-attack
@@ -402,7 +404,7 @@
     :class       :mage
     :set         :basic
     :rarity      :none
-    :description "go and grab it from the internet"
+    :description "Deal 6 damage."
     :target-type :all
     :spell       (fn [state target-id]
                    (deal-spell-damage state target-id 6))}
@@ -417,10 +419,9 @@
     :set              :classic
     :rarity           :legendary
     :description      "Whenever you cast a spell, add a 'Fireball' spell to your hand."
-    :triggered-effect {:on-play-card (fn [state archmage-id [card-id]]
-                                       (if (and (spell-card? state card-id)
-                                                (= (get-owner state card-id)
-                                                   (get-owner state archmage-id)))
+    :triggered-effect {:on-spell-cast (fn [state archmage-id [card-id]]
+                                       (if (= (get-owner state card-id)
+                                              (get-owner state archmage-id))
                                          (give-card state (get-owner state archmage-id) (create-card "Fireball"))
                                          state))}}
 
@@ -433,11 +434,11 @@
     :set              :classic
     :rarity           :legendary
     :description      "Whenever a player casts a spell, put a copy into the other player's hand."
-    :triggered-effect {:on-play-card (fn [state _ [card-id]]
-                                       (if (spell-card? state card-id)
-                                         (let [src_player (get-owner state card-id)]
-                                           (give-card state (opposing-player-id src_player) (get-card-duplicate state card-id)))
-                                         state)
+    :triggered-effect {:on-play-spell-card (fn [state _ [card-id]]
+                                             (let [src_player (get-owner state card-id)]
+                                               (give-card state
+                                                          (opposing-player-id src_player)
+                                                          (get-card-duplicate state card-id)))
                                        )}}
 
    "Doomsayer"
@@ -590,13 +591,17 @@
     :set              :goblins-vs-gnomes
     :rarity           :legendary
     :description      "Whenever your opponent casts a spell, gain a copy of it and give them a Coin."
-    :triggered-effect  {:on-spell-cast (fn [state trade-prince-id [spell-name]]
-                                         (if (= spell-name "Gallywix's Coin")
-                                           state
-                                           (let [owner-id (get-owner state trade-prince-id)
-                                                 opponent-id (if (= owner-id "p1") "p2" "p1")]
-                                             (->  (give-card state owner-id (create-card spell-name))
-                                                  (give-card opponent-id (create-card "Gallywix's Coin"))))))}}
+    :triggered-effect  {:on-spell-cast (fn [state trade-prince-id [spell-id]]
+                                         (let [spell-card (get-card-from-hand state spell-id)
+                                               spell-caster-id (get-owner spell-card)
+                                               spell-name (:name spell-card)
+                                               prince-owner-id (get-owner state trade-prince-id)
+                                               opponent-id (opposing-player-id prince-owner-id)]
+                                           (if (and (not= spell-name "Gallywix's Coin")
+                                                    (= spell-caster-id opponent-id))
+                                             (->  (give-card state prince-owner-id (create-card spell-name))
+                                                  (give-card opponent-id (create-card "Gallywix's Coin")))
+                                             state)))}}
 
    "Blood Imp"
    {:name             "Blood Imp"
@@ -618,6 +623,40 @@
                                           (let [[seed random-minion-card] (random-nth (get-seed state) friendly-minions)]
                                             (-> (set-seed state seed)
                                                 (add-buff (:id random-minion-card) {:extra-health 1})))
-                                          state)))}}})
+                                          state)))}}
+   "Moroes"
+   {:name             "Moroes"
+    :mana-cost        3
+    :health           1
+    :attack           1
+    :type             :minion
+    :set              :one-night-in-karazan
+    :rarity           :legendary
+    :description      "Stealth. At the end of your turn, summon a 1/1 Steward."
+    :stealth          true
+    :triggered-effect {:on-end-turn (fn [state moroes-id _]
+                                      (let [owner-id (get-owner state moroes-id)]
+                                        (if (= owner-id (get-player-id-in-turn state))
+                                          (summon-minion state owner-id (create-card "Steward"))
+                                          state)))}}
+
+   "Flare"
+   {:name             "Flare"
+    :mana-cost        2
+    :type             :spell
+    :class            :hunter
+    :set              :classic
+    :rarity           :rare
+    :description      "All minions lose Stealth. Destroy all enemy Secrets. Draw a card."
+    :spell            (fn [state]
+                        (let [owner (get-player-id-in-turn state)
+                              opponent (opposing-player-id owner)
+                              all-minions (get-minions state)]
+                          (-> (reduce (fn [state minion]
+                                        (remove-buffs state (:id minion) :stealth))
+                                      state
+                                      all-minions)
+                              (remove-secrets opponent)
+                              (draw-card owner))))}})
 
 (definitions/add-definitions! card-definitions)
