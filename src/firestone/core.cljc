@@ -949,7 +949,6 @@
          targets (available-targets state entity-id)]
      (if (playable? state player-in-turn entity-id)
        (if target-id
-         ; we have a target
          (and (seq-contains? targets target-id)
               (not (stealthed? state target-id)))
          (if (spell-with-target? state entity-id)
