@@ -10,6 +10,7 @@
                                          create-secret
                                          update-minion
                                          update-in-hero
+                                         minion?
                                          get-character
                                          get-minion
                                          get-minions
@@ -17,9 +18,12 @@
                                          remove-secret
                                          remove-secrets
                                          get-hero
+                                         get-damage
+                                         get-player-id-in-turn
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
+                                         get-card-from-hand
                                          get-mana
                                          get-board-entity
                                          get-hero-id
@@ -34,6 +38,7 @@
                                          get-player-id-in-turn
                                          remove-card-from-hand
                                          add-extra-mana
+                                         get-card-duplicate
                                          remove-buffs]]
             [firestone.core :refer [change-minion-board-side
                                     get-owner
@@ -248,19 +253,18 @@
                          (set-seed seed))))}
 
    "King Mukla"
-   {:name            "King Mukla"
-    :attack          5
-    :health          5
-    :mana-cost       3
-    :type            :minion
-    :set             :classic
-    :rarity          :legendary
-    :description     "Battlecry: Give your opponent 2 Bananas."
-    :on-playing-card "King Mukla battelcry"
-    :battlecry       (fn [state minion-id]
-                       (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
-                         (-> (give-card state opponent-player-id (create-card "Bananas"))
-                             (give-card opponent-player-id (create-card "Bananas")))))}
+   {:name        "King Mukla"
+    :attack      5
+    :health      5
+    :mana-cost   3
+    :type        :minion
+    :set         :classic
+    :rarity      :legendary
+    :description "Battlecry: Give your opponent 2 Bananas."
+    :battlecry   (fn [state minion-id]
+                   (let [opponent-player-id (opposing-player-id (get-owner state minion-id))]
+                     (-> (give-card state opponent-player-id (create-card "Bananas"))
+                         (give-card opponent-player-id (create-card "Bananas")))))}
 
    "Frostbolt"
    {:name        "Frostbolt"
@@ -393,6 +397,84 @@
                                             (summon-minion player-id "Snake"))
                                         state)))}}
 
+   "Fireball"
+   {:name        "Fireball"
+    :type        :spell
+    :mana-cost   4
+    :class       :mage
+    :set         :basic
+    :rarity      :none
+    :description "Deal 6 damage."
+    :target-type :all
+    :spell       (fn [state target-id]
+                   (deal-spell-damage state target-id 6))}
+
+   "Archmage Antonidas"
+   {:name             "Archmage Antonidas"
+    :attack           5
+    :health           7
+    :type             :minion
+    :mana-cost        7
+    :class            :mage
+    :set              :classic
+    :rarity           :legendary
+    :description      "Whenever you cast a spell, add a 'Fireball' spell to your hand."
+    :triggered-effect {:on-play-spell-card (fn [state archmage-id [card-id]]
+                                       (if (= (get-owner state card-id)
+                                              (get-owner state archmage-id))
+                                         (give-card state (get-owner state archmage-id) (create-card "Fireball"))
+                                         state))}}
+
+   "Lorewalker Cho"
+   {:name             "Lorewalker Cho"
+    :attack           0
+    :health           4
+    :type             :minion
+    :mana-cost        2
+    :set              :classic
+    :rarity           :legendary
+    :description      "Whenever a player casts a spell, put a copy into the other player's hand."
+    :triggered-effect {:on-play-spell-card (fn [state _ [card-id]]
+                                             (let [src_player (get-owner state card-id)]
+                                               (give-card state
+                                                          (opposing-player-id src_player)
+                                                          (get-card-duplicate state card-id)))
+                                       )}}
+
+   "Doomsayer"
+   {:name             "Doomsayer"
+    :attack           0
+    :health           7
+    :type             :minion
+    :mana-cost        2
+    :set              :classic
+    :rarity           :epic
+    :description      "At the start of your turn destroy ALL minions."
+    :triggered-effect {:on-start-turn (fn [state doomsayer-id & _]
+                                        (if (= (get-player-id-in-turn state)
+                                               (get-owner state doomsayer-id))
+                                          (reduce destroy-minion state (map :id (get-minions state)))
+                                          state))}}
+
+   "Rampage"
+   {:name             "Rampage"
+    :type             :spell
+    :mana-cost        2
+    :class            :warrior
+    :set              :classic
+    :rarity           :common
+    :description      "Give a damaged minion +3/+3."
+    :target-type      :all-minions
+    :target-condition (defn damaged-minion?
+                        [state target-id]
+                        {:pre [(map? state) (string? target-id)]}
+                        (let [minion (get-minion state target-id)]
+                          (and minion
+                               (> (get-damage minion) 0))))
+    :spell            (fn [state target-id]
+                        (add-buff state target-id {:extra-health 3
+                                                   :extra-attack 3}))}
+
    "Abusive Sergeant"
    {:name        "Abusive Sergeant"
     :attack      1
@@ -442,7 +524,6 @@
     :set       :one-night-in-karazhan
     :rarity    :none}
 
-
    "Unpowered Mauler"
    {:name          "Unpowered Mauler"
     :attack        2
@@ -481,14 +562,14 @@
                                                           (get-minions $ owner-id)))
                                             state)))}}
    "The Coin"
-   {:name             "The Coin"
-    :mana-cost        0
-    :type             :spell
-    :set              :basic
-    :rarity           :none
-    :description      "Gain 1 Mana Crystal this turn only."
-    :spell            (fn [state]
-                        (add-extra-mana state (get-player-id-in-turn state) 1))}
+   {:name        "The Coin"
+    :mana-cost   0
+    :type        :spell
+    :set         :basic
+    :rarity      :none
+    :description "Gain 1 Mana Crystal this turn only."
+    :spell       (fn [state]
+                   (add-extra-mana state (get state :player-id-in-turn) 1))}
 
    "Gallywix's Coin"
    {:name             "Gallywix's Coin"
@@ -510,13 +591,17 @@
     :set              :goblins-vs-gnomes
     :rarity           :legendary
     :description      "Whenever your opponent casts a spell, gain a copy of it and give them a Coin."
-    :triggered-effect  {:on-spell-cast (fn [state trade-prince-id [spell-name]]
-                                         (if (= spell-name "Gallywix's Coin")
-                                           state
-                                           (let [owner-id (get-owner state trade-prince-id)
-                                                 opponent-id (if (= owner-id "p1") "p2" "p1")]
-                                             (->  (give-card state owner-id (create-card spell-name))
-                                                  (give-card opponent-id (create-card "Gallywix's Coin"))))))}}
+    :triggered-effect  {:on-play-spell-card (fn [state trade-prince-id [spell-id]]
+                                         (let [spell-card (get-card-from-hand state spell-id)
+                                               spell-caster-id (get-owner spell-card)
+                                               spell-name (:name spell-card)
+                                               prince-owner-id (get-owner state trade-prince-id)
+                                               opponent-id (opposing-player-id prince-owner-id)]
+                                           (if (and (not= spell-name "Gallywix's Coin")
+                                                    (= spell-caster-id opponent-id))
+                                             (->  (give-card state prince-owner-id (create-card spell-name))
+                                                  (give-card opponent-id (create-card "Gallywix's Coin")))
+                                             state)))}}
 
    "Blood Imp"
    {:name             "Blood Imp"

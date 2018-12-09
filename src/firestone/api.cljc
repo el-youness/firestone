@@ -26,6 +26,7 @@
                                          decrement-buff-counters
                                          add-to-cards-played-this-turn
                                          reset-cards-played-this-turn
+                                         get-player
                                          hero?
                                          get-position
                                          reset-extra-mana
@@ -94,11 +95,11 @@
           (reset-minion-ids-summoned-this-turn)
 
           ; Start of turn events for the new player
-          (handle-triggers :on-start-turn)
           (draw-card new-pid)
           (add-to-max-mana new-pid 1)
           (restore-mana new-pid)
           (update-hero-power new-pid :used false)
+          (handle-triggers :on-start-turn)
           (reset-minion-attack-this-turn new-pid)))))
 
 (defn attack-with-minion
@@ -181,17 +182,18 @@
              (error? (-> state
                          (play-spell-card "p1" "snakes" {})
                          (play-spell-card "p1" "snakes2" {})))))}
-  [state player-id card-id {target-id :target-id}]
-  (when-not (valid-play? state card-id target-id)
-    (error "You cannot play the spell like this you fool.\n"))
-  (let [card (get-card-from-hand state card-id)]
+  ([state player-id card-id {target-id :target-id}]
+   (when-not (valid-play? state card-id target-id)
+     (error "You cannot play the spell like this you fool.\n"))
+   (let [card (get-card-from-hand state card-id)]
     (-> (clear-events state)
         (cast-spell card target-id)
         (consume-mana player-id (get-cost card))
-        (remove-card-from-hand player-id card-id)
-        (add-to-cards-played-this-turn card)
-        (handle-triggers :on-spell-cast (:name card))
+        (handle-triggers :on-play-spell-card card-id)
+        (remove-card-from-hand player-id card-id)(add-to-cards-played-this-turn card)
         (destroy-dead-minions))))
+  ([state card {target-id :target-id}]
+    (play-spell-card state (get-owner card) (:id card) {target-id :target-id})))
 
 (defn play-minion-card
   "Play a minion card from the hand if possible."

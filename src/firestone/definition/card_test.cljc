@@ -514,6 +514,57 @@
                    (is= (get-mana $ "p1")
                         8) $)))
 
+(deftest doomsayer
+         (as-> (create-game [{:minions [(create-minion "Doomsayer" :id "s" )]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (end-turn $)
+               (do (is= (->> (get-minions $)
+                             (map :name))
+                        ["Doomsayer" "War Golem"])
+                   $)
+               (end-turn $)
+               (is= (-> (get-minions $)
+                        (count))
+                    0)))
+
+(deftest rampage
+         (is= (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
+                                {:minions [(create-minion "War Golem" :id "wg" :damage-taken 2)]}])
+                  (play-spell-card "p1" "r" {:target-id "wg"})
+                  (get-health "wg"))
+              8)
+         (error? (-> (create-game [{:hand [(create-card "Rampage" :id "r")]}
+                                   {:minions [(create-minion "War Golem" :id "wg")]}])
+                     (play-spell-card "p1" "r" {:target-id "wg"}))))
+
+(deftest archmage-antonidas
+         (is= (-> (create-game [{:hand [(create-card "The Coin" :id "c")]
+                                 :minions [(create-minion "Archmage Antonidas" :id "aa")]}])
+                  (play-spell-card "p1" "c" {})
+                  (get-hand "p1")
+                  (first)
+                  :name)
+              "Fireball"))
+
+(deftest lorewalker-cho
+         (as-> (create-game [{:hand [(create-card "The Coin" :id "c")]
+                              :minions [(create-minion "Lorewalker Cho")]}]) state
+               (play-spell-card state "p1" "c" {})
+               (do (is= (->> (get-hand state "p2")
+                             (map :name))
+                        ["The Coin"])
+                   state)
+               (end-turn state)
+               (play-spell-card state
+                                (->> (get-player-id-in-turn state)
+                                     (get-hand state )
+                                     (first))
+                                {})
+               (do (is= (->> (get-hand state "p1")
+                             (map :name))
+                        ["The Coin"]))))
+
+
 (deftest trade-prince-gallywix
          (as-> (create-game [{:hand [(create-card "Trade Prince Gallywix" :id "tpg")] :minions [(create-minion "War Golem" :id "wg")]}
                              {:hand [(create-card "Frostbolt" :id "f")]}]) $

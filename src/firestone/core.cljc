@@ -18,6 +18,7 @@
                                          add-card-to-hand
                                          get-hero-id
                                          get-player
+                                         get-player-id-in-turn
                                          get-heroes
                                          get-hero-powers
                                          get-minion
@@ -41,7 +42,9 @@
                                          opposing-player-id
                                          remove-buffs
                                          get-triggered-effects
-                                         hero?]]))
+                                         minion?
+                                         hero?
+                                         opposing-player-id]]))
 
 (defn get-extra-health
   "Returns the extra attack from buffs of the character."
