@@ -26,6 +26,7 @@
                                     valid-plays
                                     valid-attacks
                                     frozen?
+                                    stealthed?
                                     deathrattle-minion?
                                     available-targets
                                     sleepy?]]))
@@ -36,6 +37,9 @@
            (is= (-> (create-minion "Acolyte of Pain")
                     (get-states))
                 #{"EFFECT"})
+           (is= (-> (create-minion "Blood Imp")
+                    (get-states))
+                #{"STEALTH" "EFFECT"})
            (is= (-> (create-minion "Loot Hoarder")
                     (get-states))
                 #{"DEATHRATTLE"})
@@ -49,6 +53,9 @@
   (as-> #{} $
         (if (:triggered-effect (get-definition character))
           (conj $ "EFFECT")
+          $)
+        (if (stealthed? character)
+          (conj $ "STEALTH")
           $)
         (if (frozen? character)
           (conj $ "FROZEN")
