@@ -8,5 +8,5 @@
   :main ^:skip-aot firestone.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
-  :jvm-opts ["--add-modules" "java.xml.bind"]
+  ;:jvm-opts ["--add-modules" "java.xml.bind"]
   )

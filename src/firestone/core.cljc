@@ -866,6 +866,11 @@
                                   {:minions [(create-minion "Imp" :id "i2")]}])
                     (available-targets "hp1"))
                 ["i1" "i2" "h1" "h2"])
+           ; Stealthed minions should not be targeted
+           (is= (-> (create-game [{:minions [(create-minion "Moroes" :id "m")]}
+                                  {:minions [(create-minion "Imp" :id "i1")]}])
+                    (available-targets "hp1"))
+                ["i1" "h1" "h2"])
            ; Not checking targets for a card or hero power
            (error? (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
                        (available-targets "i1"))))}
@@ -876,23 +881,24 @@
   (let [player-id (get-owner state entity-id)
         opp-player-id (opposing-player-id player-id)
         target-type (get-target-type state entity-id)
-        targets (cond
-                  (= target-type :all)
-                  (concat (get-minions state)
-                          (get-heroes state))
+        targets (->> (cond
+                      (= target-type :all)
+                      (concat (get-minions state)
+                              (get-heroes state))
 
-                  (= target-type :all-minions)
-                  (get-minions state)
+                      (= target-type :all-minions)
+                      (get-minions state)
 
-                  (= target-type :enemy-minions)
-                  (get-minions state opp-player-id)
+                      (= target-type :enemy-minions)
+                      (get-minions state opp-player-id)
 
-                  (= target-type :friendly-minions)
-                  (get-minions state player-id)
+                      (= target-type :friendly-minions)
+                      (get-minions state player-id)
 
-                  ; TODO: Might need checks for other target-type.
-                  :else
-                  [])
+                      ; TODO: Might need checks for other target-type.
+                      :else
+                      [])
+                    (filter (fn [c] (not (stealthed? c)))))
         targets-ids (map :id targets)]
     (let [target-cond-func (get-target-condition-function state entity-id)]
       (if (nil? target-cond-func)
@@ -910,7 +916,8 @@
                                                 (create-card "Imp" :id "i3")
                                                 (create-card "Big Game Hunter" :id "bgh1")]}
                                      {:minions [(create-minion "Defender" :id "d1")
-                                                (create-minion "Defender" :id "d2")]}])]
+                                                (create-minion "Defender" :id "d2")
+                                                (create-minion "Moroes" :id "mr")]}])]
              (is (valid-play? state "bgh1" "wg1"))          ; Battlecry target targets the right target (tongue twister)
              (is-not (valid-play? state "bgh1" "i1"))       ; Battlecry target targets the wrong target
              (is-not (valid-play? state "bgh1"))            ; Battlecry target required
@@ -923,6 +930,8 @@
              (is-not (valid-play? state "hp1"))             ; Fireblast needs target (hero power)
              (is (valid-play? state "hp1" "d1"))            ; Fireblast targets minion
              (is-not (valid-play? state "hp1" "st"))
+             (is-not (valid-play? state "hp1" "mr"))        ; Stealthed minion can't be targeted by hero power
+             (is-not (valid-play? state "mc1" "mr"))        ; Stealthed minion can't be targeted by spell
              )
            ; Play minion
            (is (-> (create-game [{:hand [(create-card "War Golem" :id "wg")]}])
@@ -946,9 +955,7 @@
          targets (available-targets state entity-id)]
      (if (playable? state player-in-turn entity-id)
        (if target-id
-         (if (empty? targets)
-           false
-           (seq-contains? targets target-id))
+         (seq-contains? targets target-id)
          (if (spell-with-target? state entity-id)
            false
            (empty? targets)))
