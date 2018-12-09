@@ -537,6 +537,21 @@
                                           (let [[seed random-minion-card] (random-nth (get-seed state) friendly-minions)]
                                             (-> (set-seed state seed)
                                                 (add-buff (:id random-minion-card) {:extra-health 1})))
+                                          state)))}}
+   "Moroes"
+   {:name             "Moroes"
+    :mana-cost        3
+    :health           1
+    :attack           1
+    :type             :minion
+    :set              :one-night-in-karazan
+    :rarity           :legendary
+    :description      "Stealth. At the end of your turn, summon a 1/1 Steward."
+    :stealth          true
+    :triggered-effect {:on-end-turn (fn [state moroes-id _]
+                                      (let [owner-id (get-owner state moroes-id)]
+                                        (if (= owner-id (get-player-id-in-turn state))
+                                          (summon-minion state owner-id (create-card "Steward"))
                                           state)))}}})
 
 (definitions/add-definitions! card-definitions)
