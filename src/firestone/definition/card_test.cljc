@@ -662,3 +662,21 @@
                (do (is (taunted? $ "bbb"))
                    (is= (get (valid-attacks $) "wg") ["bbb"])
                    $)))
+
+(deftest the-black-knight
+         ; Available target on board
+         (is= (as-> (create-game [{:hand [(create-card "The Black Knight" :id "tbk")]}
+                                  {:minions [(create-minion "Booty Bay Bodyguard" :id "bbb") "Imp"]}]) $
+                    (play-minion-card $ "p1" "tbk" {:position 0 :target-id "bbb"})
+                    (get-minions $)
+                    (map :name $)
+                    (set $))
+              #{"Imp" "The Black Knight"})
+         ; Can be played without target if none available
+         (is= (as-> (create-game [{:hand [(create-card "The Black Knight" :id "tbk")]}
+                                  {:minions ["Imp"]}]) $
+                    (play-minion-card $ "p1" "tbk" {:position 0})
+                    (get-minions $)
+                    (map :name $)
+                    (set $))
+              #{"Imp" "The Black Knight"}))

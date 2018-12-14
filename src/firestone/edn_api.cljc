@@ -20,9 +20,14 @@
   (core-game->client-game (reset! state-atom (let [cards (keys card-definitions)]
                                                (create-game [{:deck (drop 5 cards)
                                                               ;:hand (take 5 cards)}
-                                                              :hand ["Booty Bay Bodyguard" "War Golem"]}
+                                                              :hand ["Booty Bay Bodyguard"
+                                                                     "War Golem"
+                                                                     "The Black Knight"]}
                                                              {:deck (drop 5 (reverse cards))
-                                                              :hand (take 5 (reverse cards))
+                                                              ; :hand (take 5 (reverse cards))
+                                                              :hand ["Booty Bay Bodyguard"
+                                                                     "War Golem"
+                                                                     "The Black Knight"]
                                                               :hero "Rexxar"}])))
                           game-id))
 

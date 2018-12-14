@@ -56,7 +56,8 @@
                                     minion-card?
                                     add-to-max-mana
                                     deal-spell-damage
-                                    spell-card?]]
+                                    spell-card?
+                                    taunted?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -668,6 +669,20 @@
     :set              :classic
     :rarity           :none
     :description      "Taunt"
-    :taunt            true}})
+    :taunt            true}
+
+   "The Black Knight"
+   {:name             "The Black Knight"
+    :attack           4
+    :health           5
+    :mana-cost        6
+    :type             :minion
+    :set              :classic
+    :rarity           :legendary
+    :description      "Battlecry: Destroy an enemy minion with Taunt."
+    :target-type      :enemy-minions
+    :target-condition taunted?
+    :battlecry        (fn [state _ target-id]
+                        (destroy-minion state target-id))}})
 
 (definitions/add-definitions! card-definitions)
