@@ -273,6 +273,34 @@
   ([state id]
    (stealthed? (get-minion state id))))
 
+(defn taunted?
+  "Checks if the character is taunt"
+  {:test (fn []
+           (is (-> (create-minion "Booty Bay Bodyguard")
+                   (taunted?)))
+           (is-not (-> (create-minion "Imp")
+                       (taunted?))))}
+  ([minion]
+   (:taunt (get-definition minion)))
+  ([state id]
+   (taunted? (get-minion state id))))
+
+(defn opponent-has-taunted-minions
+  {:test (fn []
+           (is (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                 {:minions [(create-minion "Booty Bay Bodyguard" :id "bbb")
+                                            (create-minion "Booty Bay Bodyguard" :id "bbb2")]}])
+                   (opponent-has-taunted-minions)))
+           (is-not (-> (create-game [{:minions [(create-minion "Ancient Watcher" :id "aw")]}
+                                     {:minions [(create-minion "Imp" :id "i")]}])
+                       (opponent-has-taunted-minions))))}
+  [state]
+  (let [player-id (get-player-id-in-turn state)
+        targets (filter (fn [minion-id]
+                          (taunted? state minion-id))
+                        (map :id (get-minions state (opposing-player-id player-id))))]
+    (not (empty? targets))))
+
 (defn deathrattle-minion?
   "Checks if the minion has a deathrattle."
   {:test (fn []
@@ -402,7 +430,12 @@
            ; Should not be able to attack if target is stealth
            (is-not (-> (create-game [{:minions [(create-minion "Blood Imp" :id "bi")]}
                                      {:minions [(create-minion "War Golem" :id "wg")]}])
-                       (valid-attack? "p1" "wg" "bi"))))}
+                       (valid-attack? "p1" "wg" "bi")))
+           ; Should not be able to attack if other minion is taunted and this minion is not
+           (is-not (-> (create-game [{:minions [(create-minion "Imp" :id "i")]}
+                                     {:minions [(create-minion "Booty Bay Bodyguard" :id "bbb")]}])
+                       (valid-attack? "p1" "i" "h2")))
+           )}
   [state player-id attacker-id target-id]
   (let [attacker (get-minion state attacker-id)
         target (get-board-entity state target-id)
@@ -414,6 +447,9 @@
          (not= (:owner-id attacker) (:owner-id target))
          (not (if cannot-attack-function (cannot-attack-function state) false))
          (not (frozen? attacker))
+         (if (opponent-has-taunted-minions state)
+           (taunted? target)
+           true)
          (not (stealthed? target)))))
 
 (defn valid-attacks
@@ -436,6 +472,13 @@
            (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")]}])
                     (valid-attacks))
                 {"i1" ["h2"]})
+           ; Enemy has minion with taunt
+           (is= (-> (create-game [{:minions [(create-minion "Imp" :id "i1")
+                                             (create-minion "Imp" :id "i2")]}
+                                  {:minions [(create-minion "Booty Bay Bodyguard" :id "bbb")]}])
+                    (valid-attacks))
+                {"i1" ["bbb"]
+                 "i2" ["bbb"]})
            ; No minions on the board
            (is= (-> (create-game)
                     (valid-attacks))

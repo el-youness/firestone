@@ -657,6 +657,17 @@
                                       state
                                       all-minions)
                               (remove-secrets opponent)
-                              (draw-card owner))))}})
+                              (draw-card owner))))}
+   "Booty Bay Bodyguard"
+   {:name             "Booty Bay Bodyguard"
+    :mana-cost        5
+    :health           4
+    :attack           5
+    :type             :minion
+    :class            :hunter
+    :set              :classic
+    :rarity           :none
+    :description      "Taunt"
+    :taunt            true}})
 
 (definitions/add-definitions! card-definitions)

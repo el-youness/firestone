@@ -654,3 +654,11 @@
                         0)
                    (is= (count (get-hand $ "p1"))
                         1))))
+
+(deftest booty-bay-bodyguard
+         (as-> (create-game [{:minions [(create-minion "Booty Bay Bodyguard" :id "bbb")]}
+                             {:minions [(create-minion "War Golem" :id "wg")]}]) $
+               (end-turn $)
+               (do (is (taunted? $ "bbb"))
+                   (is= (get (valid-attacks $) "wg") ["bbb"])
+                   $)))

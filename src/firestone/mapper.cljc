@@ -27,6 +27,7 @@
                                     valid-attacks
                                     frozen?
                                     stealthed?
+                                    taunted?
                                     deathrattle-minion?
                                     available-targets
                                     sleepy?]]))
@@ -56,6 +57,9 @@
           $)
         (if (stealthed? character)
           (conj $ "STEALTH")
+          $)
+        (if (taunted? character)
+          (conj $ "TAUNT")
           $)
         (if (frozen? character)
           (conj $ "FROZEN")
