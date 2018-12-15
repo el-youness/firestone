@@ -647,7 +647,8 @@
                     (get-health "wg"))
                 7))}
   [state id amount]
-  (update-minion state id :damage-taken (fn [x] (max (- x amount) 0))))
+  (-> (update-minion state id :damage-taken (fn [x] (max (- x amount) 0)))
+      (handle-triggers :on-heal id)))
 
 (defn damage-hero
   "Deals damage to the hero with the given id."
@@ -684,7 +685,8 @@
                     (get-health "h1"))
                 30))}
   [state id amount]
-  (update-hero state id :damage-taken (fn [x] (max (- x amount) 0))))
+  (-> (update-hero state id :damage-taken (fn [x] (max (- x amount) 0)))
+      (handle-triggers :on-heal id)))
 
 (defn add-event
   "Adds an event to the state."

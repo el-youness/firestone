@@ -515,7 +515,7 @@
                         8) $)))
 
 (deftest doomsayer
-         (as-> (create-game [{:minions [(create-minion "Doomsayer" :id "s" )]}
+         (as-> (create-game [{:minions [(create-minion "Doomsayer" :id "s")]}
                              {:minions [(create-minion "War Golem" :id "wg")]}]) $
                (end-turn $)
                (do (is= (->> (get-minions $)
@@ -538,7 +538,7 @@
                      (play-spell-card "p1" "r" {:target-id "wg"}))))
 
 (deftest archmage-antonidas
-         (is= (-> (create-game [{:hand [(create-card "The Coin" :id "c")]
+         (is= (-> (create-game [{:hand    [(create-card "The Coin" :id "c")]
                                  :minions [(create-minion "Archmage Antonidas" :id "aa")]}])
                   (play-spell-card "p1" "c" {})
                   (get-hand "p1")
@@ -547,7 +547,7 @@
               "Fireball"))
 
 (deftest lorewalker-cho
-         (as-> (create-game [{:hand [(create-card "The Coin" :id "c")]
+         (as-> (create-game [{:hand    [(create-card "The Coin" :id "c")]
                               :minions [(create-minion "Lorewalker Cho")]}]) state
                (play-spell-card state "p1" "c" {})
                (do (is= (->> (get-hand state "p2")
@@ -557,7 +557,7 @@
                (end-turn state)
                (play-spell-card state
                                 (->> (get-player-id-in-turn state)
-                                     (get-hand state )
+                                     (get-hand state)
                                      (first))
                                 {})
                (do (is= (->> (get-hand state "p1")
@@ -639,8 +639,8 @@
                    $)))
 
 (deftest flare
-         (as-> (create-game [{:deck [(create-card "Imp")]
-                              :hand [(create-card "Flare" :id "f")]
+         (as-> (create-game [{:deck    [(create-card "Imp")]
+                              :hand    [(create-card "Flare" :id "f")]
                               :minions [(create-minion "Moroes" :id "m")]
                               :secrets ["Snake Trap"]}
                              {:minions [(create-minion "Blood Imp" :id "bi")]
@@ -680,3 +680,11 @@
                     (map :name $)
                     (set $))
               #{"Imp" "The Black Knight"}))
+
+(deftest lightwarden
+         ; Available target on board
+         (is= (-> (create-game [{:hero    (create-hero "Anduin Wrynn" :damage-taken 2)
+                                 :minions [(create-minion "Lightwarden" :id "lw")]}])
+                  (use-hero-power "p1" {:target-id "h1"})
+                  (get-attack "lw"))
+              3))
