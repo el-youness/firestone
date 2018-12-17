@@ -1270,6 +1270,12 @@
   [state card]
   (assoc-in state [:cards-played-this-turn] (conj (:cards-played-this-turn state) card)))
 
+(defn add-card-to-graveyard
+  "Added a dead card to the player's graveyard"
+
+  [state card owner-id]
+  (assoc-in state [:players owner-id :graveyard] (conj (get-in state [:players owner-id :graveyard]) card)))
+
 (defn reset-cards-played-this-turn
   "Reset which cards have been played this turn"
   {:test (fn []
@@ -1452,7 +1458,8 @@
                              [:players owner-id :minions]
                              (fn [minions]
                                (remove (fn [m] (= (:id m) id)) minions))))]
-    (->> (get-minions state owner-id)
+    (->> (add-card-to-graveyard state minion)
+         (get-minions owner-id)
          (map :id)
          (reduce (fn [state id]
                    (update-minion state id :position (fn [p]
