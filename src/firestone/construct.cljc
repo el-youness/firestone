@@ -1482,12 +1482,11 @@
   (let [minion (get-minion state id)
         owner-id (:owner-id minion)
         position (:position minion)
-        state (-> (update-in state
-                             [:players owner-id :minions]
+        state (-> (add-card-to-graveyard state minion owner-id)
+                  (update-in [:players owner-id :minions]
                              (fn [minions]
                                (remove (fn [m] (= (:id m) id)) minions))))]
-    (->> (add-card-to-graveyard state minion owner-id)
-         (get-minions owner-id)
+    (->> (get-minions state owner-id)
          (map :id)
          (reduce (fn [state id]
                    (update-minion state id :position (fn [p]

@@ -4,6 +4,7 @@
             [clojure.test :refer [function?]]
             [ysera.test :refer [is is-not is= error?]]
             [ysera.random :refer [random-nth]]
+            [ysera.collections :refer [remove-one]]
             [firestone.construct :refer [create-game
                                          create-minion
                                          create-card
@@ -712,8 +713,32 @@
                          (->> (get-owner state nzoth-id)
                               (get-graveyard state)
                               (filter (fn [m]
-                                        (deathrattle-minion? m)) )
+                                        (deathrattle-minion? m)))
                               (reduce (fn [new-state m]
-                                        (summon-minion new-state (get-owner new-state nzoth-id) m)) state)))}})
+                                        (-> (summon-minion new-state (get-owner new-state nzoth-id) m)
+                                            (update-in [:players (get-owner state nzoth-id) :graveyard]
+                                                       (fn [minions]
+                                                         (remove (fn [n] (= (:id m) (:id n))) minions))))) state)))}
+
+    "Hadronox"
+    {:name             "Hadronox"
+     :attack           3
+     :health           7
+     :mana-cost        9
+     :type             :minion
+     :set              :knights-of-the-frozen-throne
+     :rarity           :legendary
+     :description      "Deathrattle: Summon your Taunt minions that died this game."
+     :battlecry        (fn [state hadronox-id]
+                         (->> (get-owner state hadronox-id)
+                              (get-graveyard state)
+                              (filter (fn [m]
+                                        (taunted? m)) )
+                              (reduce (fn [new-state m]
+                                        (-> (summon-minion new-state (get-owner new-state hadronox-id) m)
+                                            (update-in [:players (get-owner state hadronox-id) :graveyard]
+                                                       (fn [minions]
+                                                         (remove (fn [n] (= (:id m) (:id n))) minions))))) state)))}})
+
 
 (definitions/add-definitions! card-definitions)

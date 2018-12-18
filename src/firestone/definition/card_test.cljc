@@ -690,8 +690,19 @@
               3))
 
 (deftest n'zoth-the-corruptor
-         (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh")]
-                            :hand [(create-card "N'Zoth, the Corruptor" :id "nc")]}])
-             (remove-minion "lh")
-             (play-minion-card "p1" "nc" {:position 1})
-             (get-minions "p1")))
+         (is= (-> (create-game [{:minions [(create-minion "Loot Hoarder" :id "lh")]
+                                :hand [(create-card "N'Zoth, the Corruptor" :id "nc")]}])
+                 (remove-minion "lh")
+                 (play-minion-card "p1" "nc" {:position 1})
+                 (get-minions "p1")
+                 (count))
+              2))
+
+(deftest hadronox
+         (is= (-> (create-game [{:minions [(create-minion "Booty Bay Bodyguard" :id "bbb")]
+                                :hand [(create-card "Hadronox" :id "h")]}])
+                 (remove-minion "bbb")
+                 (play-minion-card "p1" "h" {:position 1})
+                 (get-minions "p1")
+                 (count))
+              2))
