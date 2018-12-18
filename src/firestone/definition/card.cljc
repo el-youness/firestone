@@ -697,7 +697,7 @@
     :rarity           :rare
     :description      "Whenever a character is healed, gain +2 Attack."
     :triggered-effect {:on-heal (fn [state lightwarden-id _]
-                                  (add-buff state lightwarden-id {:extra-attack 2}))}}}
+                                  (add-buff state lightwarden-id {:extra-attack 2}))}}
 
     "N'Zoth, the Corruptor"
     {:name             "N'Zoth, the Corruptor"
@@ -714,6 +714,6 @@
                               (filter (fn [m]
                                         (deathrattle-minion? m)) )
                               (reduce (fn [m]
-                                        (summon-minion state (get-owner state nzoth-id) m)))))})
+                                        (summon-minion state (get-owner state nzoth-id) m)))))}})
 
 (definitions/add-definitions! card-definitions)
