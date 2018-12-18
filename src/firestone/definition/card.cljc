@@ -708,12 +708,12 @@
      :set              :whispers-of-the-old-gods
      :rarity           :legendary
      :description      "Battlecry: Summon your Deathrattle minions that died this game."
-     :battlecry        (fn [state nzoth-id _]
+     :battlecry        (fn [state nzoth-id]
                          (->> (get-owner state nzoth-id)
                               (get-graveyard state)
                               (filter (fn [m]
                                         (deathrattle-minion? m)) )
-                              (reduce (fn [m]
-                                        (summon-minion state (get-owner state nzoth-id) m)))))}})
+                              (reduce (fn [new-state m]
+                                        (summon-minion new-state (get-owner new-state nzoth-id) m)) state)))}})
 
 (definitions/add-definitions! card-definitions)
