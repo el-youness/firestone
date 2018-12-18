@@ -173,6 +173,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore"
@@ -187,6 +188,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore" :id "h2"
@@ -212,6 +214,7 @@
                                                           :attacks-performed-this-turn 0
                                                           :deck                        []
                                                           :hand                        []
+                                                          :graveyard                   []
                                                           :minions                     []
                                                           :secrets                     []
                                                           :hero                        (assoc hero :id (str "h" (inc index))
@@ -305,6 +308,18 @@
    (:deck player))
   ([state player-id]
    (get-deck (get-player state player-id))))
+
+
+(defn get-graveyard
+  "Returns the graveyard for the given player-id."
+  {:test (fn []
+           (is= (-> (create-empty-state)
+                    (get-graveyard "p1"))
+                []))}
+  ([player]
+   (:graveyard player))
+  ([state player-id]
+   (get-graveyard (get-player state player-id))))
 
 (defn get-secrets
   "Returns all secrets or the secrets for the given player-id."
@@ -542,6 +557,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     [(create-minion "Imp"
                                                                                                     :id "m1"
                                                                                                     :owner-id "p1"
@@ -561,6 +577,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     []
                                                        :hero                        (create-hero "Anduin Wrynn"
@@ -587,6 +604,7 @@
                                                        :attacks-performed-this-turn 1
                                                        :deck                        [(create-card "Imp" :id "c2" :owner-id "p1")]
                                                        :hand                        [(create-card "Imp" :id "c1" :owner-id "p1")]
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore"
@@ -603,6 +621,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     [(create-secret "Snake Trap" :id "s3" :owner-id "p2")]
                                                        :hero                        (create-hero "Anduin Wrynn"
@@ -626,6 +645,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore"
@@ -642,6 +662,7 @@
                                                        :attacks-performed-this-turn 0
                                                        :deck                        []
                                                        :hand                        []
+                                                       :graveyard                   []
                                                        :minions                     []
                                                        :secrets                     []
                                                        :hero                        (create-hero "Jaina Proudmoore"
@@ -1270,12 +1291,6 @@
   [state card]
   (assoc-in state [:cards-played-this-turn] (conj (:cards-played-this-turn state) card)))
 
-(defn add-card-to-graveyard
-  "Added a dead card to the player's graveyard"
-
-  [state card owner-id]
-  (assoc-in state [:players owner-id :graveyard] (conj (get-in state [:players owner-id :graveyard]) card)))
-
 (defn reset-cards-played-this-turn
   "Reset which cards have been played this turn"
   {:test (fn []
@@ -1438,6 +1453,19 @@
                      m)))
                {})))
 
+(defn add-card-to-graveyard
+  "Added a dead card to the player's graveyard"
+  {:test (fn []
+           (is= (as-> (create-game [{:minions [(create-minion "Imp" :id "i")]}]) $
+                      (add-buff $ "i" {:extra-health 1})
+                      (add-card-to-graveyard $ (get-minion $ "i") "p1")
+                      (get-in $ [:players "p1" :graveyard]))
+                [(create-minion "Imp" :id "i" :owner-id "p1")]))}
+
+  [state card owner-id]
+  (let [minion (create-minion (:name card) :id (:id card) :owner-id owner-id)]
+    (assoc-in state [:players owner-id :graveyard] (conj (get-in state [:players owner-id :graveyard]) minion))))
+
 (defn remove-minion
   "Removes a minion with the given id from the state."
   {:test (fn []
@@ -1458,7 +1486,7 @@
                              [:players owner-id :minions]
                              (fn [minions]
                                (remove (fn [m] (= (:id m) id)) minions))))]
-    (->> (add-card-to-graveyard state minion)
+    (->> (add-card-to-graveyard state minion owner-id)
          (get-minions owner-id)
          (map :id)
          (reduce (fn [state id]

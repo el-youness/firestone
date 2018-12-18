@@ -23,6 +23,7 @@
                                          opposing-player-id
                                          add-card-to-hand
                                          get-hand
+                                         get-graveyard
                                          get-card-from-hand
                                          get-mana
                                          get-board-entity
@@ -57,7 +58,8 @@
                                     add-to-max-mana
                                     deal-spell-damage
                                     spell-card?
-                                    taunted?]]
+                                    taunted?
+                                    deathrattle-minion?]]
             [firestone.api :refer [attack-with-minion
                                    play-minion-card
                                    end-turn]]))
@@ -695,6 +697,23 @@
     :rarity           :rare
     :description      "Whenever a character is healed, gain +2 Attack."
     :triggered-effect {:on-heal (fn [state lightwarden-id _]
-                                  (add-buff state lightwarden-id {:extra-attack 2}))}}})
+                                  (add-buff state lightwarden-id {:extra-attack 2}))}}}
+
+    "N'Zoth, the Corruptor"
+    {:name             "N'Zoth, the Corruptor"
+     :attack           5
+     :health           7
+     :mana-cost        10
+     :type             :minion
+     :set              :whispers-of-the-old-gods
+     :rarity           :legendary
+     :description      "Battlecry: Summon your Deathrattle minions that died this game."
+     :battlecry        (fn [state nzoth-id _]
+                         (->> (get-owner state nzoth-id)
+                              (get-graveyard state)
+                              (filter (fn [m]
+                                        (deathrattle-minion? m)) )
+                              (reduce (fn [m]
+                                        (summon-minion state (get-owner state nzoth-id) m)))))})
 
 (definitions/add-definitions! card-definitions)
